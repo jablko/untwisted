@@ -96,6 +96,40 @@ svg
   top: 45%;
 }
 
+.download
+{
+  color: #fff;
+  display: block;
+  margin-top: 1.5em;
+  text-decoration: none;
+}
+
+.download > *
+{
+  background: #8c3;
+  background: -moz-linear-gradient(#8c3, #491);
+  background: -webkit-linear-gradient(#8c3, #491);
+
+  border-radius: .5em;
+  -moz-border-radius: .5em;
+  -webkit-border-radius: .5em;
+
+  display: block;
+  float: right;
+  font-size: 1.4em;
+  margin: 0;
+  margin-left: 1.5em;
+  margin-right: -3em;
+  padding: .2em 1.2em;
+}
+
+.download > :before
+{
+  content: url(http://mozcom-cdn.mozilla.net/img/firefox/download-arrow.png);
+  margin-right: .3em;
+  vertical-align: central;
+}
+
 #beforeAfter
 {
   position: relative;
@@ -103,6 +137,6 @@ svg
 
 #page
 {
-  width: 768px;
   margin: 0 auto;
+  width: 768px;
 }
