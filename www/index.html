@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta content="HTML Tidy for Linux (vers 25 March 2009), see www.w3.org" name="generator" />
+  <link href="style.css" rel="stylesheet" type="text/css" />
+  <script src="http://code.jquery.com/jquery-latest.min.js" type="text/javascript">
+</script>
+  <script src="prettify/prettify.js" type="text/javascript">
+</script>
+  <script type="text/javascript">
+//<![CDATA[
+  jQuery(function ($)
+    {
+      $('code').addClass('prettyprint');
+
+      prettyPrint();
+
+      $(':not(textarea)')
+        .contents()
+        .filter(function ()
+          {
+            return 3 == this.nodeType;
+          })
+        .replaceWith(function ()
+          {
+            return this.nodeValue
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+
+              // Autolink
+              .replace(/\bPEP\s*\d+(?:(?:,|\s|&|and)+\d+)+\b/gi, function ($0)
+                {
+                  return $0.replace(/\d+/gi, function ($0)
+                    {
+                      return '<a href="http://python.org/dev/peps/pep-0000'.slice(0, Math.max(-4, -$0.length)) + $0 + '/">' + $0 + '</a>';
+                    });
+                })
+              .replace(/\bPEP\s*(\d+)\b/gi, function ($0, $1)
+                {
+                  return '<a href="http://python.org/dev/peps/pep-0000'.slice(0, Math.max(-4, -$1.length)) + $1 + '/">' + $0 + '</a>';
+                })
+
+              // Emphasis
+              .replace(/\*\w(?:[\w\s]*\w)?\*/g, '<em>$&</em>');
+          });
+
+      // Slugify
+
+      function slugify(value)
+      {
+        value = value.toLowerCase();
+
+        // Allow only digits, letters, and dashes.  Replace sequences of other
+        // characters with dash
+        value = value.replace(/[^0-9a-z]+/g, '-');
+
+        // Drop (English) articles
+        value = ('-' + value + '-').replace(/-(?:a|an|the)-/g, '-');
+
+        value = value.replace(/^-+|-+$/g, '');
+
+        return value;
+      }
+
+      $('section:not([id])').attr('id', function ()
+        {
+          return slugify($('h', this)
+            .not($('section h', this))
+            .text());
+        });
+    });
+  //]]>
+  </script>
+
+  <title>Untwisted</title>
+</head>
+
+<body>
+  <div id="page">
+    <h>Untwisted</h>
+
+    <p>Untwisted is a variation <a href="http://twistedmatrix.com/trac/">of Twisted</a>, exploiting features <a href="http://docs.python.org/whatsnew/2.5.html">in Python 2.5</a>, principally PEP 342. An advantage is more linear control flow</p>
+
+    <p>This is the same as using <a href="http://twistedmatrix.com/documents/current/api/twisted.internet.defer.html#inlineCallbacks"><code>twisted.internet.defer.inlineCallbacks()</code></a></p>
+
+    <p>For example <a href="https://github.com/jablko/cookie/commit/e99a8586cb7c655533a2cdae6786a68a9c195540">this commit</a> achieves more linear control flow by exploiting PEP 342</p>
+
+    <p>Generally, asynchronous patterns like the following can be simplified like synchronous code,</p>
+
+    <div id="beforeAfter">
+      <section>
+        <h>Before</h>
+        <pre>
+<code>def example():
+
+  # Two cases with common end statements, duplicated because of asynchronous
+  # call in one case
+  if case1:
+
+    def callback(result):
+      handleAsyncResult(result)
+
+      cleanup()
+
+    doSomeAsyncThing().connect(callback)
+
+  else:
+    cleanup()</code>
+</pre>
+      </section>
+
+      <svg version="1.1" viewbox="0 0 79.514 196.897" xmlns="http://www.w3.org/2000/svg">
+        <path d="m 5.9441461,33.503596 c -0.25875,-1.70625 2.6725,-5.2725 3.6075,-6.95625 3.9724999,-7.14 7.5799999,-14.73125 9.7912499,-22.1600002 7.21375,1.62125 13.6125,6.2262502 18.295,11.3375002 6.913749,7.5475 11.862499,17.95125 17.004999,28.85875 2.5125,5.335 4.10125,11.015 5.66875,17.26 1.525001,6.05 3.285001,12.225 3.865001,18.0375 1.1175,11.0875 3.41375,24.687514 3.0925,36.587514 -0.3225,11.8 -3.65125,30.6875 -9.791251,39.425 -2.33,0.6 -3.7575,3.9375 -4.63875,4.3875 -0.5375,0.7125 0.81625,1.2875 1.03125,2.0625 7.15,-1.6 11.895001,2.5 18.03625,4.6375 -11.50875,6.1125 -22.395,12.2 -33.238749,18.8 -3.6825,2.25 -7.5375,4.5625 -11.8525,5.675 -1.00875,-1.9875 -1.42875,-5.425 -1.54625,-8.7625 -0.30125,-8.1875 -0.23625,-16.475 -1.28875,-23.9625 -0.50375,-3.5875 -1.4175,-6.85 -1.03,-10.3125 4.6375,1.2625 9.06125,3.925 12.88375,5.1625 0.71875,2.3625 4.21875,2.6875 6.441249,1.5375 0.64375,-0.9375 0.225,-1.5375 0.515,-2.575 8.9325,-15.9375 7.6875,-34.85 5.66875,-51.7875 -0.41875,-3.500014 -1.675,-7.350014 -2.57625,-10.825014 -0.70875,-2.7375 -2.2225,-4.975 -3.0925,-7.475 -1.653749,-4.725 -2.641249,-9.1625 -4.894999,-13.9125 -1.61125,-3.3875 -4.16625,-7 -6.4425,-10.3 -5.97,-8.6675 -12.84,-15.1525 -20.87125,-20.87375 -1.6524999,-1.1825 -4.4987499,-2.9425 -4.6374999,-3.86625 z m -4.63875,-1.03 c -0.83625003,1.26625 -1.41625003,2.02875 -1.28750003,2.83375 0.12875,0.79375 0.74125,0.42875 0.7725,1.28875 18.73499993,9.35 31.99374993,26.41 38.90749993,48.435 0.89125,1.925 3.221249,10.75 4.381249,16.500014 1.14875,5.7125 1.31,12.475 1.54625,18.2875 0.3975,9.925 -0.515,15.2125 -3.6075,24.4875 -0.859999,2.5625 -2.694999,6.3375 -4.122499,6.4375 -2.23375,0.15 -7.40875,-2.9875 -9.53375,-3.8625 -3.48,-1.4375 -6.0125,-2.5375 -9.53375,-3.1 -1.7925,1.3625 -1.77125,3.825 -0.515,4.9 -0.44125,6.275 1.70625,11.6625 2.31875,17.2625 0.82625,7.5 0.1825,16.2875 1.03,23.45 1.10625,1.8875 0.90125,4.125 1.28875,5.925 1.535,1.1875 2.35125,1.7125 5.41125,1.55 17.381249,-9.175 32.454999,-21.6875 51.017499,-28.8625 0.84875,-3.45 -2.48,-2.925 -4.895,-3.6125 -4.07,-1.1375 -10.274999,-4.4875 -14.1725,-5.4125 6.023751,-7.1875 8.137501,-17.8625 10.05,-28.85 1.87875,-10.8625 1.41625,-22.1 0,-34.012514 -1.267499,-10.7 -2.319999,-21.7375 -4.638749,-31.7 C 60.912895,43.757346 52.464145,26.149846 41.759145,13.406096 37.250396,8.0373458 30.207896,4.3223458 24.754146,0.77984582 c -2.7925,0.25749998 -6.47375,-0.88125 -7.9875,-0.7725 -0.41875,0.61125 -0.86,1.20124998 -1.5475,1.54499998 -0.35375,1.1175 0.07625,1.43875 0,2.835 -1.78125,5.035 -5.09875,13.5062502 -8.2449999,19.3250002 -1.87875,3.4675 -3.3925,5.30375 -5.66875,8.76125"></path>
+      </svg>
+
+      <section>
+        <h>After</h>
+        <pre>
+<code>from untwisted import event
+
+@event.connect
+def example():
+  if case1:
+    result = yield doSomeAsyncThing()
+
+    handleAsyncResult(result)
+
+  cleanup()</code>
+</pre>
+      </section>
+    </div>
+
+    <p>By avoiding explicit callbacks, Untwisted achieves more linear, less "twisted" control flow</p>
+  </div>
+</body>
+</html>

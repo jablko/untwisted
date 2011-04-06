@@ -1,0 +1,108 @@
+@font-face
+{
+  font-family: "!Sketchy Times";
+  src: url(!sketchytimes.ttf);
+}
+
+code
+{
+  font: 15.2px Monaco, Courier New;
+}
+
+em
+{
+  color: #000;
+  font-style: normal;
+  font-weight: bolder;
+}
+
+h
+{
+  color: #000;
+  font: 2.5em "!Sketchy Times";
+  font-weight: inherit;
+}
+
+html
+{
+  color: #222;
+  font-family: Georgia, Times New Roman, Times, serif;
+  line-height: 1.5;
+}
+
+p
+{
+  margin: 1.5em 0;
+}
+
+pre
+{
+  background: #222;
+
+  border-radius: .2em;
+  -moz-border-radius: .2em;
+  -webkit-border-radius: .2em;
+
+  color: #fff;
+  padding: 1em;
+}
+
+pre .com
+{
+  color: #c4c;
+}
+
+pre .kwd
+{
+  color: #06f;
+}
+
+pre .lit
+{
+  color: #0ef;
+}
+
+pre .pln
+{
+  color: #fff;
+}
+
+pre .pun
+{
+  color: #fc6;
+}
+
+pre .str
+{
+  color: #9f0;
+}
+
+pre .typ
+{
+  color: #f40;
+}
+
+section h
+{
+  font-size: 1.5em;
+}
+
+svg
+{
+  height: 30%;
+  left: 100%;
+  margin-left: 1em;
+  position: absolute;
+  top: 45%;
+}
+
+#beforeAfter
+{
+  position: relative;
+}
+
+#page
+{
+  width: 768px;
+  margin: 0 auto;
+}
