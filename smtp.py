@@ -9,7 +9,7 @@ class Reply:
     self.code = code
 
     try:
-      (self.text,) = args
+      self.text, = args
 
     except ValueError:
       self.text = {
@@ -173,219 +173,196 @@ class Server:
     #return Command(read[:index])
     raise StopIteration(Command(read[:index]))
 
-  class Start:
+  @event.connect
+  def start(self, command, state):
+    if 'EHLO' == command.verb:
+      self.transport.write(Reply(250, [domain]))
 
-    @event.connect
-    def __call__(self, command):
-      if 'EHLO' == command.verb:
-        self.server.transport.write(Reply(250, [domain]))
+      #return self.Mail(self)
+      raise StopIteration(self.Mail(self))
 
-        #return self.server.Mail(self.server)
-        raise StopIteration(self.server.Mail(self.server))
+    if 'HELO' == command.verb:
 
-      if 'HELO' == command.verb:
+      # Servers MUST NOT return the extended EHLO-style response to a HELO
+      # command
+      self.transport.write(Reply(250, [domain]))
 
-        # Servers MUST NOT return the extended EHLO-style response to a HELO
-        # command
-        self.server.transport.write(Reply(250, [domain]))
+      #return self.Mail(self)
+      raise StopIteration(self.Mail(self))
 
-        #return self.server.Mail(self.server)
-        raise StopIteration(self.server.Mail(self.server))
+    if command.verb in ('MAIL', 'RCPT', 'DATA'):
+      self.transport.write(Reply(503))
 
-      if command.verb in ('MAIL', 'RCPT', 'DATA'):
-        self.server.transport.write(Reply(503))
+      #return state((yield self.command()), state)
+      raise StopIteration(state((yield self.command()), state))
 
-        #return self((yield self.server.command()))
-        raise StopIteration(self((yield self.server.command())))
+    if command.verb in ('RSET', 'NOOP'):
+      self.transport.write(Reply(250))
 
-      if command.verb in ('RSET', 'NOOP'):
-        self.server.transport.write(Reply(250))
+      #return state((yield self.command()), state)
+      raise StopIteration(state((yield self.command()), state))
 
-        #return self((yield self.server.command()))
-        raise StopIteration(self((yield self.server.command())))
+    if command.verb in ('VRFY', 'EXPN', 'HELP'):
+      self.transport.write(Reply(502))
 
-      if command.verb in ('VRFY', 'EXPN', 'HELP'):
-        self.server.transport.write(Reply(502))
+      #return state((yield self.command()), state)
+      raise StopIteration(state((yield self.server.command()), state))
 
-        #return self((yield self.server.command()))
-        raise StopIteration(self((yield self.server.command())))
+    if 'QUIT' == command.verb:
+      #return self.transport.write(Reply(221))
+      raise StopIteration(self.transport.write(Reply(221)))
 
-      if 'QUIT' == command.verb:
-        #return self.server.transport.write(Reply(221))
-        raise StopIteration(self.server.transport.write(Reply(221)))
+    # TODO Log?
+    self.transport.write(Reply(500))
 
-      # TODO Log?
-      self.server.transport.write(Reply(500))
-
-      self((yield self.server.command()))
+    state((yield self.server.command()), state)
 
   class Mail:
     def mail(self, mailbox):
       raise NotImplementedError
 
-    class Start(Server.Start):
+    @event.connect
+    def start(self, command, state):
 
-      @event.connect
-      def __call__(self, command):
+      # MAIL (or SEND, SOML, or SAML) MUST NOT be sent if a mail transaction is
+      # already open, i.e., it should be sent only if no mail transaction had
+      # been started in the session, or if the previous one successfully
+      # concluded with a successful DATA command, or if the previous one was
+      # aborted, e.g., with a RSET or new EHLO
+      if 'MAIL' == command.verb:
+        match = re.match(rfc5321.mail, command)
+        try:
+          if not match:
+            raise Reply(555)
 
-        # MAIL (or SEND, SOML, or SAML) MUST NOT be sent if a mail transaction
-        # is already open, i.e., it should be sent only if no mail transaction
-        # had been started in the session, or if the previous one successfully
-        # concluded with a successful DATA command, or if the previous one was
-        # aborted, e.g., with a RSET or new EHLO
-        if 'MAIL' == command.verb:
-          match = re.match(rfc5321.mail, command)
           try:
-            if not match:
-              raise Reply(555)
+            yield self.mail(match.group(1))
 
-            try:
-              yield self.mail.mail(match.group(1))
+          # TODO Log
+          except NotImplementedError:
+            raise Reply(502)
 
-            # TODO Log
-            except NotImplementedError:
-              raise Reply(502)
+          raise Reply(250)
 
-            raise Reply(250)
+        except Reply as e:
+          self.server.transport.write(e)
 
-          except Reply as e:
-            self.server.transport.write(e)
+          if int(e) in range(200, 300):
+            #return self.afterMail((yield self.server.command()), self.afterMail)
+            raise StopIteration(self.afterMail((yield self.server.command()), self.afterMail))
 
-            if int(e) in range(200, 300):
-              next = AfterMail()
-              next.mail = self.mail
-              next.server = self.server
+          #return state((yield self.server.command()), state)
+          raise StopIteration(state((yield self.server.command()), state))
 
-              #return next((yield self.server.command()))
-              raise StopIteration(next((yield self.server.command())))
+      if 'RSET' == command.verb:
+        self.server.transport.write(Reply(250))
 
-            #return self((yield self.server.command()))
-            raise StopIteration(self((yield self.server.command())))
+        #return self.server.Mail(self.server)
+        raise StopIteration(self.server.Mail(self.server))
 
-        if 'RSET' == command.verb:
-          self.server.transport.write(Reply(250))
-
-          #return self.server.Mail(self.server)
-          raise StopIteration(self.server.Mail(self.server))
-
-        #return Server.Start(self, command)
-        raise StopIteration(Server.Start(self, command))
+      #return self.server.start(command, state)
+      raise StopIteration(self.server.start(command, state))
 
     def recipient(self, mailbox):
       raise NotImplementedError
 
-    class AfterMail(Server.Start):
+    @event.connect
+    def afterMail(self, command, state):
 
-      @event.connect
-      def __call__(self, command):
+      # Once started, a mail transaction consists of a transaction beginning
+      # command, one or more RCPT commands, and a DATA command, in that order
+      if 'RCPT' == command.verb:
+        match = re.match(rfc5321.rcpt, command)
+        try:
+          if not match:
+            raise Reply(555)
 
-        # Once started, a mail transaction consists of a transaction beginning
-        # command, one or more RCPT commands, and a DATA command, in that order
-        if 'RCPT' == command.verb:
-          match = re.match(rfc5321.rcpt, command)
           try:
-            if not match:
-              raise Reply(555)
+            yield self.recipient(match.group(1))
 
-            try:
-              yield self.mail.recipient(match.group(1))
+          # TODO Log
+          except NotImplementedError:
+            raise Reply(502)
 
-            # TODO Log
-            except NotImplementedError:
-              raise Reply(502)
+          raise Reply(250)
 
-            raise Reply(250)
+        except Reply as e:
+          self.server.transport.write(e)
 
-          except Reply as e:
-            self.server.transport.write(e)
+          if int(e) in range(200, 300):
+            #return self.afterRecipient((yield self.server.command()), self.afterRecipient)
+            raise StopIteration(self.afterRecipient((yield self.server.command()), self.afterRecipient))
 
-            if int(e) in range(200, 300):
-              next = AfterRecipient()
-              next.mail = self.mail
-              next.server = self.server
+          #return state((yield self.server.command()), state)
+          raise StopIteration(state((yield self.server.command()), state))
 
-              #return next((yield self.server.command()))
-              raise StopIteration(next((yield self.server.command())))
+      if 'RSET' == command.verb:
+        self.server.transport.write(Reply(250))
 
-            #return self((yield self.server.command()))
-            raise StopIteration(self((yield self.server.command())))
+        #return self.server.Mail(self.server)
+        raise StopIteration(self.server.Mail(self.server))
 
-        if 'RSET' == command.verb:
-          self.server.transport.write(Reply(250))
-
-          #return self.server.Mail(self.server)
-          raise StopIteration(self.server.Mail(self.server))
-
-        #return Server.Start(self, command)
-        raise StopIteration(Server.Start(self, command))
+      #return self.server.start(command, state)
+      raise StopIteration(self.server.start(command, state))
 
     def data(self, data):
       raise NotImplementedError
 
-    class AfterRecipient(Server.AfterMail):
+    @event.connect
+    def afterRecipient(self, command, state):
+      if 'DATA' == command.verb:
+        self.server.transport.write(Reply(354))
 
-      @event.connect
-      def __call__(self, command):
-        if 'DATA' == command.verb:
-          self.server.transport.write(Reply(354))
-
-          read = ''
-          while True:
-            read += yield self.server.transport.protocol.dataReceived.shift()
-            try:
-              index = read.index('\r\n.\r\n')
-
-              break
-
-            except ValueError:
-              pass
-
-          # TODO Raise if index not end?
-
+        read = ''
+        while True:
+          read += yield self.server.transport.protocol.dataReceived.shift()
           try:
-            try:
+            index = read.index('\r\n.\r\n')
 
-              # When a line of mail text is received by the SMTP server, it
-              # checks the line.  If the line is composed of a single period,
-              # it is treated as the end of mail indicator.  If the first
-              # character is a period and there are other characters on the
-              # line, the first character is deleted
+            break
 
-              # Lookbehind requires fixed width pattern
-              yield self.mail.data(re.sub('(^|\r\n)\.(?=.)', '\\1', read[:index]))
+          except ValueError:
+            pass
 
-            # TODO Log
-            except NotImplementedError:
-              raise Reply(502)
+        # TODO Raise if index not end?
 
-            raise Reply(250)
+        try:
+          try:
 
-          except Reply as e:
-            self.server.transport.write(e)
+            # When a line of mail text is received by the SMTP server, it
+            # checks the line.  If the line is composed of a single period, it
+            # is treated as the end of mail indicator.  If the first character
+            # is a period and there are other characters on the line, the first
+            # character is deleted
 
-            if int(e) in range(200, 300):
-              #return self.server.Mail(self.server)
-              raise StopIteration(self.server.Mail(self.server))
+            # Lookbehind requires fixed width pattern
+            yield self.data(re.sub('(^|\r\n)\.(?=.)', '\\1', read[:index]))
 
-            #return self((yield self.server.command()))
-            raise StopIteration(self((yield self.server.command())))
+          # TODO Log
+          except NotImplementedError:
+            raise Reply(502)
 
-        #return AfterRecipient(self, command)
-        raise StopIteration(AfterRecipient(self, command))
+          raise Reply(250)
+
+        except Reply as e:
+          self.server.transport.write(e)
+
+          if int(e) in range(200, 300):
+            #return self.server.Mail(self.server)
+            raise StopIteration(self.server.Mail(self.server))
+
+          #return state((yield self.server.command()), state)
+          raise StopIteration(state((yield self.server.command()), state))
+
+      #return self.afterMail(command, state)
+      raise StopIteration(self.afterMail(command, state))
 
     def __init__(self, server):
-      next = Start()
-      next.mail = self
-      next.server = server
-
-      next((yield server.command()))
+      self.start((yield server.command()), self.start)
 
   def __init__(self, transport):
     self.transport = transport
 
     self.greeting()
 
-    next = Start()
-    next.server = self
-
-    next((yield self.command()))
+    self.start((yield self.command()), self.start)
