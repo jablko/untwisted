@@ -5,16 +5,16 @@ from untwisted import smtp
 
 sample = smtp.Reply(123, ['first', 'second', 'third'])
 equal(123, int(sample))
-equal('123-first\r\n123-second\r\n123 third\r\n', sample)
+equal('123-first\r\n123-second\r\n123 third\r\n', str(sample))
 
 sample = smtp.Command('VERB')
 equal('VERB', sample.verb)
-equal('VERB\r\n', sample)
+equal('VERB\r\n', str(sample))
 
 sample = smtp.Command('VERB parameters')
 equal('VERB', sample.verb)
-equal('VERB parameters\r\n', sample)
+equal('VERB parameters\r\n', str(sample))
 
 sample = smtp.Command('VERB', 'parameters')
 equal('VERB', sample.verb)
-equal('VERB parameters\r\n', sample)
+equal('VERB parameters\r\n', str(sample))

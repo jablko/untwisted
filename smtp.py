@@ -25,7 +25,7 @@ class Reply:
     return self.code
 
   def __str__(self):
-    return ''.join([self.code + '-' + text + '\r\n' for text in self.text[0:-1]]) + code + ' ' + self.text[-1] + '\r\n'
+    return ''.join([str(self.code) + '-' + text + '\r\n' for text in self.text[0:-1]]) + str(self.code) + ' ' + self.text[-1] + '\r\n'
 
 class Command:
   def __init__(self, verb, parameters=None):
@@ -37,7 +37,7 @@ class Command:
     if self.parameters:
       str += ' ' + self.parameters
 
-    str + '\r\n'
+    return str + '\r\n'
 
 class Client:
 
