@@ -28,14 +28,29 @@ class Reply:
     return ''.join([str(self.code) + '-' + text + '\r\n' for text in self.text[0:-1]]) + str(self.code) + ' ' + self.text[-1] + '\r\n'
 
 class Command:
-  def __init__(self, verb, parameters=None):
+  def __init__(self, verb, *args):
     self.verb = verb
-    self.parameters = parameters
+
+    try:
+      self.verb, self.text = verb.split(' ', 1)
+
+    except ValueError:
+      pass
+
+    try:
+      self.text, = args
+
+    except ValueError:
+      pass
 
   def __str__(self):
     str = self.verb
-    if self.parameters:
-      str += ' ' + self.parameters
+
+    try:
+      str += ' ' + self.text
+
+    except AttributeError:
+      pass
 
     return str + '\r\n'
 
