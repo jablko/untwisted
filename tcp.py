@@ -1,5 +1,5 @@
 import untwisted
-from twisted.internet import tcp
+from twisted.internet import reactor, tcp
 from untwisted import event
 
 class connect:
@@ -14,7 +14,7 @@ class connect:
         def __init__(ctx):
           ctx.dataReceived = event.sequence()
 
-    ctx.connector = tcp.Connector(host, port, factory, timeout, bindAddress)
+    ctx.connector = tcp.Connector(host, port, factory, timeout, bindAddress, reactor)
 
   def __call__(ctx):
     ctx.connector.connect()
