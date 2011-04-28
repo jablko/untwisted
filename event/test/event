@@ -3,20 +3,25 @@
 from testify import *
 from untwisted import event
 
+# Call then throw
+
 sample = event.event()
 equal(sample('Call'), sample)
 
 try:
-  ok(False, sample.throw('Throw'))
+  ok(False, sample.throw(Exception))
 
 except StopIteration:
   pass
 
+# Connect
 sample = event.event()
 equal(sample.connect('Connect'), sample)
 
+# Throw then call
+
 sample = event.event()
-equal(sample.throw('Throw'), sample)
+equal(sample.throw(Exception), sample)
 
 try:
   ok(False, sample('Call'))
