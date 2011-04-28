@@ -7,9 +7,7 @@ sample = event.event()
 equal(sample('Call'), sample)
 
 try:
-  sample.throw('Throw')
-
-  ok(False)
+  ok(False, sample.throw('Throw'))
 
 except StopIteration:
   pass
@@ -21,9 +19,7 @@ sample = event.event()
 equal(sample.throw('Throw'), sample)
 
 try:
-  sample('Call')
-
-  ok(False)
+  ok(False, sample('Call'))
 
 except StopIteration:
   pass
@@ -32,7 +28,7 @@ except StopIteration:
 def connectThenCall():
   expect(1)
 
-  equal(('Connect then call',), (yield event.event()))
+  equal((yield event.event()), ('Connect then call',))
 
 test(lambda: connectThenCall()('Connect then call'))
 
@@ -43,16 +39,14 @@ def callThenConnect():
 
   sample = event.event()
   sample('Call then connect')
-  equal(('Call then connect',), (yield sample))
+  equal((yield sample), ('Call then connect',))
 
 @event.connect
 def connectThenThrow():
   expect(1)
 
   try:
-    yield event.event()
-
-    ok(False)
+    ok(False, (yield event.event()))
 
   except:
     ok(True)
@@ -68,9 +62,7 @@ def throwThenConnect():
   sample.throw(Exception)
 
   try:
-    yield sample
-
-    ok(False)
+    ok(False, (yield sample))
 
   except:
     ok(True)

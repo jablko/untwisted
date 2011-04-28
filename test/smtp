@@ -4,17 +4,17 @@ from testify import *
 from untwisted import smtp
 
 sample = smtp.reply(123, ['first', 'second', 'third'])
-equal(123, int(sample))
-equal('123-first\r\n123-second\r\n123 third\r\n', str(sample))
+equal(int(sample), 123)
+equal(str(sample), '123-first\r\n123-second\r\n123 third\r\n')
 
 sample = smtp.command('VERB')
-equal('VERB', sample.verb)
-equal('VERB\r\n', str(sample))
+equal(sample.verb, 'VERB')
+equal(str(sample), 'VERB\r\n')
 
 sample = smtp.command('VERB text')
-equal('VERB', sample.verb)
-equal('VERB text\r\n', str(sample))
+equal(sample.verb, 'VERB')
+equal(str(sample), 'VERB text\r\n')
 
 sample = smtp.command('VERB', 'text')
-equal('VERB', sample.verb)
-equal('VERB text\r\n', str(sample))
+equal(sample.verb, 'VERB')
+equal(str(sample), 'VERB text\r\n')

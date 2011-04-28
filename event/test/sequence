@@ -10,12 +10,12 @@ def callThenShift():
 
   sample = event.sequence()
   sample('Call then shift')
-  equal(('Call then shift',), (yield sample.shift()))
+  equal((yield sample.shift()), ('Call then shift',))
 
 @event.connect
 def shiftThenCall():
   expect(1)
 
-  equal(('Shift then call',), (yield event.sequence().shift()))
+  equal((yield event.sequence().shift()), ('Shift then call',))
 
 test(lambda: shiftThenCall()('Shift then call'))
