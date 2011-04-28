@@ -8,7 +8,7 @@ from untwisted import event
 def callThenShift():
   expect(1)
 
-  sample = event.Sequence()
+  sample = event.sequence()
   sample('Call then shift')
   equal(('Call then shift',), (yield sample.shift()))
 
@@ -16,6 +16,6 @@ def callThenShift():
 def shiftThenCall():
   expect(1)
 
-  equal(('Shift then call',), (yield event.Sequence().shift()))
+  equal(('Shift then call',), (yield event.sequence().shift()))
 
 test(lambda: shiftThenCall()('Shift then call'))

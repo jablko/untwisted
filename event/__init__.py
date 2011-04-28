@@ -10,7 +10,7 @@ import functools, sys, untwisted
 # It calls callbacks passed to .connect().  It raises an exception if called
 # twice.  By default .throw() raises the exception?  It calls .throw() on
 # callbacks passed to .connect()?
-class Event:
+class event:
   def propagate(ctx):
     while True:
       try:
@@ -66,13 +66,13 @@ class Event:
 # Sequence is a callback.  An advantage is that it can replace a function or
 # callback without maintaining two references, one to .push() and one to the
 # sequence
-class Sequence:
+class sequence:
   def __call__(ctx, *args, **kwds):
     try:
       item = ctx.consume.pop(0)
 
     except IndexError:
-      item = Event()
+      item = event()
       ctx.produce.append(item)
 
     item(*args, **kwds)
@@ -88,7 +88,7 @@ class Sequence:
       return ctx.produce.pop(0)
 
     except IndexError:
-      item = Event()
+      item = event()
       ctx.consume.append(item)
 
       return item

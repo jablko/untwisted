@@ -3,7 +3,7 @@
 from testify import *
 from untwisted import event
 
-sample = event.Event()
+sample = event.event()
 equal(sample('Call'), sample)
 
 try:
@@ -14,10 +14,10 @@ try:
 except StopIteration:
   pass
 
-sample = event.Event()
+sample = event.event()
 equal(sample.connect('Connect'), sample)
 
-sample = event.Event()
+sample = event.event()
 equal(sample.throw('Throw'), sample)
 
 try:
@@ -32,7 +32,7 @@ except StopIteration:
 def connectThenCall():
   expect(1)
 
-  equal(('Connect then call',), (yield event.Event()))
+  equal(('Connect then call',), (yield event.event()))
 
 test(lambda: connectThenCall()('Connect then call'))
 
@@ -41,7 +41,7 @@ test(lambda: connectThenCall()('Connect then call'))
 def callThenConnect():
   expect(1)
 
-  sample = event.Event()
+  sample = event.event()
   sample('Call then connect')
   equal(('Call then connect',), (yield sample))
 
@@ -50,7 +50,7 @@ def connectThenThrow():
   expect(1)
 
   try:
-    yield event.Event()
+    yield event.event()
 
     ok(False)
 
@@ -64,7 +64,7 @@ test(lambda: connectThenThrow().throw(Exception))
 def throwThenConnect():
   expect(1)
 
-  sample = event.Event()
+  sample = event.event()
   sample.throw(Exception)
 
   try:

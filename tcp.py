@@ -2,9 +2,9 @@ import untwisted
 from twisted.internet import tcp
 from untwisted import event
 
-class Connect:
+class connect:
   def __init__(ctx, host, port, timeout=30, bindAddress=None):
-    ctx.transport = event.Sequence()
+    ctx.transport = event.sequence()
 
     @untwisted.call
     class factory:
@@ -12,7 +12,7 @@ class Connect:
         makeConnection = ctx.transport
 
         def __init__(ctx):
-          ctx.dataReceived = event.Sequence()
+          ctx.dataReceived = event.sequence()
 
     ctx.connector = tcp.Connector(host, port, factory, timeout, bindAddress)
 
@@ -21,9 +21,9 @@ class Connect:
 
     return ctx.transport.shift()
 
-class Listen:
+class listen:
   def __init__(ctx, port, interface=None):
-    ctx.transport = event.Sequence()
+    ctx.transport = event.sequence()
 
     @untwisted.call
     class factory:
@@ -31,7 +31,7 @@ class Listen:
         makeConnection = ctx.transport
 
         def __init__(ctx):
-          ctx.dataReceived = event.Sequence()
+          ctx.dataReceived = event.sequence()
 
     ctx.port = tcp.Port(port, factory, interface=interface)
     ctx.port.startListening()

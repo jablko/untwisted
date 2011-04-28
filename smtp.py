@@ -11,7 +11,7 @@ class ctxual(type):
 # Cache our domain
 domain = socket.getfqdn()
 
-class Reply:
+class reply:
   def __init__(ctx, code, *args):
     ctx.code = code
 
@@ -34,7 +34,7 @@ class Reply:
   def __str__(ctx):
     return ''.join([str(ctx.code) + '-' + text + '\r\n' for text in ctx.text[0:-1]]) + str(ctx.code) + ' ' + ctx.text[-1] + '\r\n'
 
-class Command:
+class command:
   def __init__(ctx, verb, *args):
     ctx.verb = verb
 
@@ -61,7 +61,7 @@ class Command:
 
     return str + '\r\n'
 
-class Client:
+class client:
 
   # Since some servers may generate other replies under special circumstances,
   # and to allow for future extension, SMTP clients SHOULD, when possible,
@@ -79,7 +79,7 @@ class Client:
         break
 
     # TODO Extract multiple textstring, regex currently supports only last one
-    reply = Reply(match.group(1), [match.group(2)])
+    reply = reply(match.group(1), [match.group(2)])
 
     if int(reply) not in expect:
       raise reply
@@ -88,20 +88,20 @@ class Client:
     raise StopIteration(reply)
 
   def ehlo(ctx):
-    ctx.transport.write(Command('EHLO', domain))
+    ctx.transport.write(command('EHLO', domain))
 
     return ctx.reply()
 
   def helo(ctx):
-    ctx.transport.write(Command('HELO', domain))
+    ctx.transport.write(command('HELO', domain))
 
     return ctx.reply()
 
-  class Mail:
+  class mail:
     __metaclass__ = ctxual
 
     def mail(ctx, mailbox):
-      ctx.ctx.transport.write(Command('MAIL FROM:<%s>' % mailbox))
+      ctx.ctx.transport.write(command('MAIL FROM:<%s>' % mailbox))
 
       return ctx.ctx.reply()
 
@@ -109,7 +109,7 @@ class Client:
       raise NotImplementedError
 
     def rcpt(ctx, mailbox):
-      ctx.ctx.transport.write(Command('RCPT TO:<%s>' % mailbox))
+      ctx.ctx.transport.write(command('RCPT TO:<%s>' % mailbox))
 
       return ctx.ctx.reply()
 
@@ -119,7 +119,7 @@ class Client:
     @event.connect
     def data(ctx, data):
 
-      ctx.ctx.trasport.write(Command('DATA'))
+      ctx.ctx.trasport.write(command('DATA'))
 
       # Since some servers may generate other replies under special
       # circumstances, and to allow for future extension, SMTP clients SHOULD,
@@ -161,7 +161,7 @@ class Client:
     try:
       yield ctx.ehlo()
 
-    except Reply as e:
+    except reply as e:
       if int(e) not in (500, 502):
         raise
 
@@ -169,14 +169,14 @@ class Client:
 
     try:
       while True:
-        yield ctx.Mail()
+        yield ctx.mail()
 
     except StopIteration:
       pass
 
-class Server:
+class server:
   def greeting(ctx):
-    ctx.transport.write(Reply(220, [domain]))
+    ctx.transport.write(reply(220, [domain]))
 
   @event.connect
   def command(ctx):
@@ -193,53 +193,53 @@ class Server:
 
     # TODO Raise if index not end?
     #return ...
-    raise StopIteration(Command(read[:index]))
+    raise StopIteration(command(read[:index]))
 
   @event.connect
   def start(ctx, command, state):
     if 'EHLO' == command.verb:
-      ctx.transport.write(Reply(250, [domain]))
+      ctx.transport.write(reply(250, [domain]))
 
       #return ...
-      raise StopIteration(ctx.Mail())
+      raise StopIteration(ctx.mail())
 
     if 'HELO' == command.verb:
 
       # Servers MUST NOT return the extended EHLO-style response to a HELO
       # command
-      ctx.transport.write(Reply(250, [domain]))
+      ctx.transport.write(reply(250, [domain]))
 
       #return ...
-      raise StopIteration(ctx.Mail())
+      raise StopIteration(ctx.mail())
 
     if command.verb in ('MAIL', 'RCPT', 'DATA'):
-      ctx.transport.write(Reply(503))
+      ctx.transport.write(reply(503))
 
       #return ...
       raise StopIteration(state((yield ctx.command()), state))
 
     if command.verb in ('RSET', 'NOOP'):
-      ctx.transport.write(Reply(250))
+      ctx.transport.write(reply(250))
 
       #return ...
       raise StopIteration(state((yield ctx.command()), state))
 
     if command.verb in ('VRFY', 'EXPN', 'HELP'):
-      ctx.transport.write(Reply(502))
+      ctx.transport.write(reply(502))
 
       #return ...
       raise StopIteration(state((yield ctx.command()), state))
 
     if 'QUIT' == command.verb:
       #return ...
-      raise StopIteration(ctx.transport.write(Reply(221)))
+      raise StopIteration(ctx.transport.write(reply(221)))
 
     # TODO Log?
-    ctx.transport.write(Reply(500))
+    ctx.transport.write(reply(500))
 
     state((yield ctx.command()), state)
 
-  class Mail:
+  class mail:
     __metaclass__ = ctxual
 
     def mail(ctx, mailbox):
@@ -257,18 +257,18 @@ class Server:
         match = re.match(rfc5321.mail, command)
         try:
           if not match:
-            raise Reply(555)
+            raise reply(555)
 
           try:
             yield ctx.mail(match.group(1))
 
           # TODO Log
           except NotImplementedError:
-            raise Reply(502)
+            raise reply(502)
 
-          raise Reply(250)
+          raise reply(250)
 
-        except Reply as e:
+        except reply as e:
           ctx.ctx.transport.write(e)
 
           if int(e) in range(200, 300):
@@ -279,10 +279,10 @@ class Server:
           raise StopIteration(state((yield ctx.ctx.command()), state))
 
       if 'RSET' == command.verb:
-        ctx.ctx.transport.write(Reply(250))
+        ctx.ctx.transport.write(reply(250))
 
         #return ...
-        raise StopIteration(ctx.ctx.Mail())
+        raise StopIteration(ctx.ctx.mail())
 
       #return ...
       raise StopIteration(ctx.ctx.start(command, state))
@@ -299,18 +299,18 @@ class Server:
         match = re.match(rfc5321.rcpt, command)
         try:
           if not match:
-            raise Reply(555)
+            raise reply(555)
 
           try:
             yield ctx.recipient(match.group(1))
 
           # TODO Log
           except NotImplementedError:
-            raise Reply(502)
+            raise reply(502)
 
-          raise Reply(250)
+          raise reply(250)
 
-        except Reply as e:
+        except reply as e:
           ctx.ctx.transport.write(e)
 
           if int(e) in range(200, 300):
@@ -321,10 +321,10 @@ class Server:
           raise StopIteration(state((yield ctx.ctx.command()), state))
 
       if 'RSET' == command.verb:
-        ctx.ctx.transport.write(Reply(250))
+        ctx.ctx.transport.write(reply(250))
 
         #return ...
-        raise StopIteration(ctx.ctx.Mail())
+        raise StopIteration(ctx.ctx.mail())
 
       #return ...
       raise StopIteration(ctx.ctx.start(command, state))
@@ -335,7 +335,7 @@ class Server:
     @event.connect
     def afterRecipient(ctx, command, state):
       if 'DATA' == command.verb:
-        ctx.ctx.transport.write(Reply(354))
+        ctx.ctx.transport.write(reply(354))
 
         read = ''
         while True:
@@ -364,16 +364,16 @@ class Server:
 
           # TODO Log
           except NotImplementedError:
-            raise Reply(502)
+            raise reply(502)
 
-          raise Reply(250)
+          raise reply(250)
 
-        except Reply as e:
+        except reply as e:
           ctx.ctx.transport.write(e)
 
           if int(e) in range(200, 300):
             #return ...
-            raise StopIteration(ctx.ctx.Mail())
+            raise StopIteration(ctx.ctx.mail())
 
           #return ...
           raise StopIteration(state((yield ctx.ctx.command()), state))
