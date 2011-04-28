@@ -26,7 +26,7 @@ class connect:
     return ctx.transport.shift()
 
 class listen:
-  def __init__(ctx, port, interface=None):
+  def __init__(ctx, port, interface=''):
     ctx.transport = event.sequence()
 
     # Extend protocol.Factory for .doStart()
