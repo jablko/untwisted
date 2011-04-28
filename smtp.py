@@ -1,4 +1,4 @@
-import re, socket
+import re, socket, untwisted
 from untwisted import event
 
 class ctxual(type):
@@ -142,37 +142,44 @@ class client:
       raise NotImplementedError
 
     def __init__(ctx):
-      yield ctx.mail()
 
-      yield ctx.recipient()
+      @untwisted.call
+      @event.connect
+      def ignore():
+        yield ctx.mail()
 
-      try:
-        while True:
-          yield ctx.recipient()
+        yield ctx.recipient()
 
-      except StopIteration:
-        yield ctx.data()
+        try:
+          while True:
+            yield ctx.recipient()
+
+        except StopIteration:
+          yield ctx.data()
 
   def __init__(ctx, transport):
     ctx.transport = transport
 
-    yield ctx.reply()
+    @untwisted.call
+    @event.connect
+    def ignore():
+      yield ctx.reply()
 
-    try:
-      yield ctx.ehlo()
+      try:
+        yield ctx.ehlo()
 
-    except reply as e:
-      if int(e) not in (500, 502):
-        raise
+      except reply as e:
+        if int(e) not in (500, 502):
+          raise
 
-      yield ctx.helo()
+        yield ctx.helo()
 
-    try:
-      while True:
-        yield ctx.mail()
+      try:
+        while True:
+          yield ctx.mail()
 
-    except StopIteration:
-      pass
+      except StopIteration:
+        pass
 
 class server:
   def greeting(ctx):
@@ -382,11 +389,18 @@ class server:
       raise StopIteration(ctx.afterMail(command, state))
 
     def __init__(ctx):
-      ctx.start((yield ctx.ctx.command()), ctx.start)
+
+      @untwisted.call
+      @event.connect
+      def ignore():
+        ctx.start((yield ctx.ctx.command()), ctx.start)
 
   def __init__(ctx, transport):
     ctx.transport = transport
 
     ctx.greeting()
 
-    ctx.start((yield ctx.command()), ctx.start)
+    @untwisted.call
+    @event.connect
+    def ignore():
+      ctx.start((yield ctx.command()), ctx.start)
