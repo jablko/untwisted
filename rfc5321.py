@@ -1,10 +1,22 @@
 import rfc5234, rfc5322
 
-# HT, SP, printable US-ASCII
-textstring = '[\t -~]+'
+letDig = '(?:' + rfc5234.ALPHA + '|' + rfc5234.DIGIT + ')'
+ldhStr = '(?:' + rfc5234.ALPHA + '|' + rfc5234.DIGIT + '|-)*' + letDig
+subDomain = letDig + '(?:' + ldhStr + ')?'
+domain = subDomain + '(?:\.' + subDomain + ')*'
+atDomain = '@' + domain
 
-replyCode = '[2-5][0-5][0-9]'
-replyLine = '(?:' + replyCode + '-(?:' + textstring + ')?' + rfc5234.CRLF + ')*' + replyCode + '(?: ' + textstring + ')?' + rfc5234.CRLF
+# Note that this form, the so-called "source route", MUST be accepted, SHOULD
+# NOT be generated, and SHOULD be ignored
+adl = atDomain + '(?:,' + atDomain + ')*'
+
+atom = '(?:' + rfc5322.atext + ')+'
+dotString = atom + '(?:\.' + atom + ')*'
+qtextSmtp = '[ !#-[\]-~]'
+quotedPairSmtp = '\\[ -~]'
+qcontentSmtp = '(?:' + qtextSmtp + '|' + quotedPairSmtp + ')'
+quotedString = rfc5234.DQUOTE + '(?:' + qcontentSmtp + ')*' + rfc5234.DQUOTE
+localPart = '(?:' + dotString + '|' + quotedString + ')'
 
 # Representing a decimal integer value in the range 0 through 255
 snum = '(?:' + rfc5234.DIGIT + '){1,3}'
@@ -26,9 +38,6 @@ ipv6v4Comp = '(?:' + ipv6Hex + '(?::' + ipv6Hex + '){,3})?::(?:' + ipv6Hex + '(?
 ipv6Addr = '(?:' + ipv6Full + '|' + ipv6Comp + '|' + ipv6v4Full + '|' + ipv6v4Comp + ')'
 ipv6AddressLiteral = 'IPv6:' + ipv6Addr
 
-letDig = '(?:' + rfc5234.ALPHA + '|' + rfc5234.DIGIT + ')'
-ldhStr = '(?:' + rfc5234.ALPHA + '|' + rfc5234.DIGIT + '|-)*' + letDig
-
 # Standardized-tag MUST be specified in a Standards-Track RFC and registered
 # with IANA
 standardizedTag = ldhStr
@@ -38,9 +47,18 @@ dcontent = '[!-Z^-~]'
 
 generalAddressLiteral = standardizedTag + ':' + '(?:' + dcontent + ')+'
 addressLiteral = '\[(?:' + ipv4AddressLiteral + '|' + ipv6AddressLiteral + '|' + generalAddressLiteral + ')]'
+mailbox = localPart + '@(?:' + domain + '|' + addressLiteral + ')'
+path = '<(?:' + adl + ':)?(' + mailbox + ')>'
+reversePath = '(?:' + path + '|<>)'
 
-subDomain = letDig + '(?:' + ldhStr + ')?'
-domain = subDomain + '(?:\.' + subDomain + ')*'
+mail = 'MAIL FROM:' + reversePath
+
+# HT, SP, printable US-ASCII
+textstring = '[\t -~]+'
+
+replyCode = '[2-5][0-5][0-9]'
+
+replyLine = '(?:' + replyCode + '-(?:' + textstring + ')?' + rfc5234.CRLF + ')*' + replyCode + '(?: ' + textstring + ')?' + rfc5234.CRLF
 
 # Information derived by server from TCP connection not client EHLO
 tcpInfo = '(?:' + addressLiteral + '|' + domain + rfc5322.FWS + addressLiteral + ')'
@@ -48,7 +66,6 @@ tcpInfo = '(?:' + addressLiteral + '|' + domain + rfc5322.FWS + addressLiteral +
 extendedDomain = '(?:' + domain + '|' + domain + rfc5322.FWS + '\(' + tcpInfo + '\)|' + addressLiteral + rfc5322.FWS + '\(' + tcpInfo + '\))'
 fromDomain = 'from' + rfc5322.FWS + extendedDomain
 byDomain = rfc5322.CFWS + 'by' + rfc5322.FWS + extendedDomain
-atom = '(?:' + rfc5322.atext + ')+'
 addtlLink = atom
 link = '(?:TCP|' + addtlLink + ')'
 via = rfc5322.CFWS + 'via' + rfc5322.FWS + link
@@ -59,20 +76,6 @@ protocol = 'ESMTPA'
 
 With = rfc5322.CFWS + 'with' + rfc5322.FWS + protocol
 id = rfc5322.CFWS + 'id' + rfc5322.FWS + '(?:' + atom + '|' + rfc5322.msgId + ')'
-atDomain = '@' + domain
-
-# Note that this form, the so-called "source route", MUST be accepted, SHOULD
-# NOT be generated, and SHOULD be ignored
-adl = atDomain + '(?:,' + atDomain + ')*'
-
-dotString = atom + '(?:\.' + atom + ')*'
-qtextSmtp = '[ !#-[\]-~]'
-quotedPairSmtp = '\\[ -~]'
-qcontentSmtp = '(?:' + qtextSmtp + '|' + quotedPairSmtp + ')'
-quotedString = rfc5234.DQUOTE + '(?:' + qcontentSmtp + ')*' + rfc5234.DQUOTE
-localPart = '(?:' + dotString + '|' + quotedString + ')'
-mailbox = localPart + '@(?:' + domain + '|' + addressLiteral + ')'
-path = '<(?:' + adl + ':)?' + mailbox + '>'
 For = rfc5322.CFWS + 'for' + rfc5322.FWS + '(?:' + path + '|' + mailbox + ')'
 string = '(?:' + atom + '|' + quotedString + ')'
 
