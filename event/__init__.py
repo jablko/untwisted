@@ -93,9 +93,9 @@ class sequence:
 
       return item
 
-def connect(decorated):
+def connect(callable):
   def wrapper(*args, **kwds):
-    generator = decorated(*args, **kwds)
+    generator = callable(*args, **kwds)
 
     try:
 
@@ -134,4 +134,4 @@ def connect(decorated):
       except IndexError:
         pass
 
-  return functools.update_wrapper(wrapper, decorated)
+  return functools.update_wrapper(wrapper, callable)
