@@ -28,7 +28,7 @@ except StopIteration:
 def connectThenCall():
   expect(1)
 
-  equal((yield event.event()), ('Connect then call',))
+  equal((yield event.event()), 'Connect then call')
 
 test(lambda: connectThenCall()('Connect then call'))
 
@@ -39,7 +39,7 @@ def callThenConnect():
 
   sample = event.event()
   sample('Call then connect')
-  equal((yield sample), ('Call then connect',))
+  equal((yield sample), 'Call then connect')
 
 @event.connect
 def connectThenThrow():

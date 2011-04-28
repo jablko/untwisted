@@ -103,9 +103,9 @@ def connect(callable):
 
       @untwisted.call
       class callback:
-        def __call__(ctx, *args):
+        def __call__(ctx, *args, **kwds):
           try:
-            return generator.send(args).connect(ctx)
+            return generator.send(*args, **kwds).connect(ctx)
 
           except StopIteration as e:
             try:
