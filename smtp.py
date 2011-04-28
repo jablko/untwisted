@@ -1,5 +1,5 @@
 import re, socket, untwisted
-from untwisted import event
+from untwisted import event, rfc5321
 
 class ctxual(type):
   def __get__(ctx, instance, *args):
