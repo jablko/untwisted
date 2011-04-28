@@ -77,7 +77,7 @@ class Client:
     if int(reply) not in expect:
       raise reply
 
-    #return reply
+    #return ...
     raise StopIteration(reply)
 
   def ehlo(self):
@@ -126,7 +126,7 @@ class Client:
       # Lookbehind requires fixed width pattern
       self.client.transport.write(re.sub('(^|\r\n)\.', '\\1..', data))
 
-      #return self.client.reply()
+      #return ...
       raise StopIteration(self.client.reply())
 
     def data(self):
@@ -185,7 +185,7 @@ class Server:
         pass
 
     # TODO Raise if index not end?
-    #return Command(read[:index])
+    #return ...
     raise StopIteration(Command(read[:index]))
 
   @event.connect
@@ -193,7 +193,7 @@ class Server:
     if 'EHLO' == command.verb:
       self.transport.write(Reply(250, [domain]))
 
-      #return self.Mail(self)
+      #return ...
       raise StopIteration(self.Mail(self))
 
     if 'HELO' == command.verb:
@@ -202,29 +202,29 @@ class Server:
       # command
       self.transport.write(Reply(250, [domain]))
 
-      #return self.Mail(self)
+      #return ...
       raise StopIteration(self.Mail(self))
 
     if command.verb in ('MAIL', 'RCPT', 'DATA'):
       self.transport.write(Reply(503))
 
-      #return state((yield self.command()), state)
+      #return ...
       raise StopIteration(state((yield self.command()), state))
 
     if command.verb in ('RSET', 'NOOP'):
       self.transport.write(Reply(250))
 
-      #return state((yield self.command()), state)
+      #return ...
       raise StopIteration(state((yield self.command()), state))
 
     if command.verb in ('VRFY', 'EXPN', 'HELP'):
       self.transport.write(Reply(502))
 
-      #return state((yield self.command()), state)
+      #return ...
       raise StopIteration(state((yield self.server.command()), state))
 
     if 'QUIT' == command.verb:
-      #return self.transport.write(Reply(221))
+      #return ...
       raise StopIteration(self.transport.write(Reply(221)))
 
     # TODO Log?
@@ -263,19 +263,19 @@ class Server:
           self.server.transport.write(e)
 
           if int(e) in range(200, 300):
-            #return self.afterMail((yield self.server.command()), self.afterMail)
+            #return ...
             raise StopIteration(self.afterMail((yield self.server.command()), self.afterMail))
 
-          #return state((yield self.server.command()), state)
+          #return ...
           raise StopIteration(state((yield self.server.command()), state))
 
       if 'RSET' == command.verb:
         self.server.transport.write(Reply(250))
 
-        #return self.server.Mail(self.server)
+        #return ...
         raise StopIteration(self.server.Mail(self.server))
 
-      #return self.server.start(command, state)
+      #return ...
       raise StopIteration(self.server.start(command, state))
 
     def recipient(self, mailbox):
@@ -305,19 +305,19 @@ class Server:
           self.server.transport.write(e)
 
           if int(e) in range(200, 300):
-            #return self.afterRecipient((yield self.server.command()), self.afterRecipient)
+            #return ...
             raise StopIteration(self.afterRecipient((yield self.server.command()), self.afterRecipient))
 
-          #return state((yield self.server.command()), state)
+          #return ...
           raise StopIteration(state((yield self.server.command()), state))
 
       if 'RSET' == command.verb:
         self.server.transport.write(Reply(250))
 
-        #return self.server.Mail(self.server)
+        #return ...
         raise StopIteration(self.server.Mail(self.server))
 
-      #return self.server.start(command, state)
+      #return ...
       raise StopIteration(self.server.start(command, state))
 
     def data(self, data):
@@ -363,13 +363,13 @@ class Server:
           self.server.transport.write(e)
 
           if int(e) in range(200, 300):
-            #return self.server.Mail(self.server)
+            #return ...
             raise StopIteration(self.server.Mail(self.server))
 
-          #return state((yield self.server.command()), state)
+          #return ...
           raise StopIteration(state((yield self.server.command()), state))
 
-      #return self.afterMail(command, state)
+      #return ...
       raise StopIteration(self.afterMail(command, state))
 
     def __init__(self, server):
