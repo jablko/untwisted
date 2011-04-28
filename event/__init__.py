@@ -1,4 +1,4 @@
-import functools, sys
+import functools, sys, untwisted
 
 # Differences from Twisted: Events are also callbacks, whereas deferreds
 # aren't, this eliminates .chainDeferred()
@@ -97,32 +97,35 @@ def connect(decorated):
   def wrapper(*args, **kwds):
     generator = decorated(*args, **kwds)
 
-    # TODO Tail call elimination
-    class Callback:
-      def __call__(ctx, *args):
-        try:
-          return generator.send(args).connect(ctx)
-
-        except StopIteration as e:
-          try:
-            return e.args[0]
-
-          except IndexError:
-            pass
-
-      def throw(ctx, e):
-        try:
-          return generator.throw(e).connect(ctx)
-
-        except StopIteration as e:
-          try:
-            return e.args[0]
-
-          except IndexError:
-            pass
-
     try:
-      return generator.next().connect(Callback())
+
+      # TODO Tail call elimination
+
+      @untwisted.call
+      class callback:
+        def __call__(ctx, *args):
+          try:
+            return generator.send(args).connect(ctx)
+
+          except StopIteration as e:
+            try:
+              return e.args[0]
+
+            except IndexError:
+              pass
+
+        def throw(ctx, e):
+          try:
+            return generator.throw(e).connect(ctx)
+
+          except StopIteration as e:
+            try:
+              return e.args[0]
+
+            except IndexError:
+              pass
+
+      return generator.next().connect(callback)
 
     except StopIteration as e:
       try:

@@ -1,0 +1,1 @@
+call = lambda callable: callable()
