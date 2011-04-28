@@ -1,5 +1,11 @@
 import rfc5234, rfc5322
 
+# HT, SP, printable US-ASCII
+textstring = '[\t -~]+'
+
+replyCode = '[2-5][0-5][0-9]'
+replyLine = '(?:' + replyCode + '-(?:' + textstring + ')?' + rfc5234.CRLF + ')*' + replyCode + '(?: ' + textstring + ')?' + rfc5234.CRLF
+
 # Representing a decimal integer value in the range 0 through 255
 snum = '(?:' + rfc5234.DIGIT + '){1,3}'
 
