@@ -1,6 +1,13 @@
 import re, socket
 from untwisted import event
 
+class ctxual(type):
+  def __get__(ctx, instance, *args):
+    class ctxual(ctx):
+      ctx = instance
+
+    return ctxual
+
 # Cache our domain
 domain = socket.getfqdn()
 
@@ -91,18 +98,20 @@ class Client:
     return self.reply()
 
   class Mail:
-    def mail(self, mailbox):
-      self.client.transport.write(Command('MAIL FROM:<%s>' % mailbox))
+    __metaclass__ = ctxual
 
-      return self.client.reply()
+    def mail(self, mailbox):
+      self.ctx.transport.write(Command('MAIL FROM:<%s>' % mailbox))
+
+      return self.ctx.reply()
 
     def mail(self):
       raise NotImplementedError
 
     def rcpt(self, mailbox):
-      self.client.transport.write(Command('RCPT TO:<%s>' % mailbox))
+      self.ctx.transport.write(Command('RCPT TO:<%s>' % mailbox))
 
-      return self.client.reply()
+      return self.ctx.reply()
 
     def recipient(self):
       raise NotImplementedError
@@ -110,31 +119,29 @@ class Client:
     @event.connect
     def data(self, data):
 
-      self.client.trasport.write(Command('DATA'))
+      self.ctx.trasport.write(Command('DATA'))
 
       # Since some servers may generate other replies under special
       # circumstances, and to allow for future extension, SMTP clients SHOULD,
       # when possible, interpret only the first digit of the reply and MUST be
       # prepared to deal with unrecognized reply codes by interpreting the
       # first digit only
-      yield self.client.reply(range(300, 400))
+      yield self.ctx.reply(range(300, 400))
 
       # Before sending a line of mail text, the SMTP client checks the first
       # character of the line.  If it is a period, one additional period is
       # inserted at the beginning of the line
 
       # Lookbehind requires fixed width pattern
-      self.client.transport.write(re.sub('(^|\r\n)\.', '\\1..', data))
+      self.ctx.transport.write(re.sub('(^|\r\n)\.', '\\1..', data))
 
       #return ...
-      raise StopIteration(self.client.reply())
+      raise StopIteration(self.ctx.reply())
 
     def data(self):
       raise NotImplementedError
 
-    def __init__(self, client):
-      self.client = client
-
+    def __init__(self):
       yield self.mail()
 
       yield self.recipient()
@@ -162,7 +169,7 @@ class Client:
 
     try:
       while True:
-        yield self.Mail(self)
+        yield self.Mail()
 
     except StopIteration:
       pass
@@ -194,7 +201,7 @@ class Server:
       self.transport.write(Reply(250, [domain]))
 
       #return ...
-      raise StopIteration(self.Mail(self))
+      raise StopIteration(self.Mail())
 
     if 'HELO' == command.verb:
 
@@ -203,7 +210,7 @@ class Server:
       self.transport.write(Reply(250, [domain]))
 
       #return ...
-      raise StopIteration(self.Mail(self))
+      raise StopIteration(self.Mail())
 
     if command.verb in ('MAIL', 'RCPT', 'DATA'):
       self.transport.write(Reply(503))
@@ -221,7 +228,7 @@ class Server:
       self.transport.write(Reply(502))
 
       #return ...
-      raise StopIteration(state((yield self.server.command()), state))
+      raise StopIteration(state((yield self.command()), state))
 
     if 'QUIT' == command.verb:
       #return ...
@@ -230,9 +237,11 @@ class Server:
     # TODO Log?
     self.transport.write(Reply(500))
 
-    state((yield self.server.command()), state)
+    state((yield self.command()), state)
 
   class Mail:
+    __metaclass__ = ctxual
+
     def mail(self, mailbox):
       raise NotImplementedError
 
@@ -260,23 +269,23 @@ class Server:
           raise Reply(250)
 
         except Reply as e:
-          self.server.transport.write(e)
+          self.ctx.transport.write(e)
 
           if int(e) in range(200, 300):
             #return ...
-            raise StopIteration(self.afterMail((yield self.server.command()), self.afterMail))
+            raise StopIteration(self.afterMail((yield self.ctx.command()), self.afterMail))
 
           #return ...
-          raise StopIteration(state((yield self.server.command()), state))
+          raise StopIteration(state((yield self.ctx.command()), state))
 
       if 'RSET' == command.verb:
-        self.server.transport.write(Reply(250))
+        self.ctx.transport.write(Reply(250))
 
         #return ...
-        raise StopIteration(self.server.Mail(self.server))
+        raise StopIteration(self.ctx.Mail())
 
       #return ...
-      raise StopIteration(self.server.start(command, state))
+      raise StopIteration(self.ctx.start(command, state))
 
     def recipient(self, mailbox):
       raise NotImplementedError
@@ -302,23 +311,23 @@ class Server:
           raise Reply(250)
 
         except Reply as e:
-          self.server.transport.write(e)
+          self.ctx.transport.write(e)
 
           if int(e) in range(200, 300):
             #return ...
-            raise StopIteration(self.afterRecipient((yield self.server.command()), self.afterRecipient))
+            raise StopIteration(self.afterRecipient((yield self.ctx.command()), self.afterRecipient))
 
           #return ...
-          raise StopIteration(state((yield self.server.command()), state))
+          raise StopIteration(state((yield self.ctx.command()), state))
 
       if 'RSET' == command.verb:
-        self.server.transport.write(Reply(250))
+        self.ctx.transport.write(Reply(250))
 
         #return ...
-        raise StopIteration(self.server.Mail(self.server))
+        raise StopIteration(self.ctx.Mail())
 
       #return ...
-      raise StopIteration(self.server.start(command, state))
+      raise StopIteration(self.ctx.start(command, state))
 
     def data(self, data):
       raise NotImplementedError
@@ -326,11 +335,11 @@ class Server:
     @event.connect
     def afterRecipient(self, command, state):
       if 'DATA' == command.verb:
-        self.server.transport.write(Reply(354))
+        self.ctx.transport.write(Reply(354))
 
         read = ''
         while True:
-          read += yield self.server.transport.protocol.dataReceived.shift()
+          read += yield self.ctx.transport.protocol.dataReceived.shift()
           try:
             index = read.index('\r\n.\r\n')
 
@@ -360,20 +369,20 @@ class Server:
           raise Reply(250)
 
         except Reply as e:
-          self.server.transport.write(e)
+          self.ctx.transport.write(e)
 
           if int(e) in range(200, 300):
             #return ...
-            raise StopIteration(self.server.Mail(self.server))
+            raise StopIteration(self.ctx.Mail())
 
           #return ...
-          raise StopIteration(state((yield self.server.command()), state))
+          raise StopIteration(state((yield self.ctx.command()), state))
 
       #return ...
       raise StopIteration(self.afterMail(command, state))
 
-    def __init__(self, server):
-      self.start((yield server.command()), self.start)
+    def __init__(self):
+      self.start((yield self.ctx.command()), self.start)
 
   def __init__(self, transport):
     self.transport = transport
