@@ -88,12 +88,12 @@ class client:
     raise StopIteration(reply)
 
   def ehlo(ctx):
-    ctx.transport.write(command('EHLO', domain))
+    ctx.transport.write(str(command('EHLO', domain)))
 
     return ctx.reply()
 
   def helo(ctx):
-    ctx.transport.write(command('HELO', domain))
+    ctx.transport.write(str(command('HELO', domain)))
 
     return ctx.reply()
 
@@ -101,7 +101,7 @@ class client:
     __metaclass__ = ctxual
 
     def mail(ctx, mailbox):
-      ctx.ctx.transport.write(command('MAIL FROM:<%s>' % mailbox))
+      ctx.ctx.transport.write(str(command('MAIL FROM:<%s>' % mailbox)))
 
       return ctx.ctx.reply()
 
@@ -109,7 +109,7 @@ class client:
       raise NotImplementedError
 
     def rcpt(ctx, mailbox):
-      ctx.ctx.transport.write(command('RCPT TO:<%s>' % mailbox))
+      ctx.ctx.transport.write(str(command('RCPT TO:<%s>' % mailbox)))
 
       return ctx.ctx.reply()
 
@@ -119,7 +119,7 @@ class client:
     @event.connect
     def data(ctx, data):
 
-      ctx.ctx.trasport.write(command('DATA'))
+      ctx.ctx.trasport.write(str(command('DATA')))
 
       # Since some servers may generate other replies under special
       # circumstances, and to allow for future extension, SMTP clients SHOULD,
@@ -176,7 +176,7 @@ class client:
 
 class server:
   def greeting(ctx):
-    ctx.transport.write(reply(220, [domain]))
+    ctx.transport.write(str(reply(220, [domain])))
 
   @event.connect
   def command(ctx):
@@ -198,7 +198,7 @@ class server:
   @event.connect
   def start(ctx, command, state):
     if 'EHLO' == command.verb:
-      ctx.transport.write(reply(250, [domain]))
+      ctx.transport.write(str(reply(250, [domain])))
 
       #return ...
       raise StopIteration(ctx.mail())
@@ -207,35 +207,35 @@ class server:
 
       # Servers MUST NOT return the extended EHLO-style response to a HELO
       # command
-      ctx.transport.write(reply(250, [domain]))
+      ctx.transport.write(str(reply(250, [domain])))
 
       #return ...
       raise StopIteration(ctx.mail())
 
     if command.verb in ('MAIL', 'RCPT', 'DATA'):
-      ctx.transport.write(reply(503))
+      ctx.transport.write(str(reply(503)))
 
       #return ...
       raise StopIteration(state((yield ctx.command()), state))
 
     if command.verb in ('RSET', 'NOOP'):
-      ctx.transport.write(reply(250))
+      ctx.transport.write(str(reply(250)))
 
       #return ...
       raise StopIteration(state((yield ctx.command()), state))
 
     if command.verb in ('VRFY', 'EXPN', 'HELP'):
-      ctx.transport.write(reply(502))
+      ctx.transport.write(str(reply(502)))
 
       #return ...
       raise StopIteration(state((yield ctx.command()), state))
 
     if 'QUIT' == command.verb:
       #return ...
-      raise StopIteration(ctx.transport.write(reply(221)))
+      raise StopIteration(ctx.transport.write(str(reply(221))))
 
     # TODO Log?
-    ctx.transport.write(reply(500))
+    ctx.transport.write(str(reply(500)))
 
     state((yield ctx.command()), state)
 
@@ -269,7 +269,7 @@ class server:
           raise reply(250)
 
         except reply as e:
-          ctx.ctx.transport.write(e)
+          ctx.ctx.transport.write(str(e))
 
           if int(e) in range(200, 300):
             #return ...
@@ -279,7 +279,7 @@ class server:
           raise StopIteration(state((yield ctx.ctx.command()), state))
 
       if 'RSET' == command.verb:
-        ctx.ctx.transport.write(reply(250))
+        ctx.ctx.transport.write(str(reply(250)))
 
         #return ...
         raise StopIteration(ctx.ctx.mail())
@@ -311,7 +311,7 @@ class server:
           raise reply(250)
 
         except reply as e:
-          ctx.ctx.transport.write(e)
+          ctx.ctx.transport.write(str(e))
 
           if int(e) in range(200, 300):
             #return ...
@@ -321,7 +321,7 @@ class server:
           raise StopIteration(state((yield ctx.ctx.command()), state))
 
       if 'RSET' == command.verb:
-        ctx.ctx.transport.write(reply(250))
+        ctx.ctx.transport.write(str(reply(250)))
 
         #return ...
         raise StopIteration(ctx.ctx.mail())
@@ -335,7 +335,7 @@ class server:
     @event.connect
     def afterRecipient(ctx, command, state):
       if 'DATA' == command.verb:
-        ctx.ctx.transport.write(reply(354))
+        ctx.ctx.transport.write(str(reply(354)))
 
         read = ''
         while True:
@@ -369,7 +369,7 @@ class server:
           raise reply(250)
 
         except reply as e:
-          ctx.ctx.transport.write(e)
+          ctx.ctx.transport.write(str(e))
 
           if int(e) in range(200, 300):
             #return ...
