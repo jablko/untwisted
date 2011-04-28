@@ -11,85 +11,85 @@ import functools, sys
 # twice.  By default .throw() raises the exception?  It calls .throw() on
 # callbacks passed to .connect()?
 class Event:
-  def propagate(self):
+  def propagate(ctx):
     while True:
       try:
-        callback = self.callback.pop(0)
+        callback = ctx.callback.pop(0)
 
       # No callback
       except IndexError:
-        return self
+        return ctx
 
       try:
-        result = self.next(callback)
+        result = ctx.next(callback)
 
-        self.next = lambda callback: callback(result)
+        ctx.next = lambda callback: callback(result)
 
-      #except as self.data:
+      #except as ctx.data:
       except:
-        self.next = lambda callback: callback.throw(sys.exc_info()[1])
+        ctx.next = lambda callback: callback.throw(sys.exc_info()[1])
 
-  def __call__(self, *args, **kwds):
+  def __call__(ctx, *args, **kwds):
 
     # Already triggered
-    if hasattr(self, 'next'):
+    if hasattr(ctx, 'next'):
       raise StopIteration
 
-    self.next = lambda callback: callback(*args, **kwds)
-    self.propagate()
+    ctx.next = lambda callback: callback(*args, **kwds)
+    ctx.propagate()
 
-    return self
+    return ctx
 
-  def connect(self, callback):
-    self.callback.append(callback)
-
-    # Already triggered
-    if hasattr(self, 'next'):
-      self.propagate()
-
-    return self
-
-  def __init__(self):
-    self.callback = []
-
-  def throw(self, e):
+  def connect(ctx, callback):
+    ctx.callback.append(callback)
 
     # Already triggered
-    if hasattr(self, 'next'):
+    if hasattr(ctx, 'next'):
+      ctx.propagate()
+
+    return ctx
+
+  def __init__(ctx):
+    ctx.callback = []
+
+  def throw(ctx, e):
+
+    # Already triggered
+    if hasattr(ctx, 'next'):
       raise StopIteration
 
-    self.next = lambda callback: callback.throw(e)
-    self.propagate()
+    ctx.next = lambda callback: callback.throw(e)
+    ctx.propagate()
 
-    return self
+    return ctx
 
 # Sequence is a callback.  An advantage is that it can replace a function or
 # callback without maintaining two references, one to .push() and one to the
 # sequence
 class Sequence:
-  def __call__(self, *args, **kwds):
+  def __call__(ctx, *args, **kwds):
     try:
-      item = self.consume.pop(0)
+      item = ctx.consume.pop(0)
 
     except IndexError:
       item = Event()
-      self.produce.append(item)
+      ctx.produce.append(item)
 
     item(*args, **kwds)
 
-    return self
+    return ctx
 
-  def __init__(self):
-    self.consume = []
-    self.produce = []
+  def __init__(ctx):
+    ctx.consume = []
+    ctx.produce = []
 
-  def shift(self):
+  def shift(ctx):
     try:
-      return self.produce.pop(0)
+      return ctx.produce.pop(0)
 
     except IndexError:
       item = Event()
-      self.consume.append(item)
+      ctx.consume.append(item)
 
       return item
 
@@ -99,9 +99,9 @@ def connect(decorated):
 
     # TODO Tail call elimination
     class Callback:
-      def __call__(self, *args):
+      def __call__(ctx, *args):
         try:
-          return generator.send(args).connect(self)
+          return generator.send(args).connect(ctx)
 
         except StopIteration as e:
           try:
@@ -110,9 +110,9 @@ def connect(decorated):
           except IndexError:
             pass
 
-      def throw(self, e):
+      def throw(ctx, e):
         try:
-          return generator.throw(e).connect(self)
+          return generator.throw(e).connect(ctx)
 
         except StopIteration as e:
           try:
