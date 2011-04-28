@@ -52,13 +52,13 @@ class event:
   def __init__(ctx):
     ctx.callback = []
 
-  def throw(ctx, e):
+  def throw(ctx, *args, **kwds):
 
     # Already triggered
     if hasattr(ctx, 'next'):
       raise StopIteration
 
-    ctx.next = lambda callback: callback.throw(e)
+    ctx.next = lambda callback: callback.throw(*args, **kwds)
     ctx.propagate()
 
     return ctx
