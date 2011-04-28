@@ -74,20 +74,3 @@ def throwThenConnect():
 
   except:
     ok(True)
-
-@test
-@event.connect
-def callThenShift():
-  expect(1)
-
-  sample = event.Sequence()
-  sample('Call then shift')
-  equal(('Call then shift',), (yield sample.shift()))
-
-@event.connect
-def shiftThenCall():
-  expect(1)
-
-  equal(('Shift then call',), (yield event.Sequence().shift()))
-
-test(lambda: shiftThenCall()('Shift then call'))
