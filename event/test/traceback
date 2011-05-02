@@ -96,3 +96,29 @@ ok(re.match('''(?:  File ".+", line \d+, in .+
     raise Exception\('Throw no argument'\)
 Exception: Throw no argument
 ''' % re.escape(__file__), stderr.getvalue()), stderr.getvalue())
+
+# Throw then raise
+
+# Don't use decorator to avoid any assignment
+class callback:
+
+  @staticmethod
+  def throw(*args, **kwds):
+    raise Exception('Expect')
+
+stderr = sys.stderr
+sys.stderr = StringIO()
+
+event.event().throw(Exception('Handle')).connect(callback)
+
+stderr, sys.stderr = sys.stderr, stderr
+
+ok(re.match('''(?:  File ".+", line \d+, in .+
+    .+
+)+Traceback \(most recent call last\):
+(?:  File ".+", line \d+, in .+
+    .+
+)+  File "%s", line \d+, in throw
+    raise Exception\('Expect'\)
+Exception: Expect
+''' % re.escape(__file__), stderr.getvalue()), stderr.getvalue())

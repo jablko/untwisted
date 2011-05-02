@@ -21,13 +21,13 @@ class event:
         return ctx
 
       try:
+        ctx.traceback.cancel()
+
+      except AttributeError:
+        pass
+
+      try:
         result = ctx.next(callback)
-
-        try:
-          ctx.traceback.cancel()
-
-        except AttributeError:
-          pass
 
         ctx.next = lambda callback: callback(result)
 
