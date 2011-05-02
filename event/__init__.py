@@ -136,9 +136,9 @@ def connect(callable):
             except IndexError:
               pass
 
-        def throw(ctx, e):
+        def throw(ctx, *args, **kwds):
           try:
-            return generator.throw(e).connect(ctx)
+            return generator.throw(*args, **kwds).connect(ctx)
 
           except StopIteration as e:
             try:
