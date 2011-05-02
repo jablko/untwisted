@@ -66,11 +66,19 @@ class event:
     if hasattr(ctx, 'next'):
       raise StopIteration
 
-    try:
-      raise args
+    #raise args
+    if len(args):
+      #type, value=None, traceback=None = *args
+      type, value, traceback = (lambda type, value=None, traceback=None: (type, value, traceback))(*args)
+      try:
+        raise type, value, traceback
 
-    except:
-      ctx.traceback = untwisted.final(functools.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
+      except:
+        pass
+
+    import traceback
+
+    ctx.traceback = untwisted.final(functools.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
 
     ctx.next = lambda callback: callback.throw(*args, **kwds)
     ctx.propagate()

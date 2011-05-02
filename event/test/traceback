@@ -10,32 +10,32 @@ from untwisted import event
 stderr = sys.stderr
 sys.stderr = StringIO()
 
-event.event().throw(Exception)
+event.event().throw(Exception('Throw'))
 
 stderr, sys.stderr = sys.stderr, stderr
 
 ok(re.match('''(?:  File ".+", line \d+, in .+
     .+
 )+  File "%s", line \d+, in <module>
-    event.event\(\).throw\(Exception\)
+    event.event\(\).throw\(Exception\('Throw'\)\)
   File ".+", line \d+, in .+
     .+
 Traceback \(most recent call last\):
 (?:  File ".+", line \d+, in .+
     .+
-)+Exception
+)+Exception: Throw
 ''' % re.escape(__file__), stderr.getvalue()), stderr.getvalue())
 
 # Raise
 
 # Don't use decorator to avoid any assignment
 def callback(*args, **kwds):
-  raise Exception
+  raise Exception('Raise')
 
 stderr = sys.stderr
 sys.stderr = StringIO()
 
-event.event()('Call').connect(callback)
+event.event()('Raise').connect(callback)
 
 gc.collect()
 
@@ -47,6 +47,52 @@ ok(re.match('''(?:  File ".+", line \d+, in .+
 (?:  File ".+", line \d+, in .+
     .+
 )+  File "%s", line \d+, in callback
-    raise Exception
-Exception
+    raise Exception\('Raise'\)
+Exception: Raise
+''' % re.escape(__file__), stderr.getvalue()), stderr.getvalue())
+
+# Throw type, value, traceback
+
+try:
+  raise Exception('Throw type, value, traceback')
+
+except:
+  pass
+
+stderr = sys.stderr
+sys.stderr = StringIO()
+
+event.event().throw(*sys.exc_info())
+
+stderr, sys.stderr = sys.stderr, stderr
+
+ok(re.match('''(?:  File ".+", line \d+, in .+
+    .+
+)+Traceback \(most recent call last\):
+  File "%s", line \d+, in <module>
+    raise Exception\('Throw type, value, traceback'\)
+Exception: Throw type, value, traceback
+''' % re.escape(__file__), stderr.getvalue()), stderr.getvalue())
+
+# Throw no argument
+
+try:
+  raise Exception('Throw no argument')
+
+except:
+  pass
+
+stderr = sys.stderr
+sys.stderr = StringIO()
+
+event.event().throw()
+
+stderr, sys.stderr = sys.stderr, stderr
+
+ok(re.match('''(?:  File ".+", line \d+, in .+
+    .+
+)+Traceback \(most recent call last\):
+  File "%s", line \d+, in <module>
+    raise Exception\('Throw no argument'\)
+Exception: Throw no argument
 ''' % re.escape(__file__), stderr.getvalue()), stderr.getvalue())

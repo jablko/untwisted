@@ -6,10 +6,10 @@ from untwisted import event
 # Call then throw
 
 sample = event.event()
-equal(sample('Call'), sample)
+equal(sample('Call then throw'), sample)
 
 try:
-  ok(False, sample.throw(Exception))
+  ok(False, sample.throw(Exception('Call then throw')))
 
 except StopIteration:
   pass
@@ -21,10 +21,10 @@ equal(sample.connect('Connect'), sample)
 # Throw then call
 
 sample = event.event()
-equal(sample.throw(Exception), sample)
+equal(sample.throw(Exception('Throw then call')), sample)
 
 try:
-  ok(False, sample('Call'))
+  ok(False, sample('Throw then call'))
 
 except StopIteration:
   pass
@@ -65,7 +65,7 @@ def connectThenThrow():
   except:
     ok(True)
 
-test(lambda: connectThenThrow().throw(Exception))
+test(lambda: connectThenThrow().throw(Exception('Connect then throw')))
 
 @test
 @event.connect
@@ -73,7 +73,7 @@ def throwThenConnect():
   expect(1)
 
   sample = event.event()
-  sample.throw(Exception)
+  sample.throw(Exception('Throw then connect'))
 
   try:
     ok(False, (yield sample))
