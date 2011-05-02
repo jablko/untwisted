@@ -131,7 +131,12 @@ def connect(callable):
 
           except StopIteration as e:
             try:
-              return e.args[0]
+              #value, *result = e.args
+              value, result = e.args[0], e.args[1:]
+              if len(result):
+                return value, + result
+
+              return value
 
             except IndexError:
               pass
@@ -142,7 +147,12 @@ def connect(callable):
 
           except StopIteration as e:
             try:
-              return e.args[0]
+              #value, *result = e.args
+              value, result = e.args[0], e.args[1:]
+              if len(result):
+                return value, + result
+
+              return value
 
             except IndexError:
               pass
@@ -151,7 +161,12 @@ def connect(callable):
 
     except StopIteration as e:
       try:
-        return e.args[0]
+        #value, *result = e.args
+        value, result = e.args[0], e.args[1:]
+        if len(result):
+          return value, + result
+
+        return value
 
       except IndexError:
         pass
