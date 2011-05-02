@@ -74,3 +74,10 @@ class final:
 
   def __init__(ctx, callback):
     ref[ctx] = weakref.ref(ctx, lambda ref: callback())
+
+# http://jdbates.blogspot.com/2011/04/ow-ow-ow-python-why-do-you-hurt-so-hard.html
+def identity(value, *args):
+  if len(args):
+    return value, + args
+
+  return value
