@@ -10,9 +10,11 @@ from untwisted import event
 stderr = sys.stderr
 sys.stderr = StringIO()
 
-event.event().throw(Exception('Throw'))
+try:
+  event.event().throw(Exception('Throw'))
 
-stderr, sys.stderr = sys.stderr, stderr
+finally:
+  stderr, sys.stderr = sys.stderr, stderr
 
 ok(re.match('''(?:  File ".+", line \d+, in .+
     .+
@@ -35,11 +37,13 @@ def callback(*args, **kwds):
 stderr = sys.stderr
 sys.stderr = StringIO()
 
-event.event()('Raise').connect(callback)
+try:
+  event.event()('Raise').connect(callback)
 
-gc.collect()
+  gc.collect()
 
-stderr, sys.stderr = sys.stderr, stderr
+finally:
+  stderr, sys.stderr = sys.stderr, stderr
 
 ok(re.match('''(?:  File ".+", line \d+, in .+
     .+
@@ -62,9 +66,11 @@ except:
 stderr = sys.stderr
 sys.stderr = StringIO()
 
-event.event().throw(*sys.exc_info())
+try:
+  event.event().throw(*sys.exc_info())
 
-stderr, sys.stderr = sys.stderr, stderr
+finally:
+  stderr, sys.stderr = sys.stderr, stderr
 
 ok(re.match('''(?:  File ".+", line \d+, in .+
     .+
@@ -85,9 +91,11 @@ except:
 stderr = sys.stderr
 sys.stderr = StringIO()
 
-event.event().throw()
+try:
+  event.event().throw()
 
-stderr, sys.stderr = sys.stderr, stderr
+finally:
+  stderr, sys.stderr = sys.stderr, stderr
 
 ok(re.match('''(?:  File ".+", line \d+, in .+
     .+
@@ -109,9 +117,11 @@ class callback:
 stderr = sys.stderr
 sys.stderr = StringIO()
 
-event.event().throw(Exception('Handle')).connect(callback)
+try:
+  event.event().throw(Exception('Handle')).connect(callback)
 
-stderr, sys.stderr = sys.stderr, stderr
+finally:
+  stderr, sys.stderr = sys.stderr, stderr
 
 ok(re.match('''(?:  File ".+", line \d+, in .+
     .+
