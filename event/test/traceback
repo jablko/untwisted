@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import gc, re, sys
+import gc, re, sys, untwisted
 from StringIO import StringIO
 from testify import *
 from untwisted import event
@@ -120,6 +120,8 @@ sys.stderr = StringIO()
 try:
   event.event().throw(Exception('Handle')).connect(callback)
 
+  gc.collect()
+
 finally:
   stderr, sys.stderr = sys.stderr, stderr
 
@@ -129,6 +131,48 @@ ok(re.match('''(?:  File ".+", line \d+, in .+
 (?:  File ".+", line \d+, in .+
     .+
 )+  File "%s", line \d+, in throw
+    raise Exception\('Expect'\)
+Exception: Expect
+''' % re.escape(__file__), stderr.getvalue()), stderr.getvalue())
+
+# Raise with intervene
+
+# Don't use decorator to avoid any assignment
+def callback(*args, **kwds):
+  raise Exception('Expect')
+
+sample = event.event()('Raise with intervene').connect(callback)
+
+try:
+  raise Exception('Intervene')
+
+except:
+  pass
+
+# Don't use decorator to avoid any assignment
+@untwisted.callback
+def callback():
+  yield
+
+stderr = sys.stderr
+sys.stderr = StringIO()
+
+try:
+  sample.connect(callback)
+
+  del sample
+
+  gc.collect()
+
+finally:
+  stderr, sys.stderr = sys.stderr, stderr
+
+ok(re.match('''(?:  File ".+", line \d+, in .+
+    .+
+)+Traceback \(most recent call last\):
+(?:  File ".+", line \d+, in .+
+    .+
+)+  File "%s", line \d+, in callback
     raise Exception\('Expect'\)
 Exception: Expect
 ''' % re.escape(__file__), stderr.getvalue()), stderr.getvalue())

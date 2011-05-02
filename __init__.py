@@ -1,6 +1,48 @@
-import weakref
+import functools, weakref
 
 call = lambda callable: callable()
+
+def callback(callable):
+  def wrapper(*args, **kwds):
+    generator = callable()
+    generator.next()
+
+    try:
+      generator.send(*args, **kwds)
+
+    except StopIteration as e:
+      try:
+        #value, *result = e.args
+        value, result = e.args[0], e.args[1:]
+        if len(result):
+          return value, + result
+
+        return value
+
+      except IndexError:
+        pass
+
+  @functools.partial(setattr, wrapper, 'throw')
+  def throw(*args, **kwds):
+    generator = callable()
+    generator.next()
+
+    try:
+      generator.throw(*args, **kwds)
+
+    except StopIteration as e:
+      try:
+        #value, *result = e.args
+        value, result = e.args[0], e.args[1:]
+        if len(result):
+          return value, + result
+
+        return value
+
+      except IndexError:
+        pass
+
+  return wrapper
 
 # Callback is called after there are no references to this final instance, or
 # after this final instance is garbage collected if it's part of a collectable

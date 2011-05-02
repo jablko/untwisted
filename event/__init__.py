@@ -31,11 +31,11 @@ class event:
 
         ctx.next = lambda callback: callback(result)
 
-      #except as ctx.data:
       except:
         ctx.traceback = untwisted.final(functools.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
 
-        ctx.next = lambda callback: callback.throw(sys.exc_info()[1])
+        info = sys.exc_info()
+        ctx.next = lambda callback: callback.throw(*info)
 
   def __call__(ctx, *args, **kwds):
 
