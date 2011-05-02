@@ -1,4 +1,5 @@
 import functools, weakref
+from copy import copy
 
 call = lambda callable: callable()
 
@@ -43,6 +44,12 @@ def callback(callable):
         pass
 
   return wrapper
+
+def ctxual(ctx, instance, *args):
+  clone = copy(ctx)
+  clone.ctx = instance
+
+  return clone
 
 # Callback is called after there are no references to this final instance, or
 # after this final instance is garbage collected if it's part of a collectable

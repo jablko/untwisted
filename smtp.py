@@ -1,13 +1,6 @@
 import re, socket, untwisted
 from untwisted import event, rfc5321
 
-class ctxual(type):
-  def __get__(ctx, instance, *args):
-    class ctxual(ctx):
-      ctx = instance
-
-    return ctxual
-
 # Cache our domain
 domain = socket.getfqdn()
 
@@ -98,7 +91,7 @@ class client:
     return ctx.reply()
 
   class mail:
-    __metaclass__ = ctxual
+    __get__ = classmethod(untwisted.ctxual)
 
     def mail(ctx, mailbox):
       ctx.ctx.transport.write(str(command('MAIL FROM:<%s>' % mailbox)))
@@ -247,7 +240,7 @@ class server:
     state((yield ctx.command()), state)
 
   class mail:
-    __metaclass__ = ctxual
+    __get__ = classmethod(untwisted.ctxual)
 
     def mail(ctx, mailbox):
       raise NotImplementedError

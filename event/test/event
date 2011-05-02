@@ -96,3 +96,37 @@ def throwThenConnect():
 
     except:
       ok(True)
+
+@test
+def chain():
+  expect(1)
+
+  sample = event.event()
+  event.event()('Chain').connect(sample)
+
+  @sample.connect
+  @untwisted.callback
+  def ignore():
+    equal((yield), 'Chain')
+
+@test
+def callWithEvent():
+  expect(1)
+
+  sample = event.event()(event.event()('Call with event'))
+
+  @sample.connect
+  @untwisted.callback
+  def ignore():
+    equal((yield), 'Call with event')
+
+@test
+def returnEvent():
+  expect(1)
+
+  sample = event.event()('Call').connect(lambda *args, **kwds: event.event()('Return event'))
+
+  @sample.connect
+  @untwisted.callback
+  def ignore():
+    equal((yield), 'Return event')

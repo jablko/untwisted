@@ -11,6 +11,40 @@ import functools, sys, traceback, untwisted
 # twice.  By default .throw() raises the exception?  It calls .throw() on
 # callbacks passed to .connect()?
 class event:
+
+  @untwisted.call
+  class advance(object):
+    __get__ = untwisted.ctxual
+
+    def __call__(ctx, *args, **kwds):
+
+      # *args is guaranteed not to be an event because advance is only ever
+      # connected to other event, and event never callback with event
+      ctx.ctx.next = lambda callback: callback(*args, **kwds)
+      ctx.ctx.propagate()
+
+      return ctx.ctx
+
+    def throw(ctx, *args, **kwds):
+      #raise args
+      if len(args):
+        #type, value=None, traceback=None = *args
+        type, value, traceback = (lambda type, value=None, traceback=None: (type, value, traceback))(*args)
+        try:
+          raise type, value, traceback
+
+        except:
+          pass
+
+      import traceback
+
+      ctx.ctx.traceback = untwisted.final(functools.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
+
+      ctx.ctx.next = lambda callback: callback.throw(*args, **kwds)
+      ctx.ctx.propagate()
+
+      return ctx.ctx
+
   def propagate(ctx):
     while True:
       try:
@@ -28,6 +62,14 @@ class event:
 
       try:
         result = ctx.next(callback)
+        if not isinstance(callback, event) and not isinstance(callback, event.advance.__class__) and isinstance(result, event):
+
+          # Don't propagate (on ctx.connect()) until callback
+          del ctx.next
+
+          result.connect(ctx.advance)
+
+          return ctx
 
         ctx.next = lambda callback: callback(result)
 
@@ -40,18 +82,29 @@ class event:
   def __call__(ctx, *args, **kwds):
 
     # Already triggered
-    if hasattr(ctx, 'next'):
+    if ctx.trigger:
       raise StopIteration
 
-    ctx.next = lambda callback: callback(*args, **kwds)
-    ctx.propagate()
+    ctx.trigger = True
+
+    try:
+      connect, = args
+      if isinstance(connect, event):
+        connect.connect(ctx.advance)
+
+        return ctx
+
+    except ValueError:
+      pass
+
+    ctx.advance(*args, **kwds)
 
     return ctx
 
   def connect(ctx, callback):
     ctx.callback.append(callback)
 
-    # Already triggered
+    # Ready to propagate
     if hasattr(ctx, 'next'):
       ctx.propagate()
 
@@ -59,29 +112,17 @@ class event:
 
   def __init__(ctx):
     ctx.callback = []
+    ctx.trigger = False
 
   def throw(ctx, *args, **kwds):
 
     # Already triggered
-    if hasattr(ctx, 'next'):
+    if ctx.trigger:
       raise StopIteration
 
-    #raise args
-    if len(args):
-      #type, value=None, traceback=None = *args
-      type, value, traceback = (lambda type, value=None, traceback=None: (type, value, traceback))(*args)
-      try:
-        raise type, value, traceback
+    ctx.trigger = True
 
-      except:
-        pass
-
-    import traceback
-
-    ctx.traceback = untwisted.final(functools.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
-
-    ctx.next = lambda callback: callback.throw(*args, **kwds)
-    ctx.propagate()
+    ctx.advance.throw(*args, **kwds)
 
     return ctx
 
