@@ -1,0 +1,25 @@
+#!/usr/bin/env python
+
+import gc, untwisted
+from testify import *
+
+@test
+def noReference():
+  expect(1)
+
+  untwisted.final(lambda: ok(True))
+
+@test
+def collectableCycle():
+  expect(1)
+
+  class cycle:
+    def __init__(ctx, cycle):
+      ctx.next = cycle
+      cycle.next = ctx
+
+  cycle(untwisted.final(lambda: ok(True)))
+
+  gc.collect()
+
+untwisted.final(lambda: ok(False)).cancel()

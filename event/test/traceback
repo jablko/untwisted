@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+
+import gc, re, sys
+from StringIO import StringIO
+from testify import *
+from untwisted import event
+
+# Throw
+
+stderr = sys.stderr
+sys.stderr = StringIO()
+
+event.event().throw(Exception)
+
+stderr, sys.stderr = sys.stderr, stderr
+
+ok(re.match('''(?:  File ".+", line \d+, in .+
+    .+
+)+  File "%s", line \d+, in <module>
+    event.event\(\).throw\(Exception\)
+  File ".+", line \d+, in .+
+    .+
+Traceback \(most recent call last\):
+(?:  File ".+", line \d+, in .+
+    .+
+)+Exception
+''' % re.escape(__file__), stderr.getvalue()), stderr.getvalue())
+
+# Raise
+
+# Don't use decorator to avoid any assignment
+def callback(*args, **kwds):
+  raise Exception
+
+stderr = sys.stderr
+sys.stderr = StringIO()
+
+event.event()('Call').connect(callback)
+
+gc.collect()
+
+stderr, sys.stderr = sys.stderr, stderr
+
+ok(re.match('''(?:  File ".+", line \d+, in .+
+    .+
+)+Traceback \(most recent call last\):
+(?:  File ".+", line \d+, in .+
+    .+
+)+  File "%s", line \d+, in callback
+    raise Exception
+Exception
+''' % re.escape(__file__), stderr.getvalue()), stderr.getvalue())

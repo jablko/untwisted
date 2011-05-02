@@ -29,6 +29,15 @@ try:
 except StopIteration:
   pass
 
+# Supress traceback
+
+@sample.connect
+class ignore:
+
+  @staticmethod
+  def throw(*args, **kwds):
+    pass
+
 @event.connect
 def connectThenCall():
   expect(1)

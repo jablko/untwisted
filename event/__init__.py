@@ -1,4 +1,4 @@
-import functools, sys, untwisted
+import functools, sys, traceback, untwisted
 
 # Differences from Twisted: Events are also callbacks, whereas deferreds
 # aren't, this eliminates .chainDeferred()
@@ -23,10 +23,18 @@ class event:
       try:
         result = ctx.next(callback)
 
+        try:
+          ctx.traceback.cancel()
+
+        except AttributeError:
+          pass
+
         ctx.next = lambda callback: callback(result)
 
       #except as ctx.data:
       except:
+        ctx.traceback = untwisted.final(functools.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
+
         ctx.next = lambda callback: callback.throw(sys.exc_info()[1])
 
   def __call__(ctx, *args, **kwds):
@@ -57,6 +65,12 @@ class event:
     # Already triggered
     if hasattr(ctx, 'next'):
       raise StopIteration
+
+    try:
+      raise args
+
+    except:
+      ctx.traceback = untwisted.final(functools.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
 
     ctx.next = lambda callback: callback.throw(*args, **kwds)
     ctx.propagate()
