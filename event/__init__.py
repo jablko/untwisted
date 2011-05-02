@@ -148,4 +148,4 @@ def connect(callable):
       except IndexError:
         pass
 
-  return functools.update_wrapper(wrapper, callable)
+  return wrapper
