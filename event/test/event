@@ -45,10 +45,7 @@ def connectThenCall():
 
   sample = event.event()
 
-  @sample.connect
-  @untwisted.callback
-  def ignore():
-    equal((yield), 'Connect then call')
+  sample.connect(untwisted.callback(lambda: equal((yield), 'Connect then call')))
 
   sample('Connect then call')
 
@@ -59,10 +56,7 @@ def callThenConnect():
   sample = event.event()
   sample('Call then connect')
 
-  @sample.connect
-  @untwisted.callback
-  def ignore():
-    equal((yield), 'Call then connect')
+  sample.connect(untwisted.callback(lambda: equal((yield), 'Call then connect')))
 
 @test
 def connectThenThrow():
@@ -104,10 +98,7 @@ def chain():
   sample = event.event()
   event.event()('Chain').connect(sample)
 
-  @sample.connect
-  @untwisted.callback
-  def ignore():
-    equal((yield), 'Chain')
+  sample.connect(untwisted.callback(lambda: equal((yield), 'Chain')))
 
 @test
 def callWithEvent():
@@ -115,10 +106,7 @@ def callWithEvent():
 
   sample = event.event()(event.event()('Call with event'))
 
-  @sample.connect
-  @untwisted.callback
-  def ignore():
-    equal((yield), 'Call with event')
+  sample.connect(untwisted.callback(lambda: equal((yield), 'Call with event')))
 
 @test
 def returnEvent():
@@ -126,7 +114,4 @@ def returnEvent():
 
   sample = event.event()('Call').connect(lambda *args, **kwds: event.event()('Return event'))
 
-  @sample.connect
-  @untwisted.callback
-  def ignore():
-    equal((yield), 'Return event')
+  sample.connect(untwisted.callback(lambda: equal((yield), 'Return event')))

@@ -149,16 +149,11 @@ try:
 except:
   pass
 
-# Don't use decorator to avoid any assignment
-@untwisted.callback
-def callback():
-  yield
-
 stderr = sys.stderr
 sys.stderr = StringIO()
 
 try:
-  sample.connect(callback)
+  sample.connect(untwisted.callback(lambda: (yield)))
 
   del sample
 

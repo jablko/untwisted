@@ -21,11 +21,9 @@ class reply:
         503: ['Bad sequence of commands'],
         555: ['MAIL FROM/RCPT TO parameters not recognized or not implemented']}[code]
 
-  def __int__(ctx):
-    return ctx.code
+  __int__ = lambda ctx: ctx.code
 
-  def __str__(ctx):
-    return ''.join([str(ctx.code) + '-' + text + '\r\n' for text in ctx.text[0:-1]]) + str(ctx.code) + ' ' + ctx.text[-1] + '\r\n'
+  __str__ = lambda ctx: ''.join([str(ctx.code) + '-' + text + '\r\n' for text in ctx.text[0:-1]]) + str(ctx.code) + ' ' + ctx.text[-1] + '\r\n'
 
 class command:
   def __init__(ctx, verb, *args):
@@ -175,8 +173,7 @@ class client:
         pass
 
 class server:
-  def greeting(ctx):
-    ctx.transport.write(str(reply(220, [domain])))
+  greeting = lambda ctx: ctx.transport.write(str(reply(220, [domain])))
 
   @event.connect
   def command(ctx):
@@ -382,18 +379,11 @@ class server:
       raise StopIteration(ctx.afterMail(command, state))
 
     def __init__(ctx):
-
-      @untwisted.call
-      @event.connect
-      def ignore():
-        ctx.start((yield ctx.ctx.command()), ctx.start)
+      event.connect(lambda: ctx.start((yield ctx.ctx.command()), ctx.start))()
 
   def __init__(ctx, transport):
     ctx.transport = transport
 
     ctx.greeting()
 
-    @untwisted.call
-    @event.connect
-    def ignore():
-      ctx.start((yield ctx.command()), ctx.start)
+    event.connect(lambda: ctx.start((yield ctx.command()), ctx.start))()
