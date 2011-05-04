@@ -56,22 +56,30 @@ class event:
 
       try:
         result = ctx.next(callback)
-        if not isinstance(callback, event) and not isinstance(callback, event.advance.__class__) and isinstance(result, event):
-
-          # Don't propagate (on ctx.connect()) until callback
-          del ctx.next
-
-          result.connect(ctx.advance)
-
-          return ctx
-
-        ctx.next = lambda callback: callback(result)
 
       except:
         final = untwisted.final(functools.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
 
         info = sys.exc_info()
         ctx.next = lambda callback: (final.cancel(), callback.throw(*info))[-1]
+
+        continue
+
+      if isinstance(callback, event) or isinstance(callback, event.advance.__class__):
+        ctx.next = lambda callback: callback()
+
+        continue
+
+      if isinstance(result, event):
+
+        # Don't propagate (on ctx.connect()) until callback
+        del ctx.next
+
+        result.connect(ctx.advance)
+
+        return ctx
+
+      ctx.next = lambda callback: callback(result)
 
   def __call__(ctx, *args, **kwds):
 
