@@ -38,9 +38,9 @@ class event:
 
       import traceback
 
-      ctx.ctx.traceback = untwisted.final(functools.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
+      final = untwisted.final(functools.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
 
-      ctx.ctx.next = lambda callback: callback.throw(*args, **kwds)
+      ctx.ctx.next = lambda callback: (final.cancel(), callback.throw(*args, **kwds))[-1]
       ctx.ctx.propagate()
 
       return ctx.ctx
@@ -53,12 +53,6 @@ class event:
       # No callback
       except IndexError:
         return ctx
-
-      try:
-        ctx.traceback.cancel()
-
-      except AttributeError:
-        pass
 
       try:
         result = ctx.next(callback)
@@ -74,10 +68,10 @@ class event:
         ctx.next = lambda callback: callback(result)
 
       except:
-        ctx.traceback = untwisted.final(functools.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
+        final = untwisted.final(functools.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
 
         info = sys.exc_info()
-        ctx.next = lambda callback: callback.throw(*info)
+        ctx.next = lambda callback: (final.cancel(), callback.throw(*info))[-1]
 
   def __call__(ctx, *args, **kwds):
 
