@@ -23,8 +23,6 @@ ok(re.match('''(?:  File ".+", line \d+, in .+
     .+
 )+  File "%s", line \d+, in <module>
     event.event\(\).throw\(Exception\('Throw'\)\)
-  File ".+", line \d+, in .+
-    .+
 Traceback \(most recent call last\):
 (?:  File ".+", line \d+, in .+
     .+
@@ -173,4 +171,33 @@ ok(re.match('''(?:  File ".+", line \d+, in .+
 )+  File "%s", line \d+, in callback
     raise Exception\('Expect'\)
 Exception: Expect
+''' % re.escape(__file__), stderr.getvalue()), stderr.getvalue())
+
+# Connect with intervene
+
+stderr = sys.stderr
+sys.stderr = StringIO()
+
+try:
+  sample = event.event().throw(Exception('Expect'))
+
+  try:
+    raise Exception('Intervene')
+
+  except Exception:
+    pass
+
+  event.event()('Nest with intervene').connect(lambda *args, **kwds: sample)
+
+finally:
+  stderr, sys.stderr = sys.stderr, stderr
+
+ok(re.match('''(?:  File ".+", line \d+, in .+
+    .+
+)+  File "%s", line \d+, in <module>
+    sample = event.event\(\).throw\(Exception\('Expect'\)\)
+Traceback \(most recent call last\):
+(?:  File ".+", line \d+, in .+
+    .+
+)+Exception: Expect
 ''' % re.escape(__file__), stderr.getvalue()), stderr.getvalue())
