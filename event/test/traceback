@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 
-import gc, re, sys, untwisted
+import exceptions, gc, re, sys, untwisted
 from StringIO import StringIO
 from testify import *
 from untwisted import event
+
+class Exception(exceptions.Exception):
+  pass
 
 # Throw
 
@@ -60,7 +63,7 @@ Exception: Raise
 try:
   raise Exception('Throw type, value, traceback')
 
-except:
+except Exception:
   pass
 
 stderr = sys.stderr
@@ -85,7 +88,7 @@ Exception: Throw type, value, traceback
 try:
   raise Exception('Throw no argument')
 
-except:
+except Exception:
   pass
 
 stderr = sys.stderr
@@ -146,7 +149,7 @@ sample = event.event()('Raise with intervene').connect(callback)
 try:
   raise Exception('Intervene')
 
-except:
+except Exception:
   pass
 
 stderr = sys.stderr
