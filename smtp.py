@@ -7,23 +7,18 @@ domain = socket.getfqdn()
 class reply:
   def __init__(ctx, code, *args):
     ctx.code = code
-
-    try:
-      ctx.text, = args
-
-    except ValueError:
-      ctx.text = {
-        221: ['Service closing transmission channel'],
-        250: ['Requested mail action okay, completed'],
-        354: ['Start mail input; end with <CRLF>.<CRLF>'],
-        500: ['Syntax error, command unrecognized'],
-        502: ['Command not implemented'],
-        503: ['Bad sequence of commands'],
-        555: ['MAIL FROM/RCPT TO parameters not recognized or not implemented']}[code]
+    ctx.text = args if len(args) else {
+      221: ('Service closing transmission channel',),
+      250: ('Requested mail action okay, completed',),
+      354: ('Start mail input; end with <CRLF>.<CRLF>',),
+      500: ('Syntax error, command unrecognized',),
+      502: ('Command not implemented',),
+      503: ('Bad sequence of commands',),
+      555: ('MAIL FROM/RCPT TO parameters not recognized or not implemented',)}[code]
 
   __int__ = lambda ctx: ctx.code
 
-  __str__ = lambda ctx: ''.join([str(ctx.code) + '-' + text + '\r\n' for text in ctx.text[0:-1]]) + str(ctx.code) + ' ' + ctx.text[-1] + '\r\n'
+  __str__ = lambda ctx: ''.join(str(ctx.code) + '-' + text + '\r\n' for text in ctx.text[:-1]) + str(ctx.code) + ' ' + ctx.text[-1] + '\r\n'
 
 class command:
   def __init__(ctx, verb, *args):
@@ -70,7 +65,7 @@ class client:
         break
 
     # TODO Extract multiple textstring, regex currently supports only last one
-    reply = reply(match.group(1), [match.group(2)])
+    reply = reply(match.group(1), match.group(2))
 
     if int(reply) not in expect:
       raise reply
@@ -173,7 +168,7 @@ class client:
         pass
 
 class server:
-  greeting = lambda ctx: ctx.transport.write(str(reply(220, [domain])))
+  greeting = lambda ctx: ctx.transport.write(str(reply(220, domain)))
 
   @event.connect
   def command(ctx):
@@ -195,7 +190,7 @@ class server:
   @event.connect
   def start(ctx, command, state):
     if 'EHLO' == command.verb:
-      ctx.transport.write(str(reply(250, [domain])))
+      ctx.transport.write(str(reply(250, domain)))
 
       #return ...
       raise StopIteration(ctx.mail())
@@ -204,7 +199,7 @@ class server:
 
       # Servers MUST NOT return the extended EHLO-style response to a HELO
       # command
-      ctx.transport.write(str(reply(250, [domain])))
+      ctx.transport.write(str(reply(250, domain)))
 
       #return ...
       raise StopIteration(ctx.mail())

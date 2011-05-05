@@ -3,7 +3,7 @@
 from testify import *
 from untwisted import smtp
 
-sample = smtp.reply(123, ['first', 'second', 'third'])
+sample = smtp.reply(123, 'first', 'second', 'third')
 equal(int(sample), 123)
 equal(str(sample), '123-first\r\n123-second\r\n123 third\r\n')
 
