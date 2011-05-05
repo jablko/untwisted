@@ -1,7 +1,7 @@
 ALPHA = '[A-Za-z]'
 
 # Use local newlines
-CRLF = '\n'
+CRLF = '\r\n'
 
 DIGIT = '\d'
 DQUOTE = '"'

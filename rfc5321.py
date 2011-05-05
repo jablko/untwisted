@@ -50,8 +50,21 @@ addressLiteral = '\[(?:' + ipv4AddressLiteral + '|' + ipv6AddressLiteral + '|' +
 mailbox = localPart + '@(?:' + domain + '|' + addressLiteral + ')'
 path = '<(?:' + adl + ':)?(' + mailbox + ')>'
 reversePath = '(?:' + path + '|<>)'
+esmtpKeyword = '(?:' + rfc5234.ALPHA + '|' + rfc5234.DIGIT + ')(?:' + rfc5234.ALPHA + '|' + rfc5234.DIGIT + '|-)*'
 
-mail = 'MAIL FROM:' + reversePath
+# Any CHAR excluding "=", SP, and control characters.  If this string is an
+# email address, i.e. a Mailbox, then the "xtext" syntax SHOULD be used
+esmtpValue = '[!-<>-~]+'
+
+esmtpParam = esmtpKeyword + '(?:=' + esmtpValue + ')?'
+mailParameters = esmtpParam + '(?: ' + esmtpParam + ')*'
+
+mail = 'MAIL FROM:' + reversePath + '(?:' + mailParameters + ')?' + rfc5234.CRLF
+
+forwardPath = path
+rcptParameters = esmtpParam + '(?: ' + esmtpParam + ')*'
+
+rcpt = 'RCPT TO:(?:<Postmaster@' + domain + '>|<Postmaster>|' + forwardPath + ')(?: ' + rcptParameters + ')?' + rfc5234.CRLF
 
 # HT, SP, printable US-ASCII
 textstring = '[\t -~]+'
