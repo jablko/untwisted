@@ -150,7 +150,7 @@ class sequence:
 
       return item
 
-def connect(callable):
+def continuate(callable):
   def wrapper(*args, **kwds):
     generator = callable(*args, **kwds)
 

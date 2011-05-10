@@ -54,7 +54,7 @@ class client:
   # interpret only the first digit of the reply and MUST be prepared to deal
   # with unrecognized reply codes by interpreting the first digit only
 
-  @event.connect
+  @event.continuate
   def reply(ctx, expect=range(200, 300)):
     read = ''
     while True:
@@ -102,7 +102,7 @@ class client:
     def recipient(ctx):
       raise NotImplementedError
 
-    @event.connect
+    @event.continuate
     def data(ctx, data):
 
       ctx.ctx.trasport.write(str(command('DATA')))
@@ -130,7 +130,7 @@ class client:
     def __init__(ctx):
 
       @untwisted.call
-      @event.connect
+      @event.continuate
       def ignore():
         yield ctx.mail()
 
@@ -147,7 +147,7 @@ class client:
     ctx.transport = transport
 
     @untwisted.call
-    @event.connect
+    @event.continuate
     def ignore():
       yield ctx.reply()
 
@@ -170,7 +170,7 @@ class client:
 class server:
   greeting = lambda ctx: ctx.transport.write(str(reply(220, domain)))
 
-  @event.connect
+  @event.continuate
   def command(ctx):
     read = ''
     while True:
@@ -187,7 +187,7 @@ class server:
     #return ...
     raise StopIteration(command(read[:index]))
 
-  @event.connect
+  @event.continuate
   def start(ctx, command, state):
     if 'EHLO' == command.verb:
       ctx.transport.write(str(reply(250, domain)))
@@ -237,7 +237,7 @@ class server:
     def mail(ctx, mailbox):
       raise NotImplementedError
 
-    @event.connect
+    @event.continuate
     def start(ctx, command, state):
 
       # MAIL (or SEND, SOML, or SAML) MUST NOT be sent if a mail transaction is
@@ -282,7 +282,7 @@ class server:
     def recipient(ctx, mailbox):
       raise NotImplementedError
 
-    @event.connect
+    @event.continuate
     def afterMail(ctx, command, state):
 
       # Once started, a mail transaction consists of a transaction beginning
@@ -324,7 +324,7 @@ class server:
     def data(ctx, data):
       raise NotImplementedError
 
-    @event.connect
+    @event.continuate
     def afterRecipient(ctx, command, state):
       if 'DATA' == command.verb:
         ctx.ctx.transport.write(str(reply(354)))
@@ -374,11 +374,11 @@ class server:
       raise StopIteration(ctx.afterMail(command, state))
 
     def __init__(ctx):
-      event.connect(lambda: ctx.start((yield ctx.ctx.command()), ctx.start))()
+      event.continuate(lambda: ctx.start((yield ctx.ctx.command()), ctx.start))()
 
   def __init__(ctx, transport):
     ctx.transport = transport
 
     ctx.greeting()
 
-    event.connect(lambda: ctx.start((yield ctx.command()), ctx.start))()
+    event.continuate(lambda: ctx.start((yield ctx.command()), ctx.start))()
