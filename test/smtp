@@ -3,18 +3,22 @@
 from testify import *
 from untwisted import smtp
 
-sample = smtp.reply(123, 'first', 'second', 'third')
+sample = smtp.reply(123, 'First', 'Second', 'Third')
+
 equal(int(sample), 123)
-equal(str(sample), '123-first\r\n123-second\r\n123 third\r\n')
+equal(str(sample), '123-First\r\n123-Second\r\n123 Third\r\n')
 
 sample = smtp.command('VERB')
+
 equal(sample.verb, 'VERB')
 equal(str(sample), 'VERB\r\n')
 
-sample = smtp.command('VERB text')
-equal(sample.verb, 'VERB')
-equal(str(sample), 'VERB text\r\n')
+sample = smtp.command('VERB Text')
 
-sample = smtp.command('VERB', 'text')
 equal(sample.verb, 'VERB')
-equal(str(sample), 'VERB text\r\n')
+equal(str(sample), 'VERB Text\r\n')
+
+sample = smtp.command('VERB', 'Text')
+
+equal(sample.verb, 'VERB')
+equal(str(sample), 'VERB Text\r\n')

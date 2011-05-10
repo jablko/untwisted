@@ -22,4 +22,6 @@ def collectableCycle():
 
   gc.collect()
 
+# Cancel
+
 untwisted.final(lambda: ok(False)).cancel()

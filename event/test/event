@@ -7,31 +7,17 @@ from untwisted import event
 class Exception(exceptions.Exception):
   pass
 
-# Call then throw
-
-sample = event.event()
-equal(sample('Call then throw'), sample)
-
-try:
-  ok(False, sample.throw(Exception('Call then throw')))
-
-except StopIteration:
-  pass
-
 # Connect
 sample = event.event()
 equal(sample.connect('Connect'), sample)
 
-# Throw then call
-
+# Call
 sample = event.event()
-equal(sample.throw(Exception('Throw then call')), sample)
+equal(sample('Call'), sample)
 
-try:
-  ok(False, sample('Throw then call'))
-
-except StopIteration:
-  pass
+# Throw
+sample = event.event()
+equal(sample.throw(Exception('Throw')), sample)
 
 # Suppress traceback
 
@@ -48,18 +34,18 @@ def connectThenCall():
 
   sample = event.event()
 
-  sample.connect(untwisted.callback(lambda: equal((yield), 'Connect then call')))
+  sample.connect(lambda actual: equal(actual, 'Expect'))
 
-  sample('Connect then call')
+  sample('Expect')
 
 @test
 def callThenConnect():
   expect(1)
 
   sample = event.event()
-  sample('Call then connect')
+  sample('Expect')
 
-  sample.connect(untwisted.callback(lambda: equal((yield), 'Call then connect')))
+  sample.connect(lambda actual: equal(actual, 'Expect'))
 
 @test
 def connectThenThrow():
@@ -76,14 +62,105 @@ def connectThenThrow():
     except Exception:
       ok(True)
 
-  sample.throw(Exception('Connect then throw'))
+  sample.throw(Exception('Throw'))
 
 @test
 def throwThenConnect():
   expect(1)
 
   sample = event.event()
-  sample.throw(Exception('Throw then connect'))
+  sample.throw(Exception('Throw'))
+
+  @sample.connect
+  @untwisted.callback
+  def ignore():
+    try:
+      ok(False, (yield))
+
+    except Exception:
+      ok(True)
+
+# Call then call
+
+sample = event.event()
+sample('Call')
+
+try:
+  ok(False, sample('Call'))
+
+except StopIteration:
+  pass
+
+# Call then throw
+
+sample = event.event()
+sample('Call')
+
+try:
+  ok(False, sample.throw(Exception('Throw')))
+
+except StopIteration:
+  pass
+
+# Throw then throw
+
+sample = event.event()
+sample.throw(Exception('Throw'))
+
+try:
+  ok(False, sample.throw(Exception('Throw')))
+
+except StopIteration:
+  pass
+
+# Suppress traceback
+
+@sample.connect
+class ignore:
+
+  @staticmethod
+  def throw(*args, **kwds):
+    pass
+
+# Throw then call
+
+sample = event.event()
+sample.throw(Exception('Throw'))
+
+try:
+  ok(False, sample('Call'))
+
+except StopIteration:
+  pass
+
+# Suppress traceback
+
+@sample.connect
+class ignore:
+
+  @staticmethod
+  def throw(*args, **kwds):
+    pass
+
+@test
+def propagate():
+  expect(1)
+
+  sample = event.event()
+  sample('Call').connect(lambda *args, **kwds: 'Expect')
+
+  sample.connect(lambda actual: equal(actual, 'Expect'))
+
+@test
+def propagateException():
+  expect(1)
+
+  sample = event.event()
+  sample('Call')
+
+  @sample.connect
+  def ignore(*args, **kwds):
+    raise Exception('Raise')
 
   @sample.connect
   @untwisted.callback
@@ -99,22 +176,24 @@ def chain():
   expect(1)
 
   sample = event.event()
-  event.event()('Chain').connect(sample)
+  event.event()('Expect').connect(sample)
 
-  sample.connect(untwisted.callback(lambda: equal((yield), 'Chain')))
+  sample.connect(lambda actual: equal(actual, 'Expect'))
 
 @test
 def callWithEvent():
   expect(1)
 
-  sample = event.event()(event.event()('Call with event'))
+  sample = event.event()
+  sample(event.event()('Expect'))
 
-  sample.connect(untwisted.callback(lambda: equal((yield), 'Call with event')))
+  sample.connect(lambda actual: equal(actual, 'Expect'))
 
 @test
-def returnEvent():
+def propagateEvent():
   expect(1)
 
-  sample = event.event()('Call').connect(lambda *args, **kwds: event.event()('Return event'))
+  sample = event.event()
+  sample('Call').connect(lambda *args, **kwds: event.event()('Expect'))
 
-  sample.connect(untwisted.callback(lambda: equal((yield), 'Return event')))
+  sample.connect(lambda actual: equal(actual, 'Expect'))

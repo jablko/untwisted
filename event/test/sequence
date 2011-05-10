@@ -8,9 +8,10 @@ from untwisted import event
 def callThenShift():
   expect(1)
 
-  sample = event.sequence()('Call then shift')
+  sample = event.sequence()
+  sample('Expect')
 
-  sample.shift().connect(untwisted.callback(lambda: equal((yield), 'Call then shift')))
+  sample.shift().connect(lambda actual: equal(actual, 'Expect'))
 
 @test
 def shiftThenCall():
@@ -18,6 +19,6 @@ def shiftThenCall():
 
   sample = event.sequence()
 
-  sample.shift().connect(untwisted.callback(lambda: equal((yield), 'Shift then call')))
+  sample.shift().connect(lambda actual: equal(actual, 'Expect'))
 
-  sample('Shift then call')
+  sample('Expect')
