@@ -15,6 +15,13 @@ def continuate():
   equal((yield event.event()('Expect')), 'Expect')
 
 @test
+@event.continuate
+def continuateNonEvent():
+  expect(1)
+
+  equal((yield 'Expect'), 'Expect')
+
+@test
 def propagateException():
   expect(1)
 

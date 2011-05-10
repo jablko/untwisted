@@ -156,7 +156,16 @@ class StopIteration(exceptions.StopIteration):
 
     ctx.kwds = kwds
 
+# If continuate is a class, then wrapper (aka .__call__()) is either a method
+# or a class, and neither a method nor a class behaves like a function if it's
+# an attribute of another object.  The first argument of a method is always a
+# continuate instance and the first argument of a class is wrapper (aka
+# .__call__()) instance.  untwisted.ctxual is a workaround, but a function is
+# simpler
 def continuate(cbl):
+
+  # If cbl is a function and wrapper is a class then it doesn't behave like cbl
+  # if it's an attribute of another object
   def wrapper(*args, **kwds):
     gnr = cbl(*args, **kwds)
     result = event()
@@ -168,7 +177,7 @@ def continuate(cbl):
     class ignore:
       def __call__(ctx, *args, **kwds):
         try:
-          return gnr.send(*args, **kwds).connect(ctx)
+          itm = gnr.send(*args, **kwds)
 
         except exceptions.StopIteration as e:
           try:
@@ -176,10 +185,14 @@ def continuate(cbl):
 
           except AttributeError:
             return event()(*e.args)
+
+        result.callback.insert(0, ctx)
+
+        return itm
 
       def throw(ctx, *args, **kwds):
         try:
-          return gnr.throw(*args, **kwds).connect(ctx)
+          itm = gnr.throw(*args, **kwds)
 
         except exceptions.StopIteration as e:
           try:
@@ -187,6 +200,10 @@ def continuate(cbl):
 
           except AttributeError:
             return event()(*e.args)
+
+        result.callback.insert(0, ctx)
+
+        return itm
 
     # gnr.send(None)
     return result(None)
