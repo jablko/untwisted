@@ -180,6 +180,28 @@ def chain():
 
   sample.connect(lambda actual: equal(actual, 'Expect'))
 
+# Call then chain
+
+sample = event.event()
+sample('Call')
+
+try:
+  ok(False, event.event()('Chain').connect(sample))
+
+except StopIteration:
+  pass
+
+# Chain then call
+
+sample = event.event()
+event.event()('Chain').connect(sample)
+
+try:
+  ok(False, sample('Call'))
+
+except StopIteration:
+  pass
+
 @test
 def callWithEvent():
   expect(1)

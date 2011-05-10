@@ -30,6 +30,13 @@ class event:
         return ctx
 
       if isinstance(callback, event):
+
+        # Already triggered
+        if hasattr(callback, 'advance'):
+          raise StopIteration
+
+        callback.trigger = True
+
         callback.advance = ctx.advance
         callback.propagate()
 
