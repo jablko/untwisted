@@ -126,13 +126,13 @@ class event:
 class sequence:
   def __call__(ctx, *args, **kwds):
     try:
-      item = ctx.consume.pop(0)
+      itm = ctx.consume.pop(0)
 
     except IndexError:
-      item = event()
-      ctx.produce.append(item)
+      itm = event()
+      ctx.produce.append(itm)
 
-    item(*args, **kwds)
+    itm(*args, **kwds)
 
     return ctx
 
@@ -145,10 +145,10 @@ class sequence:
       return ctx.produce.pop(0)
 
     except IndexError:
-      item = event()
-      ctx.consume.append(item)
+      itm = event()
+      ctx.consume.append(itm)
 
-      return item
+      return itm
 
 class StopIteration(exceptions.StopIteration):
   def __init__(ctx, *args, **kwds):
@@ -156,9 +156,9 @@ class StopIteration(exceptions.StopIteration):
 
     ctx.kwds = kwds
 
-def continuate(callable):
+def continuate(cbl):
   def wrapper(*args, **kwds):
-    generator = callable(*args, **kwds)
+    gnr = cbl(*args, **kwds)
     result = event()
 
     # TODO Tail call elimination
@@ -168,7 +168,7 @@ def continuate(callable):
     class ignore:
       def __call__(ctx, *args, **kwds):
         try:
-          return generator.send(*args, **kwds).connect(ctx)
+          return gnr.send(*args, **kwds).connect(ctx)
 
         except exceptions.StopIteration as e:
           try:
@@ -179,7 +179,7 @@ def continuate(callable):
 
       def throw(ctx, *args, **kwds):
         try:
-          return generator.throw(*args, **kwds).connect(ctx)
+          return gnr.throw(*args, **kwds).connect(ctx)
 
         except exceptions.StopIteration as e:
           try:
@@ -188,7 +188,7 @@ def continuate(callable):
           except AttributeError:
             return event()(*e.args)
 
-    # generator.send(None)
+    # gnr.send(None)
     return result(None)
 
   return wrapper

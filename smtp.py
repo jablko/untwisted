@@ -87,7 +87,8 @@ class client:
     __get__ = classmethod(untwisted.ctxual)
 
     def mail(ctx, mailbox):
-      ctx.ctx.transport.write(str(command('MAIL FROM:<%s>' % mailbox)))
+      #ctx.ctx.transport.write(str(command('MAIL FROM:<{}>'.format(mailbox))))
+      ctx.ctx.transport.write(str(command('MAIL FROM:<{0}>'.format(mailbox))))
 
       return ctx.ctx.reply()
 
@@ -95,7 +96,8 @@ class client:
       raise NotImplementedError
 
     def rcpt(ctx, mailbox):
-      ctx.ctx.transport.write(str(command('RCPT TO:<%s>' % mailbox)))
+      #ctx.ctx.transport.write(str(command('RCPT TO:<{}>'.format(mailbox))))
+      ctx.ctx.transport.write(str(command('RCPT TO:<{0}>'.format(mailbox))))
 
       return ctx.ctx.reply()
 
@@ -104,7 +106,6 @@ class client:
 
     @event.continuate
     def data(ctx, data):
-
       ctx.ctx.trasport.write(str(command('DATA')))
 
       # Since some servers may generate other replies under special

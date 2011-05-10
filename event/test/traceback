@@ -19,15 +19,16 @@ try:
 finally:
   stderr, sys.stderr = sys.stderr, stderr
 
+#)+  File "{}", line \d+, in <module>
 ok(re.match('''(?:  File ".+", line \d+, in .+
     .+
-)+  File "%s", line \d+, in <module>
+)+  File "{0}", line \d+, in <module>
     event.event\(\).throw\(Exception\('Expect'\)\)
 Traceback \(most recent call last\):
 (?:  File ".+", line \d+, in .+
     .+
 )+Exception: Expect
-''' % re.escape(__file__), stderr.getvalue()), stderr.getvalue())
+'''.format(re.escape(__file__)), stderr.getvalue()), stderr.getvalue())
 
 # Raise
 
@@ -46,15 +47,16 @@ try:
 finally:
   stderr, sys.stderr = sys.stderr, stderr
 
+#)+  File "{}", line \d+, in callback
 ok(re.match('''(?:  File ".+", line \d+, in .+
     .+
 )+Traceback \(most recent call last\):
 (?:  File ".+", line \d+, in .+
     .+
-)+  File "%s", line \d+, in callback
+)+  File "{0}", line \d+, in callback
     raise Exception\('Expect'\)
 Exception: Expect
-''' % re.escape(__file__), stderr.getvalue()), stderr.getvalue())
+'''.format(re.escape(__file__)), stderr.getvalue()), stderr.getvalue())
 
 # Throw type, value, traceback
 
@@ -73,13 +75,14 @@ try:
 finally:
   stderr, sys.stderr = sys.stderr, stderr
 
+#  File "{}", line \d+, in <module>
 ok(re.match('''(?:  File ".+", line \d+, in .+
     .+
 )+Traceback \(most recent call last\):
-  File "%s", line \d+, in <module>
+  File "{0}", line \d+, in <module>
     raise Exception\('Expect'\)
 Exception: Expect
-''' % re.escape(__file__), stderr.getvalue()), stderr.getvalue())
+'''.format(re.escape(__file__)), stderr.getvalue()), stderr.getvalue())
 
 # Throw no argument
 
@@ -98,13 +101,14 @@ try:
 finally:
   stderr, sys.stderr = sys.stderr, stderr
 
+#  File "{}", line \d+, in <module>
 ok(re.match('''(?:  File ".+", line \d+, in .+
     .+
 )+Traceback \(most recent call last\):
-  File "%s", line \d+, in <module>
+  File "{0}", line \d+, in <module>
     raise Exception\('Expect'\)
 Exception: Expect
-''' % re.escape(__file__), stderr.getvalue()), stderr.getvalue())
+'''.format(re.escape(__file__)), stderr.getvalue()), stderr.getvalue())
 
 # Throw then raise
 
@@ -126,15 +130,16 @@ try:
 finally:
   stderr, sys.stderr = sys.stderr, stderr
 
+#)+  File "{}", line \d+, in throw
 ok(re.match('''(?:  File ".+", line \d+, in .+
     .+
 )+Traceback \(most recent call last\):
 (?:  File ".+", line \d+, in .+
     .+
-)+  File "%s", line \d+, in throw
+)+  File "{0}", line \d+, in throw
     raise Exception\('Expect'\)
 Exception: Expect
-''' % re.escape(__file__), stderr.getvalue()), stderr.getvalue())
+'''.format(re.escape(__file__)), stderr.getvalue()), stderr.getvalue())
 
 # Raise with intervene
 
@@ -164,15 +169,16 @@ try:
 finally:
   stderr, sys.stderr = sys.stderr, stderr
 
+#)+  File "{}", line \d+, in callback
 ok(re.match('''(?:  File ".+", line \d+, in .+
     .+
 )+Traceback \(most recent call last\):
 (?:  File ".+", line \d+, in .+
     .+
-)+  File "%s", line \d+, in callback
+)+  File "{0}", line \d+, in callback
     raise Exception\('Expect'\)
 Exception: Expect
-''' % re.escape(__file__), stderr.getvalue()), stderr.getvalue())
+'''.format(re.escape(__file__)), stderr.getvalue()), stderr.getvalue())
 
 # Chain with intervene
 
@@ -197,12 +203,13 @@ try:
 finally:
   stderr, sys.stderr = sys.stderr, stderr
 
+#)+  File "{}", line \d+, in <module>
 ok(re.match('''(?:  File ".+", line \d+, in .+
     .+
-)+  File "%s", line \d+, in <module>
+)+  File "{0}", line \d+, in <module>
     sample.throw\(Exception\('Expect'\)\)
 Traceback \(most recent call last\):
 (?:  File ".+", line \d+, in .+
     .+
 )+Exception: Expect
-''' % re.escape(__file__), stderr.getvalue()), stderr.getvalue())
+'''.format(re.escape(__file__)), stderr.getvalue()), stderr.getvalue())

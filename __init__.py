@@ -1,44 +1,44 @@
 import functools, weakref
 from copy import copy
 
-call = lambda callable: callable()
+call = lambda cbl: cbl()
 
-def callback(callable):
+def callback(cbl):
   def wrapper(*args, **kwds):
-    generator = callable()
-    generator.next()
+    gnr = cbl()
+    gnr.next()
 
     try:
-      generator.send(*args, **kwds)
+      gnr.send(*args, **kwds)
 
     except StopIteration as e:
       try:
-        #value, *result = e.args
-        value, result = e.args[0], e.args[1:]
-        if len(result):
-          return (value,) + result
+        #head, *rest = e.args
+        head, rest = e.args[0], e.args[1:]
+        if len(rest):
+          return (head,) + rest
 
-        return value
+        return head
 
       except IndexError:
         pass
 
   @functools.partial(setattr, wrapper, 'throw')
   def throw(*args, **kwds):
-    generator = callable()
-    generator.next()
+    gnr = cbl()
+    gnr.next()
 
     try:
-      generator.throw(*args, **kwds)
+      gnr.throw(*args, **kwds)
 
     except StopIteration as e:
       try:
-        #value, *result = e.args
-        value, result = e.args[0], e.args[1:]
-        if len(result):
-          return (value,) + result
+        #head, *rest = e.args
+        head, rest = e.args[0], e.args[1:]
+        if len(rest):
+          return (head,) + rest
 
-        return value
+        return head
 
       except IndexError:
         pass
@@ -83,8 +83,8 @@ class final:
     ref[ctx] = weakref.ref(ctx, lambda ref: callback())
 
 # http://jdbates.blogspot.com/2011/04/ow-ow-ow-python-why-do-you-hurt-so-hard.html
-def identity(value, *args):
-  if len(args):
-    return (value,) + args
+def identity(head, *rest):
+  if len(rest):
+    return (head,) + rest
 
-  return value
+  return head
