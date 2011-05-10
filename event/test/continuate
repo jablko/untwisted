@@ -33,3 +33,16 @@ def propagateException():
 
     except Exception:
       ok(True)
+
+@test
+def propagateStopIteration():
+  expect(2)
+
+  @untwisted.call
+  @event.continuate
+  def sample():
+    raise event.StopIteration('First', 'Second', 'Third', True=True, False=False)
+
+    yield
+
+  sample.connect(lambda *args, **kwds: (equal(args, ('First', 'Second', 'Third')), equal(kwds, { 'True': True, 'False': False })))

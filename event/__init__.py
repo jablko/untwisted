@@ -1,4 +1,4 @@
-import functools, sys, traceback, untwisted
+import exceptions, functools, sys, traceback, untwisted
 
 # Differences from Twisted: Events are also callbacks, whereas deferreds
 # aren't, this eliminates .chainDeferred()
@@ -150,6 +150,12 @@ class sequence:
 
       return item
 
+class StopIteration(exceptions.StopIteration):
+  def __init__(ctx, *args, **kwds):
+    exceptions.StopIteration.__init__(ctx, *args)
+
+    ctx.kwds = kwds
+
 def continuate(callable):
   def wrapper(*args, **kwds):
     generator = callable(*args, **kwds)
@@ -164,33 +170,23 @@ def continuate(callable):
         try:
           return generator.send(*args, **kwds).connect(ctx)
 
-        except StopIteration as e:
+        except exceptions.StopIteration as e:
           try:
-            #value, *result = e.args
-            value, result = e.args[0], e.args[1:]
-            if len(result):
-              return (value,) + result
+            return event()(*e.args, **e.kwds)
 
-            return value
-
-          except IndexError:
-            pass
+          except AttributeError:
+            return event()(*e.args)
 
       def throw(ctx, *args, **kwds):
         try:
           return generator.throw(*args, **kwds).connect(ctx)
 
-        except StopIteration as e:
+        except exceptions.StopIteration as e:
           try:
-            #value, *result = e.args
-            value, result = e.args[0], e.args[1:]
-            if len(result):
-              return (value,) + result
+            return event()(*e.args, **e.kwds)
 
-            return value
-
-          except IndexError:
-            pass
+          except AttributeError:
+            return event()(*e.args)
 
     # generator.send(None)
     return result(None)
