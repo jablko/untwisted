@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+
+import untwisted
+from testify import *
+
+equal(untwisted.identity('Expect'), 'Expect')
+equal(untwisted.identity('First', 'Second', 'Third'), ('First', 'Second', 'Third'))

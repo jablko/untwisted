@@ -16,7 +16,7 @@ def callback(callable):
         #value, *result = e.args
         value, result = e.args[0], e.args[1:]
         if len(result):
-          return value, + result
+          return (value,) + result
 
         return value
 
@@ -36,7 +36,7 @@ def callback(callable):
         #value, *result = e.args
         value, result = e.args[0], e.args[1:]
         if len(result):
-          return value, + result
+          return (value,) + result
 
         return value
 
@@ -85,6 +85,6 @@ class final:
 # http://jdbates.blogspot.com/2011/04/ow-ow-ow-python-why-do-you-hurt-so-hard.html
 def identity(value, *args):
   if len(args):
-    return value, + args
+    return (value,) + args
 
   return value

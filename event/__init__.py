@@ -169,7 +169,7 @@ def continuate(callable):
             #value, *result = e.args
             value, result = e.args[0], e.args[1:]
             if len(result):
-              return value, + result
+              return (value,) + result
 
             return value
 
@@ -185,7 +185,7 @@ def continuate(callable):
             #value, *result = e.args
             value, result = e.args[0], e.args[1:]
             if len(result):
-              return value, + result
+              return (value,) + result
 
             return value
 
