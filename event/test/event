@@ -33,7 +33,7 @@ try:
 except StopIteration:
   pass
 
-# Supress traceback
+# Suppress traceback
 
 @sample.connect
 class ignore:
