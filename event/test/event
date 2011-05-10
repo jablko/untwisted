@@ -172,6 +172,19 @@ def propagateException():
       ok(True)
 
 @test
+def propagateAndConnect():
+  expect(1)
+
+  sample = event.event()
+  sample('Call')
+
+  @sample.connect
+  def ignore(*args, **kwds):
+    sample.connect(lambda actual: equal(actual, 'Expect'))
+
+    return 'Expect'
+
+@test
 def chain():
   expect(1)
 

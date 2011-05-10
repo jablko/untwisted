@@ -44,8 +44,12 @@ class event:
 
         continue
 
+      # Don't propagate (on ctx.connect())
+      advance = ctx.advance
+      del ctx.advance
+
       try:
-        result = ctx.advance(callback)
+        result = advance(callback)
 
       except:
         final = untwisted.final(functools.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
@@ -56,10 +60,6 @@ class event:
         continue
 
       if isinstance(result, event):
-
-        # Don't propagate (on ctx.connect()) until callback
-        del ctx.advance
-
         result.connect(ctx)
 
         return ctx
