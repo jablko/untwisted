@@ -153,57 +153,46 @@ class sequence:
 def continuate(callable):
   def wrapper(*args, **kwds):
     generator = callable(*args, **kwds)
+    result = event()
 
-    try:
+    # TODO Tail call elimination
 
-      # TODO Tail call elimination
+    @result.connect
+    @untwisted.call
+    class ignore:
+      def __call__(ctx, *args, **kwds):
+        try:
+          return generator.send(*args, **kwds).connect(ctx)
 
-      @untwisted.call
-      class callback:
-        def __call__(ctx, *args, **kwds):
+        except StopIteration as e:
           try:
-            return generator.send(*args, **kwds).connect(ctx)
+            #value, *result = e.args
+            value, result = e.args[0], e.args[1:]
+            if len(result):
+              return value, + result
 
-          except StopIteration as e:
-            try:
-              #value, *result = e.args
-              value, result = e.args[0], e.args[1:]
-              if len(result):
-                return value, + result
+            return value
 
-              return value
+          except IndexError:
+            pass
 
-            except IndexError:
-              pass
+      def throw(ctx, *args, **kwds):
+        try:
+          return generator.throw(*args, **kwds).connect(ctx)
 
-        def throw(ctx, *args, **kwds):
+        except StopIteration as e:
           try:
-            return generator.throw(*args, **kwds).connect(ctx)
+            #value, *result = e.args
+            value, result = e.args[0], e.args[1:]
+            if len(result):
+              return value, + result
 
-          except StopIteration as e:
-            try:
-              #value, *result = e.args
-              value, result = e.args[0], e.args[1:]
-              if len(result):
-                return value, + result
+            return value
 
-              return value
+          except IndexError:
+            pass
 
-            except IndexError:
-              pass
-
-      return generator.next().connect(callback)
-
-    except StopIteration as e:
-      try:
-        #value, *result = e.args
-        value, result = e.args[0], e.args[1:]
-        if len(result):
-          return value, + result
-
-        return value
-
-      except IndexError:
-        pass
+    # generator.send(None)
+    return result(None)
 
   return wrapper
