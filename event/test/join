@@ -1,0 +1,22 @@
+#!/usr/bin/env python
+
+from testify import *
+from untwisted import event
+
+@test
+def join():
+  expect(1)
+
+  sample = event.join()
+  sample(event.event()('Expect'))
+
+  sample.connect(lambda actual: equal(actual, 'Expect'))
+
+@test
+def joinNonEvent():
+  expect(1)
+
+  sample = event.join()
+  sample('Expect')
+
+  sample.connect(lambda actual: equal(actual, 'Expect'))

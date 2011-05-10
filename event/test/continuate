@@ -53,3 +53,16 @@ def propagateStopIteration():
     yield
 
   sample.connect(lambda *args, **kwds: (equal(args, ('First', 'Second', 'Third')), equal(kwds, { 'True': True, 'False': False })))
+
+@test
+def propagateStopIterationEvent():
+  expect(2)
+
+  @untwisted.call
+  @event.continuate
+  def sample():
+    raise event.StopIteration(event.event()('First'), event.event()('Second'), event.event()('Third'), True=True, False=False)
+
+    yield
+
+  sample.connect(lambda *args, **kwds: (equal(args, ('First', 'Second', 'Third')), equal(kwds, { 'True': True, 'False': False })))

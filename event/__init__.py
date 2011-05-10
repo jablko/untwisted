@@ -74,16 +74,6 @@ class event:
 
     ctx.trigger = True
 
-    try:
-      connect, = args
-      if isinstance(connect, event):
-        connect.connect(ctx)
-
-        return ctx
-
-    except ValueError:
-      pass
-
     ctx.advance = lambda callback: callback(*args, **kwds)
     ctx.propagate()
 
@@ -156,6 +146,73 @@ class StopIteration(exceptions.StopIteration):
 
     ctx.kwds = kwds
 
+# Join is an event.  When called, its arguments may be other events.  It
+# propagates only after all these events are triggered and calls callbacks with
+# the results of all these events
+#
+# Join is like the following, except,
+#
+#  * this is infinitely recursive because continuate calls join
+#
+#  * this isn't a generator function!  "yield" yields extra values from the
+#    list comprehension - it doesn't form a generator function
+#
+# @continuate
+# def join(*args, **kwds):
+#   raise StopIteration(((yield itm) for itm in args), **kwds)
+#
+class join(event):
+  def __call__(ctx, *args, **kwds):
+
+    # Already triggered
+    if ctx.trigger:
+      raise StopIteration
+
+    ctx.trigger = True
+
+    try:
+      #head, *rest = args
+      head, rest = args[0], args[1:]
+
+      # Can iterate with iterator or list, not tuple
+      rest = list(rest)
+
+      args = []
+      def callback(*argsItm, **kwdsItm):
+        try:
+          args.append(*argsItm)
+
+        except TypeError:
+          args.append(argsItm)
+
+        kwds.update(*kwdsItm)
+
+        try:
+          itm = rest.pop(0)
+
+        except IndexError:
+          return event()(*args, **kwds)
+
+        ctx.callback.insert(0, callback)
+
+        return itm
+
+      ctx.callback.insert(0, callback)
+
+      if isinstance(head, event):
+        head.connect(ctx)
+
+        return ctx
+
+      ctx.advance = lambda callback: callback(head)
+
+    except IndexError:
+      ctx.advance = lambda callback: callback(*args, **kwds)
+
+    ctx.propagate()
+
+    return ctx
+
 # If continuate is a class, then wrapper (aka .__call__()) is either a method
 # or a class, and neither a method nor a class behaves like a function if it's
 # an attribute of another object.  The first argument of a method is always a
@@ -181,10 +238,10 @@ def continuate(cbl):
 
         except exceptions.StopIteration as e:
           try:
-            return event()(*e.args, **e.kwds)
+            return join()(*e.args, **e.kwds)
 
           except AttributeError:
-            return event()(*e.args)
+            return join()(*e.args)
 
         result.callback.insert(0, ctx)
 
@@ -196,10 +253,10 @@ def continuate(cbl):
 
         except exceptions.StopIteration as e:
           try:
-            return event()(*e.args, **e.kwds)
+            return join()(*e.args, **e.kwds)
 
           except AttributeError:
-            return event()(*e.args)
+            return join()(*e.args)
 
         result.callback.insert(0, ctx)
 

@@ -216,15 +216,6 @@ except StopIteration:
   pass
 
 @test
-def callWithEvent():
-  expect(1)
-
-  sample = event.event()
-  sample(event.event()('Expect'))
-
-  sample.connect(lambda actual: equal(actual, 'Expect'))
-
-@test
 def propagateEvent():
   expect(1)
 
