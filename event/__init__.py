@@ -38,9 +38,14 @@ class event:
         callback.trigger = True
 
         callback.advance = ctx.advance
-        callback.propagate()
-
         ctx.advance = lambda callback: callback()
+
+        if len(ctx.callback):
+          callback.propagate()
+
+        # Tail call optimization
+        else:
+          ctx = callback
 
         continue
 

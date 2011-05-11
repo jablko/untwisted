@@ -31,3 +31,21 @@ def propagageAndConnect():
   sample.connect(callback)(0)
 
   sample.connect(lambda actual: equal(actual, sys.getrecursionlimit()))
+
+@test
+def chain():
+  expect(1)
+
+  sample = event.event()
+
+  next = sample
+  for ignore in range(sys.getrecursionlimit()):
+    prev = next
+    next = event.event()
+
+    prev.connect(next)
+    next.connect(lambda count: count + 1)
+
+  sample(0)
+
+  next.connect(lambda actual: equal(actual, sys.getrecursionlimit()))
