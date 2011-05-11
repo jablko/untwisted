@@ -49,3 +49,28 @@ def chain():
   sample(0)
 
   next.connect(lambda actual: equal(actual, sys.getrecursionlimit()))
+
+@test
+def propagateEvent():
+  expect(1)
+
+  sample = event.event()
+  for ignore in range(sys.getrecursionlimit()):
+    sample.connect(lambda count: event.event()(count + 1))
+
+  sample(0)
+
+  sample.connect(lambda actual: equal(actual, sys.getrecursionlimit()))
+
+@test
+@event.continuate
+def continuate():
+  expect(1)
+
+  count = 0
+  for ignore in range(sys.getrecursionlimit()):
+    yield event.event()('Call')
+
+    count += 1
+
+  equal(count, sys.getrecursionlimit())

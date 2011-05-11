@@ -65,9 +65,21 @@ class event:
         continue
 
       if isinstance(result, event):
-        result.connect(ctx)
 
-        return ctx
+        # Tail call optimization
+        #result.connect(ctx)
+
+        try:
+          ctx.advance = result.advance
+
+        except AttributeError:
+          result.callback.append(ctx)
+
+          return ctx
+
+        result.advance = lambda callback: callback()
+
+        continue
 
       ctx.advance = lambda callback: callback(result)
 
@@ -231,8 +243,6 @@ def continuate(cbl):
   def wrapper(*args, **kwds):
     gnr = cbl(*args, **kwds)
     result = event()
-
-    # TODO Tail call elimination
 
     @result.connect
     @untwisted.call
