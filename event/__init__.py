@@ -15,7 +15,7 @@ class event:
     ctx.callback.append(callback)
 
     # Ready to propagate
-    if hasattr(ctx, 'advance'):
+    if hasattr(ctx, 'args'):
       ctx.propagate()
 
     return ctx
@@ -32,13 +32,23 @@ class event:
       if isinstance(callback, event):
 
         # Already triggered
-        if hasattr(callback, 'advance'):
+        if hasattr(callback, 'args'):
           raise StopIteration
 
         callback.trigger = True
 
-        callback.advance = ctx.advance
-        ctx.advance = lambda callback: callback()
+        try:
+          callback.traceback = ctx.traceback
+          del ctx.traceback
+
+        except AttributeError:
+          pass
+
+        callback.args = ctx.args
+        ctx.args = ()
+
+        callback.kwds = ctx.kwds
+        ctx.kwds = {}
 
         if len(ctx.callback):
           callback.propagate()
@@ -49,18 +59,31 @@ class event:
 
         continue
 
-      # Don't propagate (on ctx.connect())
-      advance = ctx.advance
-      del ctx.advance
+      # Skip if callback has no .throw()
+      if hasattr(ctx, 'traceback'):
+        try:
+          callback = callback.throw
+
+        except AttributeError:
+          continue
+
+        ctx.traceback.cancel()
+        del ctx.traceback
+
+      args = ctx.args
+      del ctx.args
+
+      kwds = ctx.kwds
+      del ctx.kwds
 
       try:
-        result = advance(callback)
+        result = callback(*args, **kwds)
 
       except:
-        final = untwisted.final(functools.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
+        ctx.traceback = untwisted.final(functools.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
 
-        info = sys.exc_info()
-        ctx.advance = lambda callback: (final.cancel(), callback.throw(*info))[-1]
+        ctx.args = sys.exc_info()
+        ctx.kwds = {}
 
         continue
 
@@ -70,18 +93,28 @@ class event:
         #result.connect(ctx)
 
         try:
-          ctx.advance = result.advance
+          ctx.traceback = result.traceback
+          del result.traceback
+
+        except AttributeError:
+          pass
+
+        try:
+          ctx.args = result.args
+          result.args = ()
+
+          ctx.kwds = result.kwds
+          result.kwds = {}
 
         except AttributeError:
           result.callback.append(ctx)
 
           return ctx
 
-        result.advance = lambda callback: callback()
-
         continue
 
-      ctx.advance = lambda callback: callback(result)
+      ctx.args = result,
+      ctx.kwds = {}
 
   def __call__(ctx, *args, **kwds):
 
@@ -91,7 +124,9 @@ class event:
 
     ctx.trigger = True
 
-    ctx.advance = lambda callback: callback(*args, **kwds)
+    ctx.args = args
+    ctx.kwds = kwds
+
     ctx.propagate()
 
     return ctx
@@ -120,9 +155,11 @@ class event:
 
     import traceback
 
-    final = untwisted.final(functools.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
+    ctx.traceback = untwisted.final(functools.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
 
-    ctx.advance = lambda callback: (final.cancel(), callback.throw(*args, **kwds))[-1]
+    ctx.args = args
+    ctx.kwds = kwds
+
     ctx.propagate()
 
     return ctx
@@ -221,10 +258,12 @@ class join(event):
 
         return ctx
 
-      ctx.advance = lambda callback: callback(head)
+      ctx.args = head,
+      ctx.kwds = {}
 
     except IndexError:
-      ctx.advance = lambda callback: callback(*args, **kwds)
+      ctx.args = args
+      ctx.kwds = kwds
 
     ctx.propagate()
 

@@ -28,58 +28,6 @@ class ignore:
   def throw(*args, **kwds):
     pass
 
-@test
-def connectThenCall():
-  expect(1)
-
-  sample = event.event()
-
-  sample.connect(lambda actual: equal(actual, 'Expect'))
-
-  sample('Expect')
-
-@test
-def callThenConnect():
-  expect(1)
-
-  sample = event.event()
-  sample('Expect')
-
-  sample.connect(lambda actual: equal(actual, 'Expect'))
-
-@test
-def connectThenThrow():
-  expect(1)
-
-  sample = event.event()
-
-  @sample.connect
-  @untwisted.callback
-  def ignore():
-    try:
-      ok(False, (yield))
-
-    except Exception:
-      ok(True)
-
-  sample.throw(Exception('Throw'))
-
-@test
-def throwThenConnect():
-  expect(1)
-
-  sample = event.event()
-  sample.throw(Exception('Throw'))
-
-  @sample.connect
-  @untwisted.callback
-  def ignore():
-    try:
-      ok(False, (yield))
-
-    except Exception:
-      ok(True)
-
 # Call then call
 
 sample = event.event()
@@ -141,6 +89,75 @@ class ignore:
   @staticmethod
   def throw(*args, **kwds):
     pass
+
+@test
+def connectThenCall():
+  expect(1)
+
+  sample = event.event()
+
+  sample.connect(lambda actual: equal(actual, 'Expect'))
+
+  sample('Expect')
+
+@test
+def callThenConnect():
+  expect(1)
+
+  sample = event.event()
+  sample('Expect')
+
+  sample.connect(lambda actual: equal(actual, 'Expect'))
+
+@test
+def connectThenThrow():
+  expect(1)
+
+  sample = event.event()
+
+  @sample.connect
+  @untwisted.callback
+  def ignore():
+    try:
+      ok(False, (yield))
+
+    except Exception:
+      ok(True)
+
+  sample.throw(Exception('Throw'))
+
+@test
+def throwThenConnect():
+  expect(1)
+
+  sample = event.event()
+  sample.throw(Exception('Throw'))
+
+  @sample.connect
+  @untwisted.callback
+  def ignore():
+    try:
+      ok(False, (yield))
+
+    except Exception:
+      ok(True)
+
+@test
+def noThrow():
+  expect(1)
+
+  sample = event.event()
+  sample.throw(Exception('Throw'))
+  sample.connect(lambda *args, **kwds: 'Skip')
+
+  @sample.connect
+  @untwisted.callback
+  def ignore():
+    try:
+      ok(False, (yield))
+
+    except Exception:
+      ok(True)
 
 @test
 def propagate():
