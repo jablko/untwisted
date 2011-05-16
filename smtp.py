@@ -84,7 +84,8 @@ class client:
     return ctx.reply()
 
   class mail:
-    __get__ = classmethod(untwisted.ctxual)
+    class __metaclass__(type):
+      __get__ = untwisted.ctxual
 
     def mail(ctx, mailbox):
       #ctx.ctx.transport.write(str(command('MAIL FROM:<{}>'.format(mailbox))))
@@ -233,7 +234,8 @@ class server:
     state((yield ctx.command()), state)
 
   class mail:
-    __get__ = classmethod(untwisted.ctxual)
+    class __metaclass__(type):
+      __get__ = untwisted.ctxual
 
     def mail(ctx, mailbox):
       raise NotImplementedError

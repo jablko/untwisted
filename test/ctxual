@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+
+import untwisted
+from testify import *
+
+class outer:
+  class inner:
+    class __metaclass__(type):
+      __get__ = untwisted.ctxual
+
+sample = outer()
+
+equal(sample.inner.ctx, sample)
