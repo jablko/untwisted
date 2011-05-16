@@ -69,20 +69,20 @@ class client:
         break
 
     # TODO Extract multiple textstring, regex currently supports only last one
-    reply = reply(match.group(1), match.group(2))
+    result = reply(match.group(1), match.group(2))
 
-    if int(reply) not in expect:
-      raise reply
+    if int(result) not in expect:
+      raise result
 
     #return ...
-    raise StopIteration(reply)
+    raise StopIteration(result)
 
-  def ehlo(ctx):
+  def ehloCmd(ctx):
     ctx.transport.write(str(command('EHLO', domain)))
 
     return ctx.reply()
 
-  def helo(ctx):
+  def heloCmd(ctx):
     ctx.transport.write(str(command('HELO', domain)))
 
     return ctx.reply()
@@ -93,7 +93,7 @@ class client:
 
       __get__ = untwisted.ctxual
 
-    def mail(ctx, mailbox):
+    def mailCmd(ctx, mailbox):
       #ctx.ctx.transport.write(str(command('MAIL FROM:<{}>'.format(mailbox))))
       ctx.ctx.transport.write(str(command('MAIL FROM:<{0}>'.format(mailbox))))
 
@@ -102,7 +102,7 @@ class client:
     def mail(ctx):
       raise NotImplementedError
 
-    def rcpt(ctx, mailbox):
+    def rcptCmd(ctx, mailbox):
       #ctx.ctx.transport.write(str(command('RCPT TO:<{}>'.format(mailbox))))
       ctx.ctx.transport.write(str(command('RCPT TO:<{0}>'.format(mailbox))))
 
@@ -112,7 +112,7 @@ class client:
       raise NotImplementedError
 
     @event.continuate
-    def data(ctx, data):
+    def dataCmd(ctx, data):
       ctx.ctx.trasport.write(str(command('DATA')))
 
       # Since some servers may generate other replies under special
@@ -155,13 +155,13 @@ class client:
     yield ctx.reply()
 
     try:
-      yield ctx.ehlo()
+      yield ctx.ehloCmd()
 
     except reply as e:
       if int(e) not in (500, 502):
         raise
 
-      yield ctx.helo()
+      yield ctx.heloCmd()
 
     try:
       while True:
@@ -190,8 +190,10 @@ class server:
         pass
 
     # TODO Raise if index not end?
+    result = command(read[:index])
+
     #return ...
-    raise StopIteration(command(read[:index]))
+    raise StopIteration(result)
 
   @event.continuate
   def start(ctx, command, state):
