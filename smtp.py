@@ -1,6 +1,22 @@
 import re, socket, untwisted
 from untwisted import event, rfc5321
 
+def __new__(ctx, *args, **kwds):
+  result = object.__new__(ctx).__init__(*args, **kwds)
+
+  # Thread safety?
+  if isinstance(result, ctx):
+    try:
+      __init__ = ctx.__dict__['__init__']
+
+    except KeyError:
+      ctx.__init__ = lambda *args, **kwds: delattr(ctx, '__init__')
+
+    else:
+      ctx.__init__ = lambda *args, **kwds: setattr(ctx, '__init__', __init__)
+
+  return result
+
 # Cache our domain
 domain = socket.getfqdn()
 
@@ -47,7 +63,8 @@ class command:
 
     return str + '\r\n'
 
-class client:
+class client(object):
+  __new__ = __new__
 
   # Since some servers may generate other replies under special circumstances,
   # and to allow for future extension, SMTP clients SHOULD, when possible,
@@ -84,6 +101,8 @@ class client:
     return ctx.reply()
 
   class mail:
+    __new__ = __new__
+
     class __metaclass__(type):
       __get__ = untwisted.ctxual
 
@@ -129,47 +148,44 @@ class client:
     def data(ctx):
       raise NotImplementedError
 
-    def __init__(ctx):
-
-      @untwisted.call
-      @event.continuate
-      def ignore():
-        yield ctx.mail()
-
-        yield ctx.recipient()
-
-        try:
-          while True:
-            yield ctx.recipient()
-
-        except StopIteration:
-          yield ctx.data()
-
-  def __init__(ctx, transport):
-    ctx.transport = transport
-
-    @untwisted.call
     @event.continuate
-    def ignore():
-      yield ctx.reply()
+    def __init__(ctx):
+      yield ctx.mail()
 
-      try:
-        yield ctx.ehlo()
-
-      except reply as e:
-        if int(e) not in (500, 502):
-          raise
-
-        yield ctx.helo()
+      yield ctx.recipient()
 
       try:
         while True:
-          yield ctx.mail()
+          yield ctx.recipient()
 
       except StopIteration:
-        pass
+        yield ctx.data()
 
-class server:
+  @event.continuate
+  def __init__(ctx, transport):
+    ctx.transport = transport
+
+    yield ctx.reply()
+
+    try:
+      yield ctx.ehlo()
+
+    except reply as e:
+      if int(e) not in (500, 502):
+        raise
+
+      yield ctx.helo()
+
+    try:
+      while True:
+        yield ctx.mail()
+
+    except StopIteration:
+      pass
+
+class server(object):
+  __new__ = __new__
+
   greeting = lambda ctx: ctx.transport.write(str(reply(220, domain)))
 
   @event.continuate
@@ -234,6 +250,8 @@ class server:
     state((yield ctx.command()), state)
 
   class mail:
+    __new__ = __new__
+
     class __metaclass__(type):
       __get__ = untwisted.ctxual
 
@@ -376,12 +394,16 @@ class server:
       #return ...
       raise StopIteration(ctx.afterMail(command, state))
 
+    @event.continuate
     def __init__(ctx):
-      event.continuate(lambda: ctx.start((yield ctx.ctx.command()), ctx.start))()
+      #return ...
+      raise StopIteration(ctx.start((yield ctx.ctx.command()), ctx.start))
 
+  @event.continuate
   def __init__(ctx, transport):
     ctx.transport = transport
 
     ctx.greeting()
 
-    event.continuate(lambda: ctx.start((yield ctx.command()), ctx.start))()
+    #return ...
+    raise StopIteration(ctx.start((yield ctx.command()), ctx.start))
