@@ -113,7 +113,7 @@ class client:
 
     @event.continuate
     def dataCmd(ctx, data):
-      ctx.ctx.trasport.write(str(command('DATA')))
+      ctx.ctx.transport.write(str(command('DATA')))
 
       # Since some servers may generate other replies under special
       # circumstances, and to allow for future extension, SMTP clients SHOULD,
