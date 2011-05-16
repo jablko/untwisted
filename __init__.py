@@ -44,7 +44,15 @@ def callback(cbl):
 
   return wrapper
 
-ctxual = lambda ctx, instance, *args: type(ctx)(ctx.__name__, (ctx,), { 'ctx': instance })
+cache = weakref.WeakValueDictionary()
+def ctxual(ctx, instance, *args):
+  try:
+    return cache[ctx, instance]
+
+  except KeyError:
+    result = cache[ctx, instance] = type(ctx)(ctx.__name__, (ctx,), { 'ctx': instance })
+
+    return result
 
 # Callback is called after there are no references to this final instance, or
 # after this final instance is garbage collected if it's part of a collectable
@@ -69,7 +77,6 @@ ctxual = lambda ctx, instance, *args: type(ctx)(ctx.__name__, (ctx,), { 'ctx': i
 # http://jdbates.blogspot.com/2011/04/in-python-how-can-you-reliably-call.html
 
 ref = weakref.WeakKeyDictionary()
-
 class final:
   def cancel(ctx):
     del ref[ctx]
