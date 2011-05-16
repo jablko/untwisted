@@ -272,7 +272,7 @@ class server:
       # concluded with a successful DATA command, or if the previous one was
       # aborted, e.g., with a RSET or new EHLO
       if 'MAIL' == command.verb:
-        match = re.match(rfc5321.mail, command)
+        match = re.match(rfc5321.mail, str(command))
         try:
           if not match:
             raise reply(555)
@@ -314,7 +314,7 @@ class server:
       # Once started, a mail transaction consists of a transaction beginning
       # command, one or more RCPT commands, and a DATA command, in that order
       if 'RCPT' == command.verb:
-        match = re.match(rfc5321.rcpt, command)
+        match = re.match(rfc5321.rcpt, str(command))
         try:
           if not match:
             raise reply(555)
