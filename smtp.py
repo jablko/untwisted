@@ -69,7 +69,7 @@ class client:
         break
 
     # TODO Extract multiple textstring, regex currently supports only last one
-    result = reply(match.group(1), match.group(2))
+    result = reply(int(match.group(1)), match.group(2))
 
     if int(result) not in expect:
       raise result
