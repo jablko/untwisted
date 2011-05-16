@@ -71,7 +71,7 @@ textstring = '[\t -~]+'
 
 replyCode = '[2-5][0-5][0-9]'
 
-replyLine = '(?:' + replyCode + '-(?:' + textstring + ')?' + rfc5234.CRLF + ')*' + replyCode + '(?: ' + textstring + ')?' + rfc5234.CRLF
+replyLine = '(?:' + replyCode + '-(?:' + textstring + ')?' + rfc5234.CRLF + ')*(' + replyCode + ')(?: (' + textstring + '))?' + rfc5234.CRLF
 
 # Information derived by server from TCP connection not client EHLO
 tcpInfo = '(?:' + addressLiteral + '|' + domain + rfc5322.FWS + addressLiteral + ')'
