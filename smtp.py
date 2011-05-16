@@ -137,16 +137,28 @@ class client:
 
     @event.continuate
     def __init__(ctx):
-      yield ctx.mail()
+      result = yield ctx.mail()
+      if not isinstance(result, reply):
+        yield ctx.mailCmd(result)
 
-      yield ctx.recipient()
+      result = yield ctx.recipient()
+      if not isinstance(result, reply):
+        yield ctx.rcptCmd(result)
 
       try:
         while True:
-          yield ctx.recipient()
+          result = yield ctx.recipient()
+          if not isinstance(result, reply):
+            yield ctx.rcptCmd(result)
 
       except StopIteration:
-        yield ctx.data()
+        result = yield ctx.data()
+        if not isinstance(result, reply):
+          #return ...
+          raise StopIteration(ctx.dataCmd(result))
+
+        #return ...
+        raise StopIteration(result)
 
   @event.continuate
   def __init__(ctx, transport):
