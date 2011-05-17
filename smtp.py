@@ -1,21 +1,7 @@
 import re, socket, untwisted
 from untwisted import event, rfc5321
 
-def __new__(ctx, *args, **kwds):
-  result = object.__new__(ctx).__init__(*args, **kwds)
-
-  # Thread safety?
-  if isinstance(result, ctx):
-    try:
-      __init__ = ctx.__dict__['__init__']
-
-    except KeyError:
-      ctx.__init__ = lambda *args, **kwds: delattr(ctx, '__init__')
-
-    else:
-      ctx.__init__ = lambda *args, **kwds: setattr(ctx, '__init__', __init__)
-
-  return result
+__call__ = lambda ctx, *args, **kwds: ctx.__new__(ctx).__init__(*args, **kwds)
 
 # Cache our domain
 domain = socket.getfqdn()
@@ -63,8 +49,9 @@ class command:
 
     return str + '\r\n'
 
-class client(object):
-  __new__ = __new__
+class client:
+  class __metaclass__(type):
+    __call__ = __call__
 
   # Since some servers may generate other replies under special circumstances,
   # and to allow for future extension, SMTP clients SHOULD, when possible,
@@ -101,9 +88,9 @@ class client(object):
     return ctx.reply()
 
   class mail:
-    __new__ = __new__
-
     class __metaclass__(type):
+      __call__ = __call__
+
       __get__ = untwisted.ctxual
 
     def mail(ctx, mailbox):
@@ -183,8 +170,9 @@ class client(object):
     except StopIteration:
       pass
 
-class server(object):
-  __new__ = __new__
+class server:
+  class __metaclass__(type):
+    __call__ = __call__
 
   greeting = lambda ctx: ctx.transport.write(str(reply(220, domain)))
 
@@ -250,9 +238,9 @@ class server(object):
     state((yield ctx.command()), state)
 
   class mail:
-    __new__ = __new__
-
     class __metaclass__(type):
+      __call__ = __call__
+
       __get__ = untwisted.ctxual
 
     def mail(ctx, mailbox):
