@@ -34,7 +34,7 @@ def propagateException():
 
   @sample.connect
   @untwisted.callback
-  def ignore():
+  def _():
     try:
       ok(False, (yield))
 

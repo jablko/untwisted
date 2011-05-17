@@ -285,7 +285,7 @@ def continuate(cbl):
 
     @result.connect
     @untwisted.call
-    class ignore:
+    class _:
       def __call__(ctx, *args, **kwds):
         try:
           itm = gnr.send(*args, **kwds)

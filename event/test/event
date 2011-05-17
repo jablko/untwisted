@@ -22,7 +22,7 @@ equal(sample.throw(Exception('Throw')), sample)
 # Suppress traceback
 
 @sample.connect
-class ignore:
+class _:
 
   @staticmethod
   def throw(*args, **kwds):
@@ -64,7 +64,7 @@ except StopIteration:
 # Suppress traceback
 
 @sample.connect
-class ignore:
+class _:
 
   @staticmethod
   def throw(*args, **kwds):
@@ -84,7 +84,7 @@ except StopIteration:
 # Suppress traceback
 
 @sample.connect
-class ignore:
+class _:
 
   @staticmethod
   def throw(*args, **kwds):
@@ -117,7 +117,7 @@ def connectThenThrow():
 
   @sample.connect
   @untwisted.callback
-  def ignore():
+  def _():
     try:
       ok(False, (yield))
 
@@ -135,7 +135,7 @@ def throwThenConnect():
 
   @sample.connect
   @untwisted.callback
-  def ignore():
+  def _():
     try:
       ok(False, (yield))
 
@@ -152,7 +152,7 @@ def noThrow():
 
   @sample.connect
   @untwisted.callback
-  def ignore():
+  def _():
     try:
       ok(False, (yield))
 
@@ -176,12 +176,12 @@ def propagateException():
   sample('Call')
 
   @sample.connect
-  def ignore(*args, **kwds):
+  def _(*args, **kwds):
     raise Exception('Raise')
 
   @sample.connect
   @untwisted.callback
-  def ignore():
+  def _():
     try:
       ok(False, (yield))
 
@@ -196,7 +196,7 @@ def propagateAndConnect():
   sample('Call')
 
   @sample.connect
-  def ignore(*args, **kwds):
+  def _(*args, **kwds):
     sample.connect(lambda actual: equal(actual, 'Expect'))
 
     return 'Expect'
