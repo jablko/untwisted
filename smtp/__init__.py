@@ -127,7 +127,21 @@ class client:
       # inserted at the beginning of the line
 
       # Lookbehind requires fixed width pattern
-      ctx.ctx.transport.write(re.sub('(^|\r\n)\.', '\\1..', data))
+      data = re.sub('(^|\r\n)\.', '\\1..', data)
+
+      # An extra <CRLF> MUST NOT be added, as that would cause an empty line to
+      # be added to the message.  The only exception to this rule would arise
+      # if the message body were passed to the originating SMTP-sender with a
+      # final "line" that did not end in <CRLF>; in that case, the originating
+      # SMTP system MUST either reject the message as invalid or add <CRLF> in
+      # order to have the receiving SMTP server recognize the "end of data"
+      # condition
+      if '\r\n' != data[-2:]:
+        data += '\r\n'
+
+      data += '.\r\n'
+
+      ctx.ctx.transport.write(data)
 
       #return ...
       raise StopIteration(ctx.ctx.reply())
@@ -367,18 +381,20 @@ class server:
             pass
 
         # TODO Raise if index not end?
+        data = read[:index]
+
+        # When a line of mail text is received by the SMTP server, it checks
+        # the line.  If the line is composed of a single period, it is treated
+        # as the end of mail indicator.  If the first character is a period and
+        # there are other characters on the line, the first character is
+        # deleted
+
+        # Lookbehind requires fixed width pattern
+        data = re.sub('(^|\r\n)\.(?=.)', '\\1', data)
 
         try:
           try:
-
-            # When a line of mail text is received by the SMTP server, it
-            # checks the line.  If the line is composed of a single period, it
-            # is treated as the end of mail indicator.  If the first character
-            # is a period and there are other characters on the line, the first
-            # character is deleted
-
-            # Lookbehind requires fixed width pattern
-            yield ctx.data(re.sub('(^|\r\n)\.(?=.)', '\\1', read[:index]))
+            yield ctx.data(data)
 
           # TODO Log
           except NotImplementedError:
