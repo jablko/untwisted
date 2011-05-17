@@ -203,7 +203,8 @@ class server:
   class __metaclass__(type):
     __call__ = __call__
 
-  greeting = lambda ctx: ctx.transport.write(str(reply(220, domain)))
+  #greeting = lambda ctx: ctx.transport.write(str(reply(220, '{} Service ready'.format(domain))))
+  greeting = lambda ctx: ctx.transport.write(str(reply(220, '{0} Service ready'.format(domain))))
 
   @event.continuate
   def command(ctx):
@@ -227,7 +228,8 @@ class server:
   @event.continuate
   def start(ctx, command, state):
     if 'EHLO' == command.verb:
-      ctx.transport.write(str(reply(250, domain)))
+      #ctx.transport.write(str(reply(250, '{} Requested mail action okay, completed'.format(domain))))
+      ctx.transport.write(str(reply(250, '{0} Requested mail action okay, completed'.format(domain))))
 
       #return ...
       raise StopIteration(ctx.mail())
@@ -236,7 +238,7 @@ class server:
 
       # Servers MUST NOT return the extended EHLO-style response to a HELO
       # command
-      ctx.transport.write(str(reply(250, domain)))
+      ctx.transport.write(str(reply(250)))
 
       #return ...
       raise StopIteration(ctx.mail())
