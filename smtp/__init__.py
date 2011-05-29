@@ -245,8 +245,8 @@ class server:
   @event.continuate
   def start(ctx, command, state):
     if 'EHLO' == command.verb:
-      #ctx.transport.write(str(reply(250, '{} Requested mail action okay, completed'.format(domain))))
-      ctx.transport.write(str(reply(250, '{0} Requested mail action okay, completed'.format(domain))))
+      #ctx.transport.write(str(reply(250, '{} Requested mail action okay, completed'.format(domain), 'PIPELINING')))
+      ctx.transport.write(str(reply(250, '{0} Requested mail action okay, completed'.format(domain), 'PIPELINING')))
 
       #return ...
       raise StopIteration(ctx.mail())
