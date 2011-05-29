@@ -145,20 +145,23 @@ class client:
       if not isinstance(result, reply):
         yield ctx.rcptCmd(result)
 
-      try:
-        while True:
+      while True:
+        try:
           result = yield ctx.recipient()
-          if not isinstance(result, reply):
-            yield ctx.rcptCmd(result)
 
-      except StopIteration:
-        result = yield ctx.data()
+        except StopIteration:
+          break
+
         if not isinstance(result, reply):
-          #return ...
-          raise StopIteration(ctx.dataCmd(result))
+          yield ctx.rcptCmd(result)
 
+      result = yield ctx.data()
+      if not isinstance(result, reply):
         #return ...
-        raise StopIteration(result)
+        raise StopIteration(ctx.dataCmd(result))
+
+      #return ...
+      raise StopIteration(result)
 
   @event.continuate
   def __init__(ctx, transport):
@@ -175,12 +178,12 @@ class client:
 
       yield ctx.heloCmd()
 
-    try:
-      while True:
+    while True:
+      try:
         yield ctx.mail()
 
-    except StopIteration:
-      pass
+      except StopIteration:
+        break
 
 class server:
   class __metaclass__(type):
