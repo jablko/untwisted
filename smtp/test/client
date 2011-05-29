@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import untwisted
 from testify import *
 from untwisted import event, smtp
 
@@ -44,3 +45,20 @@ def dataCrlf():
   transport.protocol.dataReceived('354\r\n')
 
   equal((yield transport.write.shift()), 'Expect\r\n.\r\n')
+
+@test
+@event.continuate
+def reply():
+  expect(1)
+
+  class transport:
+    class protocol:
+      dataReceived = event.sequence()
+
+    write = event.sequence()
+
+  client = type.__call__(smtp.client, transport)
+  client.reply(untwisted.wildcard)
+  transport.protocol.dataReceived('456 Ignore\r\n234 Expect\r\n')
+
+  equal(str((yield client.reply())), '234 Expect\r\n')

@@ -82,13 +82,15 @@ class client:
 
   @event.continuate
   def reply(ctx, expect=range(200, 300)):
-    read = ''
     while True:
-      read += yield ctx.transport.protocol.dataReceived.shift()
-
-      match = re.match(rfc5321.replyLine, read)
+      match = re.match(rfc5321.replyLine, ctx.read)
       if match:
         break
+
+      ctx.read += yield ctx.transport.protocol.dataReceived.shift()
+
+    #ctx.read = ctx.read[len(match):]
+    ctx.read = ctx.read[match.end():]
 
     # TODO Extract multiple textstring, regex currently supports only last one
     result = reply(int(match.group(1)), match.group(2))
@@ -207,6 +209,8 @@ class client:
   def __init__(ctx, transport):
     ctx.transport = transport
 
+    ctx.read = ''
+
 class server:
   class __metaclass__(type):
 
@@ -224,19 +228,16 @@ class server:
 
   @event.continuate
   def command(ctx):
-    read = ''
     while True:
-      read += yield ctx.transport.protocol.dataReceived.shift()
       try:
-        index = read.index('\r\n')
+        result, ctx.read = ctx.read.split('\r\n', 1)
 
         break
 
       except ValueError:
-        pass
+        ctx.read += yield ctx.transport.protocol.dataReceived.shift()
 
-    # TODO Raise if index not end?
-    result = command(read[:index])
+    result = command(result)
 
     #return ...
     raise StopIteration(result)
@@ -392,19 +393,14 @@ class server:
       if 'DATA' == command.verb:
         ctx.ctx.transport.write(str(reply(354)))
 
-        read = ''
         while True:
-          read += yield ctx.ctx.transport.protocol.dataReceived.shift()
           try:
-            index = read.index('\r\n.\r\n')
+            data, ctx.ctx.read = ctx.ctx.read.split('\r\n.\r\n', 1)
 
             break
 
           except ValueError:
-            pass
-
-        # TODO Raise if index not end?
-        data = read[:index]
+            ctx.ctx.read += yield ctx.ctx.transport.protocol.dataReceived.shift()
 
         # When a line of mail text is received by the SMTP server, it checks
         # the line.  If the line is composed of a single period, it is treated
@@ -440,3 +436,5 @@ class server:
 
   def __init__(ctx, transport):
     ctx.transport = transport
+
+    ctx.read = ''

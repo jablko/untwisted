@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+
+from testify import *
+from untwisted import event, smtp
+
+@test
+@event.continuate
+def command():
+  expect(1)
+
+  class transport:
+    class protocol:
+      dataReceived = event.sequence()
+
+    write = event.sequence()
+
+  server = type.__call__(smtp.server, transport)
+  server.command()
+  transport.protocol.dataReceived('IGNORE\r\nEXPECT\r\n')
+
+  equal(str((yield server.command())), 'EXPECT\r\n')

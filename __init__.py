@@ -101,3 +101,7 @@ def identity(head, *rest):
     return (head,) + rest
 
   return head
+
+@call
+class wildcard:
+  __contains__ = lambda *args, **kwds: True
