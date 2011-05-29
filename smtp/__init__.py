@@ -72,6 +72,9 @@ class client:
         except StopIteration:
           break
 
+      #return ...
+      raise StopIteration(ctx.quitCmd())
+
   # Since some servers may generate other replies under special circumstances,
   # and to allow for future extension, SMTP clients SHOULD, when possible,
   # interpret only the first digit of the reply and MUST be prepared to deal
@@ -195,6 +198,11 @@ class client:
 
     def data(ctx):
       raise NotImplementedError
+
+  def quitCmd(ctx):
+    ctx.transport.write(str(command('QUIT')))
+
+    return ctx.reply()
 
   def __init__(ctx, transport):
     ctx.transport = transport

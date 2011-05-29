@@ -160,7 +160,7 @@ stderr = sys.stderr
 sys.stderr = StringIO()
 
 try:
-  sample.connect(untwisted.callback(lambda: (yield)))
+  sample.connect(untwisted.head(lambda: (yield)))
 
   del sample
 

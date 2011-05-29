@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+
+import re, untwisted
+from testify import *
+from untwisted import event, rfc5234, rfc5321, smtp
+
+@test
+@event.continuate
+def receive():
+  expect(10)
+
+  class server(smtp.server):
+
+    @untwisted.each
+    def mail():
+      class sample(smtp.server.mail):
+        mail = staticmethod(untwisted.each(lambda: equal((yield), 'alice@example.com')))
+
+        recipient = staticmethod(untwisted.each(lambda: equal((yield), 'bob@example.com')))
+
+        data = staticmethod(untwisted.each(lambda: equal((yield), 'Expect')))
+
+      # QUIT
+      yield smtp.server.mail.__get__((yield sample.__get__((yield))()))()
+
+  class transport:
+    class protocol:
+      dataReceived = event.sequence()
+
+    write = event.sequence()
+
+  server(transport)
+
+  actual = yield transport.write.shift()
+  ok(re.match('(?:220-(?:' + rfc5321.textstring + ')?' + rfc5234.CRLF + ')*220(?: ' + rfc5321.textstring + ')?' + rfc5234.CRLF, actual), actual)
+
+  transport.protocol.dataReceived('EHLO example.com\r\n')
+
+  actual = yield transport.write.shift()
+  ok(re.match('(?:250-(?:' + rfc5321.textstring + ')?' + rfc5234.CRLF + ')*250(?: ' + rfc5321.textstring + ')?' + rfc5234.CRLF, actual), actual)
+
+  transport.protocol.dataReceived('MAIL FROM:<alice@example.com>\r\n')
+
+  equal((yield transport.write.shift()), '250 Requested mail action okay, completed\r\n')
+
+  transport.protocol.dataReceived('RCPT TO:<bob@example.com>\r\n')
+
+  equal((yield transport.write.shift()), '250 Requested mail action okay, completed\r\n')
+
+  transport.protocol.dataReceived('DATA\r\n')
+
+  equal((yield transport.write.shift()), '354 Start mail input; end with <CRLF>.<CRLF>\r\n')
+
+  transport.protocol.dataReceived('Expect\r\n.\r\n')
+
+  equal((yield transport.write.shift()), '250 Requested mail action okay, completed\r\n')
+
+  transport.protocol.dataReceived('QUIT\r\n')
+
+  equal((yield transport.write.shift()), '221 Service closing transmission channel\r\n')

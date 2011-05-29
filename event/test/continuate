@@ -33,7 +33,7 @@ def propagateException():
     yield
 
   @sample.connect
-  @untwisted.callback
+  @untwisted.head
   def _():
     try:
       ok(False, (yield))

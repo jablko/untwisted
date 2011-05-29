@@ -4,19 +4,6 @@ letDig = '(?:' + rfc5234.ALPHA + '|' + rfc5234.DIGIT + ')'
 ldhStr = '(?:' + rfc5234.ALPHA + '|' + rfc5234.DIGIT + '|-)*' + letDig
 subDomain = letDig + '(?:' + ldhStr + ')?'
 domain = subDomain + '(?:\.' + subDomain + ')*'
-atDomain = '@' + domain
-
-# Note that this form, the so-called "source route", MUST be accepted, SHOULD
-# NOT be generated, and SHOULD be ignored
-adl = atDomain + '(?:,' + atDomain + ')*'
-
-atom = '(?:' + rfc5322.atext + ')+'
-dotString = atom + '(?:\.' + atom + ')*'
-qtextSmtp = '[ !#-[\]-~]'
-quotedPairSmtp = '\\[ -~]'
-qcontentSmtp = '(?:' + qtextSmtp + '|' + quotedPairSmtp + ')'
-quotedString = rfc5234.DQUOTE + '(?:' + qcontentSmtp + ')*' + rfc5234.DQUOTE
-localPart = '(?:' + dotString + '|' + quotedString + ')'
 
 # Representing a decimal integer value in the range 0 through 255
 snum = '(?:' + rfc5234.DIGIT + '){1,3}'
@@ -47,6 +34,22 @@ dcontent = '[!-Z^-~]'
 
 generalAddressLiteral = standardizedTag + ':' + '(?:' + dcontent + ')+'
 addressLiteral = '\[(?:' + ipv4AddressLiteral + '|' + ipv6AddressLiteral + '|' + generalAddressLiteral + ')]'
+
+ehlo = 'EHLO (?:' + domain + '|' + addressLiteral + ')' + rfc5234.CRLF
+
+atDomain = '@' + domain
+
+# Note that this form, the so-called "source route", MUST be accepted, SHOULD
+# NOT be generated, and SHOULD be ignored
+adl = atDomain + '(?:,' + atDomain + ')*'
+
+atom = '(?:' + rfc5322.atext + ')+'
+dotString = atom + '(?:\.' + atom + ')*'
+qtextSmtp = '[ !#-[\]-~]'
+quotedPairSmtp = '\\[ -~]'
+qcontentSmtp = '(?:' + qtextSmtp + '|' + quotedPairSmtp + ')'
+quotedString = rfc5234.DQUOTE + '(?:' + qcontentSmtp + ')*' + rfc5234.DQUOTE
+localPart = '(?:' + dotString + '|' + quotedString + ')'
 mailbox = localPart + '@(?:' + domain + '|' + addressLiteral + ')'
 path = '<(?:' + adl + ':)?(' + mailbox + ')>'
 reversePath = '(?:' + path + '|<>)'

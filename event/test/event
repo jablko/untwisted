@@ -116,7 +116,7 @@ def connectThenThrow():
   sample = event.event()
 
   @sample.connect
-  @untwisted.callback
+  @untwisted.head
   def _():
     try:
       ok(False, (yield))
@@ -134,7 +134,7 @@ def throwThenConnect():
   sample.throw(Exception('Throw'))
 
   @sample.connect
-  @untwisted.callback
+  @untwisted.head
   def _():
     try:
       ok(False, (yield))
@@ -151,7 +151,7 @@ def noThrow():
   sample.connect(lambda *args, **kwds: 'Skip')
 
   @sample.connect
-  @untwisted.callback
+  @untwisted.head
   def _():
     try:
       ok(False, (yield))
@@ -180,7 +180,7 @@ def propagateException():
     raise Exception('Raise')
 
   @sample.connect
-  @untwisted.callback
+  @untwisted.head
   def _():
     try:
       ok(False, (yield))
