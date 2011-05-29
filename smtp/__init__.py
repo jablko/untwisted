@@ -1,8 +1,6 @@
 import re, socket, untwisted
 from untwisted import event, rfc5321
 
-__call__ = lambda ctx, *args, **kwds: ctx.__new__(ctx).__init__(*args, **kwds)
-
 # Cache our domain
 domain = socket.getfqdn()
 
@@ -51,7 +49,28 @@ class command:
 
 class client:
   class __metaclass__(type):
-    __call__ = __call__
+
+    @event.continuate
+    def __call__(ctx, transport):
+      ctx = type.__call__(ctx, transport)
+
+      yield ctx.reply()
+
+      try:
+        yield ctx.ehloCmd()
+
+      except reply as e:
+        if int(e) not in (500, 502):
+          raise
+
+        yield ctx.heloCmd()
+
+      while True:
+        try:
+          yield ctx.mail()
+
+        except StopIteration:
+          break
 
   # Since some servers may generate other replies under special circumstances,
   # and to allow for future extension, SMTP clients SHOULD, when possible,
@@ -89,9 +108,37 @@ class client:
 
   class mail:
     class __metaclass__(type):
-      __call__ = __call__
-
       __get__ = untwisted.ctxual
+
+      @event.continuate
+      def __call__(ctx):
+        ctx = type.__call__(ctx)
+
+        result = yield ctx.mail()
+        if not isinstance(result, reply):
+          yield ctx.mailCmd(result)
+
+        result = yield ctx.recipient()
+        if not isinstance(result, reply):
+          yield ctx.rcptCmd(result)
+
+        while True:
+          try:
+            result = yield ctx.recipient()
+
+          except StopIteration:
+            break
+
+          if not isinstance(result, reply):
+            yield ctx.rcptCmd(result)
+
+        result = yield ctx.data()
+        if not isinstance(result, reply):
+          #return ...
+          raise StopIteration(ctx.dataCmd(result))
+
+        #return ...
+        raise StopIteration(result)
 
     def mailCmd(ctx, mailbox):
       #ctx.ctx.transport.write(str(command('MAIL FROM:<{}>'.format(mailbox))))
@@ -149,59 +196,20 @@ class client:
     def data(ctx):
       raise NotImplementedError
 
-    @event.continuate
-    def __init__(ctx):
-      result = yield ctx.mail()
-      if not isinstance(result, reply):
-        yield ctx.mailCmd(result)
-
-      result = yield ctx.recipient()
-      if not isinstance(result, reply):
-        yield ctx.rcptCmd(result)
-
-      while True:
-        try:
-          result = yield ctx.recipient()
-
-        except StopIteration:
-          break
-
-        if not isinstance(result, reply):
-          yield ctx.rcptCmd(result)
-
-      result = yield ctx.data()
-      if not isinstance(result, reply):
-        #return ...
-        raise StopIteration(ctx.dataCmd(result))
-
-      #return ...
-      raise StopIteration(result)
-
-  @event.continuate
   def __init__(ctx, transport):
     ctx.transport = transport
 
-    yield ctx.reply()
-
-    try:
-      yield ctx.ehloCmd()
-
-    except reply as e:
-      if int(e) not in (500, 502):
-        raise
-
-      yield ctx.heloCmd()
-
-    while True:
-      try:
-        yield ctx.mail()
-
-      except StopIteration:
-        break
-
 class server:
   class __metaclass__(type):
-    __call__ = __call__
+
+    @event.continuate
+    def __call__(ctx, transport):
+      ctx = type.__call__(ctx, transport)
+
+      ctx.greeting()
+
+      #return ...
+      raise StopIteration(ctx.start((yield ctx.command()), ctx.start))
 
   #greeting = lambda ctx: ctx.transport.write(str(reply(220, '{} Service ready'.format(domain))))
   greeting = lambda ctx: ctx.transport.write(str(reply(220, '{0} Service ready'.format(domain))))
@@ -272,9 +280,14 @@ class server:
 
   class mail:
     class __metaclass__(type):
-      __call__ = __call__
-
       __get__ = untwisted.ctxual
+
+      @event.continuate
+      def __call__(ctx):
+        ctx = type.__call__(ctx)
+
+        #return ...
+        raise StopIteration(ctx.start((yield ctx.ctx.command()), ctx.start))
 
     def mail(ctx, mailbox):
       raise NotImplementedError
@@ -417,16 +430,5 @@ class server:
       #return ...
       raise StopIteration(ctx.afterMail(command, state))
 
-    @event.continuate
-    def __init__(ctx):
-      #return ...
-      raise StopIteration(ctx.start((yield ctx.ctx.command()), ctx.start))
-
-  @event.continuate
   def __init__(ctx, transport):
     ctx.transport = transport
-
-    ctx.greeting()
-
-    #return ...
-    raise StopIteration(ctx.start((yield ctx.command()), ctx.start))

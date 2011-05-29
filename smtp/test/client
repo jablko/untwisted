@@ -8,39 +8,39 @@ from untwisted import event, smtp
 def data():
   expect(2)
 
-  class client(smtp.client):
-    class transport:
-      class protocol:
-        dataReceived = event.sequence()
+  class transport:
+    class protocol:
+      dataReceived = event.sequence()
 
-      write = event.sequence()
+    write = event.sequence()
 
-  sample = client.mail.__new__(client.__new__(client).mail)
+  client = type.__call__(smtp.client, transport)
+  sample = type.__call__(client.mail)
   sample.dataCmd('Expect')
 
-  equal((yield client.transport.write.shift()), 'DATA\r\n')
+  equal((yield transport.write.shift()), 'DATA\r\n')
 
-  client.transport.protocol.dataReceived('354\r\n')
+  transport.protocol.dataReceived('354\r\n')
 
-  equal((yield client.transport.write.shift()), 'Expect\r\n.\r\n')
+  equal((yield transport.write.shift()), 'Expect\r\n.\r\n')
 
 @test
 @event.continuate
 def dataCrlf():
   expect(2)
 
-  class client(smtp.client):
-    class transport:
-      class protocol:
-        dataReceived = event.sequence()
+  class transport:
+    class protocol:
+      dataReceived = event.sequence()
 
-      write = event.sequence()
+    write = event.sequence()
 
-  sample = client.mail.__new__(client.__new__(client).mail)
+  client = type.__call__(smtp.client, transport)
+  sample = type.__call__(client.mail)
   sample.dataCmd('Expect\r\n')
 
-  equal((yield client.transport.write.shift()), 'DATA\r\n')
+  equal((yield transport.write.shift()), 'DATA\r\n')
 
-  client.transport.protocol.dataReceived('354\r\n')
+  transport.protocol.dataReceived('354\r\n')
 
-  equal((yield client.transport.write.shift()), 'Expect\r\n.\r\n')
+  equal((yield transport.write.shift()), 'Expect\r\n.\r\n')
