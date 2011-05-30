@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import untwisted
+import functools, untwisted
 from testify import *
 from untwisted import event
 
@@ -11,7 +11,7 @@ def callThenShift():
   sample = event.sequence()
   sample('Expect')
 
-  sample.shift().connect(lambda actual: equal('Expect', actual))
+  sample.shift().connect(functools.partial(equal, 'Expect'))
 
 @test
 def shiftThenCall():
@@ -19,6 +19,6 @@ def shiftThenCall():
 
   sample = event.sequence()
 
-  sample.shift().connect(lambda actual: equal('Expect', actual))
+  sample.shift().connect(functools.partial(equal, 'Expect'))
 
   sample('Expect')

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import exceptions, untwisted
+import exceptions, functools, untwisted
 from testify import *
 from untwisted import event
 
@@ -96,7 +96,7 @@ def connectThenCall():
 
   sample = event.event()
 
-  sample.connect(lambda actual: equal('Expect', actual))
+  sample.connect(functools.partial(equal, 'Expect'))
 
   sample('Expect')
 
@@ -107,7 +107,7 @@ def callThenConnect():
   sample = event.event()
   sample('Expect')
 
-  sample.connect(lambda actual: equal('Expect', actual))
+  sample.connect(functools.partial(equal, 'Expect'))
 
 @test
 def connectThenThrow():
@@ -166,7 +166,7 @@ def propagate():
   sample = event.event()
   sample('Call').connect(lambda *args, **kwds: 'Expect')
 
-  sample.connect(lambda actual: equal('Expect', actual))
+  sample.connect(functools.partial(equal, 'Expect'))
 
 @test
 def propagateException():
@@ -197,7 +197,7 @@ def propagateAndConnect():
 
   @sample.connect
   def _(*args, **kwds):
-    sample.connect(lambda actual: equal('Expect', actual))
+    sample.connect(functools.partial(equal, 'Expect'))
 
     return 'Expect'
 
@@ -208,7 +208,7 @@ def chain():
   sample = event.event()
   event.event()('Expect').connect(sample)
 
-  sample.connect(lambda actual: equal('Expect', actual))
+  sample.connect(functools.partial(equal, 'Expect'))
 
 # Call then chain
 
@@ -239,4 +239,4 @@ def propagateEvent():
   sample = event.event()
   sample('Call').connect(lambda *args, **kwds: event.event()('Expect'))
 
-  sample.connect(lambda actual: equal('Expect', actual))
+  sample.connect(functools.partial(equal, 'Expect'))
