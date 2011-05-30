@@ -4,6 +4,31 @@ import functools, re, untwisted
 from testify import *
 from untwisted import event, rfc5321, smtp
 
+def nowThen(result, now=lambda *args, **kwds: event.event()(*args, **kwds), then=lambda *args, **kwds: event.event()(*args, **kwds)):
+  wrapper = lambda *args, **kwds: callback(*args, **kwds)
+
+  callback = now
+  try:
+    wrapper.throw = now.throw
+
+  except AttributeError:
+    pass
+
+  try:
+    return result.connect(wrapper)
+
+  finally:
+    callback = then
+    try:
+      wrapper.throw = then.throw
+
+    except AttributeError:
+      try:
+        del wrapper.throw
+
+      except AttributeError:
+        pass
+
 @test
 def send():
   expect(6)
@@ -29,40 +54,40 @@ def send():
 
   client(transport)
 
-  callback = functools.partial(ok, False)
-  transport.write.shift().connect(lambda actual: callback(actual))
+  nowThen(transport.write.shift(),
+    functools.partial(ok, False),
+    lambda actual: ok(re.match(rfc5321.ehlo, actual), actual))
 
-  callback = lambda actual: ok(re.match(rfc5321.ehlo, actual), actual)
   transport.protocol.dataReceived('220\r\n')
 
-  callback = functools.partial(ok, False)
-  transport.write.shift().connect(lambda actual: callback(actual))
+  nowThen(transport.write.shift(),
+    functools.partial(ok, False),
+    functools.partial(equal, 'MAIL FROM:<alice@example.com>\r\n'))
 
-  callback = functools.partial(equal, 'MAIL FROM:<alice@example.com>\r\n')
   transport.protocol.dataReceived('250\r\n')
 
-  callback = functools.partial(ok, False)
-  transport.write.shift().connect(lambda actual: callback(actual))
+  nowThen(transport.write.shift(),
+    functools.partial(ok, False),
+    functools.partial(equal, 'RCPT TO:<bob@example.com>\r\n'))
 
-  callback = functools.partial(equal, 'RCPT TO:<bob@example.com>\r\n')
   transport.protocol.dataReceived('250\r\n')
 
-  callback = functools.partial(ok, False)
-  transport.write.shift().connect(lambda actual: callback(actual))
+  nowThen(transport.write.shift(),
+    functools.partial(ok, False),
+    functools.partial(equal, 'DATA\r\n'))
 
-  callback = functools.partial(equal, 'DATA\r\n')
   transport.protocol.dataReceived('250\r\n')
 
-  callback = functools.partial(ok, False)
-  transport.write.shift().connect(lambda actual: callback(actual))
+  nowThen(transport.write.shift(),
+    functools.partial(ok, False),
+    functools.partial(equal, 'Expect\r\n.\r\n'))
 
-  callback = functools.partial(equal, 'Expect\r\n.\r\n')
   transport.protocol.dataReceived('354\r\n')
 
-  callback = functools.partial(ok, False)
-  transport.write.shift().connect(lambda actual: callback(actual))
+  nowThen(transport.write.shift(),
+    functools.partial(ok, False),
+    functools.partial(equal, 'QUIT\r\n'))
 
-  callback = functools.partial(equal, 'QUIT\r\n')
   transport.protocol.dataReceived('250\r\n')
 
   transport.protocol.dataReceived('221\r\n')
