@@ -10,7 +10,7 @@ def join():
   sample = event.join()
   sample(event.event()('Expect'))
 
-  sample.connect(lambda actual: equal(actual, 'Expect'))
+  sample.connect(lambda actual: equal('Expect', actual))
 
 @test
 def joinNonEvent():
@@ -19,4 +19,4 @@ def joinNonEvent():
   sample = event.join()
   sample('Expect')
 
-  sample.connect(lambda actual: equal(actual, 'Expect'))
+  sample.connect(lambda actual: equal('Expect', actual))

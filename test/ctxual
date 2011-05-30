@@ -10,5 +10,5 @@ class outer:
 
 sample = outer()
 
-equal(sample.inner.ctx, sample)
+equal(sample, sample.inner.ctx)
 equal(sample.inner, sample.inner)

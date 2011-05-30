@@ -38,31 +38,31 @@ def send():
   callback = functools.partial(ok, False)
   transport.write.shift().connect(lambda actual: callback(actual))
 
-  callback = lambda actual: equal(actual, 'MAIL FROM:<alice@example.com>\r\n')
+  callback = lambda actual: equal('MAIL FROM:<alice@example.com>\r\n', actual)
   transport.protocol.dataReceived('250\r\n')
 
   callback = functools.partial(ok, False)
   transport.write.shift().connect(lambda actual: callback(actual))
 
-  callback = lambda actual: equal(actual, 'RCPT TO:<bob@example.com>\r\n')
+  callback = lambda actual: equal('RCPT TO:<bob@example.com>\r\n', actual)
   transport.protocol.dataReceived('250\r\n')
 
   callback = functools.partial(ok, False)
   transport.write.shift().connect(lambda actual: callback(actual))
 
-  callback = lambda actual: equal(actual, 'DATA\r\n')
+  callback = lambda actual: equal('DATA\r\n', actual)
   transport.protocol.dataReceived('250\r\n')
 
   callback = functools.partial(ok, False)
   transport.write.shift().connect(lambda actual: callback(actual))
 
-  callback = lambda actual: equal(actual, 'Expect\r\n.\r\n')
+  callback = lambda actual: equal('Expect\r\n.\r\n', actual)
   transport.protocol.dataReceived('354\r\n')
 
   callback = functools.partial(ok, False)
   transport.write.shift().connect(lambda actual: callback(actual))
 
-  callback = lambda actual: equal(actual, 'QUIT\r\n')
+  callback = lambda actual: equal('QUIT\r\n', actual)
   transport.protocol.dataReceived('250\r\n')
 
   transport.protocol.dataReceived('221\r\n')

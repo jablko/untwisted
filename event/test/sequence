@@ -11,7 +11,7 @@ def callThenShift():
   sample = event.sequence()
   sample('Expect')
 
-  sample.shift().connect(lambda actual: equal(actual, 'Expect'))
+  sample.shift().connect(lambda actual: equal('Expect', actual))
 
 @test
 def shiftThenCall():
@@ -19,6 +19,6 @@ def shiftThenCall():
 
   sample = event.sequence()
 
-  sample.shift().connect(lambda actual: equal(actual, 'Expect'))
+  sample.shift().connect(lambda actual: equal('Expect', actual))
 
   sample('Expect')

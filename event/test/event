@@ -9,15 +9,15 @@ class Exception(exceptions.Exception):
 
 # Connect
 sample = event.event()
-equal(sample.connect('Connect'), sample)
+equal(sample, sample.connect('Connect'))
 
 # Call
 sample = event.event()
-equal(sample('Call'), sample)
+equal(sample, sample('Call'))
 
 # Throw
 sample = event.event()
-equal(sample.throw(Exception('Throw')), sample)
+equal(sample, sample.throw(Exception('Throw')))
 
 # Suppress traceback
 
@@ -96,7 +96,7 @@ def connectThenCall():
 
   sample = event.event()
 
-  sample.connect(lambda actual: equal(actual, 'Expect'))
+  sample.connect(lambda actual: equal('Expect', actual))
 
   sample('Expect')
 
@@ -107,7 +107,7 @@ def callThenConnect():
   sample = event.event()
   sample('Expect')
 
-  sample.connect(lambda actual: equal(actual, 'Expect'))
+  sample.connect(lambda actual: equal('Expect', actual))
 
 @test
 def connectThenThrow():
@@ -166,7 +166,7 @@ def propagate():
   sample = event.event()
   sample('Call').connect(lambda *args, **kwds: 'Expect')
 
-  sample.connect(lambda actual: equal(actual, 'Expect'))
+  sample.connect(lambda actual: equal('Expect', actual))
 
 @test
 def propagateException():
@@ -197,7 +197,7 @@ def propagateAndConnect():
 
   @sample.connect
   def _(*args, **kwds):
-    sample.connect(lambda actual: equal(actual, 'Expect'))
+    sample.connect(lambda actual: equal('Expect', actual))
 
     return 'Expect'
 
@@ -208,7 +208,7 @@ def chain():
   sample = event.event()
   event.event()('Expect').connect(sample)
 
-  sample.connect(lambda actual: equal(actual, 'Expect'))
+  sample.connect(lambda actual: equal('Expect', actual))
 
 # Call then chain
 
@@ -239,4 +239,4 @@ def propagateEvent():
   sample = event.event()
   sample('Call').connect(lambda *args, **kwds: event.event()('Expect'))
 
-  sample.connect(lambda actual: equal(actual, 'Expect'))
+  sample.connect(lambda actual: equal('Expect', actual))

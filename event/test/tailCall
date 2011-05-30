@@ -14,7 +14,7 @@ def propagate():
 
   sample(0)
 
-  sample.connect(lambda actual: equal(actual, sys.getrecursionlimit()))
+  sample.connect(lambda actual: equal(sys.getrecursionlimit(), actual))
 
 @test
 def propagageAndConnect():
@@ -30,7 +30,7 @@ def propagageAndConnect():
 
   sample.connect(callback)(0)
 
-  sample.connect(lambda actual: equal(actual, sys.getrecursionlimit()))
+  sample.connect(lambda actual: equal(sys.getrecursionlimit(), actual))
 
 @test
 def chain():
@@ -48,7 +48,7 @@ def chain():
 
   sample(0)
 
-  next.connect(lambda actual: equal(actual, sys.getrecursionlimit()))
+  next.connect(lambda actual: equal(sys.getrecursionlimit(), actual))
 
 @test
 def propagateEvent():
@@ -60,7 +60,7 @@ def propagateEvent():
 
   sample(0)
 
-  sample.connect(lambda actual: equal(actual, sys.getrecursionlimit()))
+  sample.connect(lambda actual: equal(sys.getrecursionlimit(), actual))
 
 @test
 @event.continuate
@@ -73,4 +73,4 @@ def continuate():
 
     count += 1
 
-  equal(count, sys.getrecursionlimit())
+  equal(sys.getrecursionlimit(), count)

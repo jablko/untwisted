@@ -36,14 +36,14 @@ def client():
 
   transport.protocol.dataReceived('250-example.com\r\n250 PIPELINING\r\n')
 
-  equal((yield transport.write.shift()), 'MAIL FROM:<alice@example.com>\r\n')
-  equal((yield transport.write.shift()), 'RCPT TO:<bob@example.com>\r\n')
-  equal((yield transport.write.shift()), 'DATA\r\n')
+  equal('MAIL FROM:<alice@example.com>\r\n', (yield transport.write.shift()))
+  equal('RCPT TO:<bob@example.com>\r\n', (yield transport.write.shift()))
+  equal('DATA\r\n', (yield transport.write.shift()))
 
   transport.protocol.dataReceived('250\r\n250\r\n354\r\n')
 
-  equal((yield transport.write.shift()), 'Expect\r\n.\r\n')
-  equal((yield transport.write.shift()), 'QUIT\r\n')
+  equal('Expect\r\n.\r\n', (yield transport.write.shift()))
+  equal('QUIT\r\n', (yield transport.write.shift()))
 
   transport.protocol.dataReceived('250\r\n221\r\n')
 
@@ -57,11 +57,11 @@ def server():
     @untwisted.each
     def mail():
       class sample(smtp.server.mail):
-        mail = staticmethod(untwisted.each(lambda: equal((yield), 'alice@example.com')))
+        mail = staticmethod(untwisted.each(lambda: equal('alice@example.com', (yield))))
 
-        recipient = staticmethod(untwisted.each(lambda: equal((yield), 'bob@example.com')))
+        recipient = staticmethod(untwisted.each(lambda: equal('bob@example.com', (yield))))
 
-        data = staticmethod(untwisted.each(lambda: equal((yield), 'Expect')))
+        data = staticmethod(untwisted.each(lambda: equal('Expect', (yield))))
 
       # QUIT
       yield smtp.server.mail.__get__((yield sample.__get__((yield))()))()
@@ -84,11 +84,11 @@ def server():
 
   transport.protocol.dataReceived('MAIL FROM:<alice@example.com>\r\nRCPT TO:<bob@example.com>\r\nDATA\r\n')
 
-  equal((yield transport.write.shift()), '250 Requested mail action okay, completed\r\n')
-  equal((yield transport.write.shift()), '250 Requested mail action okay, completed\r\n')
-  equal((yield transport.write.shift()), '354 Start mail input; end with <CRLF>.<CRLF>\r\n')
+  equal('250 Requested mail action okay, completed\r\n', (yield transport.write.shift()))
+  equal('250 Requested mail action okay, completed\r\n', (yield transport.write.shift()))
+  equal('354 Start mail input; end with <CRLF>.<CRLF>\r\n', (yield transport.write.shift()))
 
   transport.protocol.dataReceived('Expect\r\n.\r\nQUIT\r\n')
 
-  equal((yield transport.write.shift()), '250 Requested mail action okay, completed\r\n')
-  equal((yield transport.write.shift()), '221 Service closing transmission channel\r\n')
+  equal('250 Requested mail action okay, completed\r\n', (yield transport.write.shift()))
+  equal('221 Service closing transmission channel\r\n', (yield transport.write.shift()))

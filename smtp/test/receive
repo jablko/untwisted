@@ -14,11 +14,11 @@ def receive():
     @untwisted.each
     def mail():
       class sample(smtp.server.mail):
-        mail = staticmethod(untwisted.each(lambda: equal((yield), 'alice@example.com')))
+        mail = staticmethod(untwisted.each(lambda: equal('alice@example.com', (yield))))
 
-        recipient = staticmethod(untwisted.each(lambda: equal((yield), 'bob@example.com')))
+        recipient = staticmethod(untwisted.each(lambda: equal('bob@example.com', (yield))))
 
-        data = staticmethod(untwisted.each(lambda: equal((yield), 'Expect')))
+        data = staticmethod(untwisted.each(lambda: equal('Expect', (yield))))
 
       # QUIT
       yield smtp.server.mail.__get__((yield sample.__get__((yield))()))()
@@ -41,20 +41,20 @@ def receive():
 
   transport.protocol.dataReceived('MAIL FROM:<alice@example.com>\r\n')
 
-  equal((yield transport.write.shift()), '250 Requested mail action okay, completed\r\n')
+  equal('250 Requested mail action okay, completed\r\n', (yield transport.write.shift()))
 
   transport.protocol.dataReceived('RCPT TO:<bob@example.com>\r\n')
 
-  equal((yield transport.write.shift()), '250 Requested mail action okay, completed\r\n')
+  equal('250 Requested mail action okay, completed\r\n', (yield transport.write.shift()))
 
   transport.protocol.dataReceived('DATA\r\n')
 
-  equal((yield transport.write.shift()), '354 Start mail input; end with <CRLF>.<CRLF>\r\n')
+  equal('354 Start mail input; end with <CRLF>.<CRLF>\r\n', (yield transport.write.shift()))
 
   transport.protocol.dataReceived('Expect\r\n.\r\n')
 
-  equal((yield transport.write.shift()), '250 Requested mail action okay, completed\r\n')
+  equal('250 Requested mail action okay, completed\r\n', (yield transport.write.shift()))
 
   transport.protocol.dataReceived('QUIT\r\n')
 
-  equal((yield transport.write.shift()), '221 Service closing transmission channel\r\n')
+  equal('221 Service closing transmission channel\r\n', (yield transport.write.shift()))

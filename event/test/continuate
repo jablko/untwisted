@@ -12,14 +12,14 @@ class Exception(exceptions.Exception):
 def continuate():
   expect(1)
 
-  equal((yield event.event()('Expect')), 'Expect')
+  equal('Expect', (yield event.event()('Expect')))
 
 @test
 @event.continuate
 def continuateNonEvent():
   expect(1)
 
-  equal((yield 'Expect'), 'Expect')
+  equal('Expect', (yield 'Expect'))
 
 @test
 def propagateException():
@@ -52,7 +52,7 @@ def propagateStopIteration():
 
     yield
 
-  sample.connect(lambda *args, **kwds: (equal(args, ('First', 'Second', 'Third')), equal(kwds, { 'True': True, 'False': False })))
+  sample.connect(lambda *args, **kwds: (equal(('First', 'Second', 'Third'), args), equal({ 'True': True, 'False': False }, kwds)))
 
 @test
 def propagateStopIterationEvent():
@@ -65,4 +65,4 @@ def propagateStopIterationEvent():
 
     yield
 
-  sample.connect(lambda *args, **kwds: (equal(args, ('First', 'Second', 'Third')), equal(kwds, { 'True': True, 'False': False })))
+  sample.connect(lambda *args, **kwds: (equal(('First', 'Second', 'Third'), args), equal({ 'True': True, 'False': False }, kwds)))

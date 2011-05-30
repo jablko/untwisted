@@ -18,4 +18,4 @@ def command():
   server.command()
   transport.protocol.dataReceived('IGNORE\r\nEXPECT\r\n')
 
-  equal(str((yield server.command())), 'EXPECT\r\n')
+  equal('EXPECT\r\n', str((yield server.command())))

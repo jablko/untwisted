@@ -19,11 +19,11 @@ def data():
   sample = type.__call__(client.mail)
   sample.dataCmd('Expect')
 
-  equal((yield transport.write.shift()), 'DATA\r\n')
+  equal('DATA\r\n', (yield transport.write.shift()))
 
   transport.protocol.dataReceived('354\r\n')
 
-  equal((yield transport.write.shift()), 'Expect\r\n.\r\n')
+  equal('Expect\r\n.\r\n', (yield transport.write.shift()))
 
 @test
 @event.continuate
@@ -40,11 +40,11 @@ def dataCrlf():
   sample = type.__call__(client.mail)
   sample.dataCmd('Expect\r\n')
 
-  equal((yield transport.write.shift()), 'DATA\r\n')
+  equal('DATA\r\n', (yield transport.write.shift()))
 
   transport.protocol.dataReceived('354\r\n')
 
-  equal((yield transport.write.shift()), 'Expect\r\n.\r\n')
+  equal('Expect\r\n.\r\n', (yield transport.write.shift()))
 
 @test
 @event.continuate
@@ -61,4 +61,4 @@ def reply():
   client.reply(untwisted.wildcard)
   transport.protocol.dataReceived('456 Ignore\r\n234 Expect\r\n')
 
-  equal(str((yield client.reply())), '234 Expect\r\n')
+  equal('234 Expect\r\n', str((yield client.reply())))

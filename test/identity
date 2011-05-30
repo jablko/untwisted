@@ -3,5 +3,5 @@
 import untwisted
 from testify import *
 
-equal(untwisted.identity('Expect'), 'Expect')
-equal(untwisted.identity('First', 'Second', 'Third'), ('First', 'Second', 'Third'))
+equal('Expect', untwisted.identity('Expect'))
+equal(('First', 'Second', 'Third'), untwisted.identity('First', 'Second', 'Third'))

@@ -5,20 +5,20 @@ from untwisted import smtp
 
 sample = smtp.reply(123, 'First', 'Second', 'Third')
 
-equal(int(sample), 123)
-equal(str(sample), '123-First\r\n123-Second\r\n123 Third\r\n')
+equal(123, int(sample))
+equal('123-First\r\n123-Second\r\n123 Third\r\n', str(sample))
 
 sample = smtp.command('VERB')
 
-equal(sample.verb, 'VERB')
-equal(str(sample), 'VERB\r\n')
+equal('VERB', sample.verb)
+equal('VERB\r\n', str(sample))
 
 sample = smtp.command('VERB Text')
 
-equal(sample.verb, 'VERB')
-equal(str(sample), 'VERB Text\r\n')
+equal('VERB', sample.verb)
+equal('VERB Text\r\n', str(sample))
 
 sample = smtp.command('VERB', 'Text')
 
-equal(sample.verb, 'VERB')
-equal(str(sample), 'VERB Text\r\n')
+equal('VERB', sample.verb)
+equal('VERB Text\r\n', str(sample))
