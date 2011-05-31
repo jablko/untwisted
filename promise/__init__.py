@@ -11,6 +11,11 @@ import exceptions, functools, sys, traceback, untwisted
 # twice.  By default .throw() raises the exception?  It calls .throw() on
 # callbacks passed to .then()?
 class promise:
+  trigger = False
+
+  def __init__(ctx):
+    ctx.callback = []
+
   def then(ctx, callback):
     ctx.callback.append(callback)
 
@@ -131,10 +136,6 @@ class promise:
 
     return ctx
 
-  def __init__(ctx):
-    ctx.callback = []
-    ctx.trigger = False
-
   def throw(ctx, *args, **kwds):
 
     # Already triggered
@@ -168,6 +169,10 @@ class promise:
 # callback without maintaining two references, one to .push() and one to the
 # sequence
 class sequence:
+  def __init__(ctx):
+    ctx.consume = []
+    ctx.produce = []
+
   def __call__(ctx, *args, **kwds):
     try:
       itm = ctx.consume.pop(0)
@@ -179,10 +184,6 @@ class sequence:
     itm(*args, **kwds)
 
     return ctx
-
-  def __init__(ctx):
-    ctx.consume = []
-    ctx.produce = []
 
   def shift(ctx):
     try:

@@ -76,6 +76,11 @@ class client:
       #return ...
       raise StopIteration(ctx.quitCmd())
 
+  read = ''
+
+  def __init__(ctx, transport):
+    ctx.transport = transport
+
   # Since some servers may generate other replies under special circumstances,
   # and to allow for future extension, SMTP clients SHOULD, when possible,
   # interpret only the first digit of the reply and MUST be prepared to deal
@@ -207,11 +212,6 @@ class client:
 
     return ctx.reply()
 
-  def __init__(ctx, transport):
-    ctx.transport = transport
-
-    ctx.read = ''
-
 class pipeline(client):
   class __metaclass__(client.__metaclass__):
 
@@ -319,6 +319,11 @@ class server:
 
       #return ...
       raise StopIteration(ctx.start((yield ctx.command()), ctx.start))
+
+  read = ''
+
+  def __init__(ctx, transport):
+    ctx.transport = transport
 
   #greeting = lambda ctx: ctx.transport.write(str(reply(220, '{} Service ready'.format(domain))))
   greeting = lambda ctx: ctx.transport.write(str(reply(220, '{0} Service ready'.format(domain))))
@@ -532,8 +537,3 @@ class server:
 
       #return ...
       raise StopIteration(ctx.afterMail(command, state))
-
-  def __init__(ctx, transport):
-    ctx.transport = transport
-
-    ctx.read = ''
