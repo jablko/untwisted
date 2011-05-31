@@ -213,100 +213,52 @@ class client:
     return ctx.reply()
 
 class pipeline(client):
-  class __metaclass__(client.__metaclass__):
-
-    @promise.continuate
-    def __call__(ctx, transport):
-      ctx = type.__call__(ctx, transport)
-
-      # Greeting
-      yield ctx.reply()
-
-      try:
-        yield ctx.ehloCmd()
-
-      except reply as e:
-        if int(e) not in (500, 502):
-          raise
-
-        yield ctx.heloCmd()
-
-      ctx.count = 0
-      while True:
-        try:
-          yield ctx.mail()
-
-        except StopIteration:
-          break
-
-        # Mail data
-        ctx.count = 1
-
-      transport.write(str(command('QUIT')))
-
-      # Mail data
-      yield ctx.reply()
-
-      #return ...
-      raise StopIteration(ctx.reply())
+  count = 0
 
   class mail(client.mail):
-    class __metaclass__(client.mail.__metaclass__):
+    def mailCmd(ctx, mailbox):
+      #ctx.ctx.transport.write(str(command('MAIL FROM:<{}>'.format(mailbox))))
+      ctx.ctx.transport.write(str(command('MAIL FROM:<{0}>'.format(mailbox))))
 
-      @promise.continuate
-      def __init__(ctx):
-        ctx = type.__call__(ctx)
+      ctx.ctx.count += 1
 
-        result = yield ctx.mail()
-        if not isinstance(result, reply):
-          #ctx.ctx.transport.write(str(command('MAIL FROM:<{}>'.format(result))))
-          ctx.ctx.transport.write(str(command('MAIL FROM:<{0}>'.format(result))))
+    def rcptCmd(ctx, mailbox):
+      #ctx.ctx.transport.write(str(command('RCPT TO:<{}>'.format(mailbox))))
+      ctx.ctx.transport.write(str(command('RCPT TO:<{0}>'.format(mailbox))))
 
-          ctx.ctx.count += 1
+      ctx.ctx.count += 1
 
-        result = yield ctx.recipient()
-        if not isinstance(result, reply):
-          #ctx.ctx.transport.write(str(command('RCPT TO:<{}>'.format(result))))
-          ctx.ctx.transport.write(str(command('RCPT TO:<{0}>'.format(result))))
+    @promise.continuate
+    def dataCmd(ctx, data):
+      ctx.ctx.transport.write(str(command('DATA')))
 
-          ctx.ctx.count += 1
+      for _ in range(ctx.ctx.count):
+        yield ctx.ctx.reply()
 
-        while True:
-          try:
-            result = yield ctx.recipient()
+      yield ctx.ctx.reply(range(300, 400))
 
-          except StopIteration:
-            break
+      data = re.sub('(^|\r\n)\.', '\\1..', data)
 
-          if not isinstance(result, reply):
-            #ctx.ctx.transport.write(str(command('RCPT TO:<{}>'.format(result))))
-            ctx.ctx.transport.write(str(command('RCPT TO:<{0}>'.format(result))))
+      if '\r\n' != data[-2:]:
+        data += '\r\n'
 
-            ctx.ctx.count += 1
+      data += '.\r\n'
 
-        result = yield ctx.data()
-        if not isinstance(result, reply):
-          ctx.ctx.transport.write(str(command('DATA')))
+      ctx.ctx.transport.write(data)
 
-          for _ in range(ctx.ctx.count):
-            yield ctx.ctx.reply()
+      ctx.ctx.count = 1
 
-          yield ctx.ctx.reply(range(300, 400))
+  @promise.continuate
+  def quitCmd(ctx):
+    ctx.transport.write(str(command('QUIT')))
 
-          result = re.sub('(^|\r\n)\.', '\\1..', result)
+    for _ in range(ctx.count):
+      yield ctx.reply()
 
-          if '\r\n' != result[-2:]:
-            result += '\r\n'
+    ctx.count = 0
 
-          result += '.\r\n'
-
-          ctx.ctx.transport.write(result)
-
-          #return ...
-          raise StopIteration(None)
-
-        #return ...
-        raise StopIteration(result)
+    #return ...
+    raise StopIteration(ctx.reply())
 
 class server:
   class __metaclass__(type):
