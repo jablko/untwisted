@@ -26,3 +26,23 @@ def then():
     functools.partial(equal, 'Expect'))
 
   sample('Expect')
+
+@test
+def noNow():
+  expect(1)
+
+  sample = event.event()
+  sample('Expect')
+  event.nowThen(sample)
+
+  sample.connect(functools.partial(equal, 'Expect'))
+
+@test
+def noThen():
+  expect(1)
+
+  sample = event.event()
+  event.nowThen(sample)
+  sample('Expect')
+
+  sample.connect(functools.partial(equal, 'Expect'))
