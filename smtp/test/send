@@ -29,40 +29,34 @@ def send():
 
   client(transport)
 
-  event.nowThen(transport.write.shift(),
-    functools.partial(ok, False),
+  event.nowThen((event.nowThen(transport.write.shift(),
+        functools.partial(ok, False)),
+      transport.protocol.dataReceived('220\r\n'))[0],
     lambda actual: ok(re.match(rfc5321.ehlo, actual), actual))
 
-  transport.protocol.dataReceived('220\r\n')
-
-  event.nowThen(transport.write.shift(),
-    functools.partial(ok, False),
+  event.nowThen((event.nowThen(transport.write.shift(),
+        functools.partial(ok, False)),
+      transport.protocol.dataReceived('250\r\n'))[0],
     functools.partial(equal, 'MAIL FROM:<alice@example.com>\r\n'))
 
-  transport.protocol.dataReceived('250\r\n')
-
-  event.nowThen(transport.write.shift(),
-    functools.partial(ok, False),
+  event.nowThen((event.nowThen(transport.write.shift(),
+        functools.partial(ok, False)),
+      transport.protocol.dataReceived('250\r\n'))[0],
     functools.partial(equal, 'RCPT TO:<bob@example.com>\r\n'))
 
-  transport.protocol.dataReceived('250\r\n')
-
-  event.nowThen(transport.write.shift(),
-    functools.partial(ok, False),
+  event.nowThen((event.nowThen(transport.write.shift(),
+        functools.partial(ok, False)),
+      transport.protocol.dataReceived('250\r\n'))[0],
     functools.partial(equal, 'DATA\r\n'))
 
-  transport.protocol.dataReceived('250\r\n')
-
-  event.nowThen(transport.write.shift(),
-    functools.partial(ok, False),
+  event.nowThen((event.nowThen(transport.write.shift(),
+        functools.partial(ok, False)),
+      transport.protocol.dataReceived('354\r\n'))[0],
     functools.partial(equal, 'Expect\r\n.\r\n'))
 
-  transport.protocol.dataReceived('354\r\n')
-
-  event.nowThen(transport.write.shift(),
-    functools.partial(ok, False),
+  event.nowThen((event.nowThen(transport.write.shift(),
+        functools.partial(ok, False)),
+      transport.protocol.dataReceived('250\r\n'))[0],
     functools.partial(equal, 'QUIT\r\n'))
-
-  transport.protocol.dataReceived('250\r\n')
 
   transport.protocol.dataReceived('221\r\n')
