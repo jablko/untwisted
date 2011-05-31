@@ -376,8 +376,10 @@ class server:
       raise StopIteration(state((yield ctx.command()), state))
 
     if 'QUIT' == command.verb:
+      ctx.transport.write(str(reply(221)))
+
       #return ...
-      raise StopIteration(ctx.transport.write(str(reply(221))))
+      raise StopIteration(ctx.transport.loseConnection())
 
     # TODO Log?
     ctx.transport.write(str(reply(500)))

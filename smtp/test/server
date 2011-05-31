@@ -1,7 +1,23 @@
 #!/usr/bin/env python
 
+import functools
 from testify import *
 from untwisted import promise, smtp
+
+@test
+@promise.continuate
+def quit():
+  expect(2)
+
+  class transport:
+    loseConnection = functools.partial(ok, True)
+
+    write = promise.sequence()
+
+  server = type.__call__(smtp.server, transport)
+  server.start(smtp.command('QUIT'), None)
+
+  equal('221 Service closing transmission channel\r\n', (yield transport.write.shift()))
 
 @test
 @promise.continuate

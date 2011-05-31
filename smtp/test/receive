@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-import re, untwisted
+import functools, re, untwisted
 from testify import *
 from untwisted import promise, rfc5234, rfc5321, smtp
 
 @test
 @promise.continuate
 def receive():
-  expect(10)
+  expect(11)
 
   class server(smtp.server):
 
@@ -24,6 +24,8 @@ def receive():
       yield smtp.server.mail.__get__((yield sample.__get__((yield))()))()
 
   class transport:
+    loseConnection = functools.partial(ok, True)
+
     class protocol:
       dataReceived = promise.sequence()
 

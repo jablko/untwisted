@@ -58,7 +58,7 @@ def client():
 @test
 @promise.continuate
 def server():
-  expect(10)
+  expect(11)
 
   class server(smtp.server):
 
@@ -75,6 +75,8 @@ def server():
       yield smtp.server.mail.__get__((yield sample.__get__((yield))()))()
 
   class transport:
+    loseConnection = functools.partial(ok, True)
+
     class protocol:
       dataReceived = promise.sequence()
 
