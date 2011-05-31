@@ -27,7 +27,6 @@ def then():
 
   sample('Expect')
 
-@test
 def noNow():
   expect(1)
 
@@ -37,7 +36,9 @@ def noNow():
 
   sample.connect(functools.partial(equal, 'Expect'))
 
-@test
+test(noNow)
+test(noNow)
+
 def noThen():
   expect(1)
 
@@ -46,3 +47,6 @@ def noThen():
   sample('Expect')
 
   sample.connect(functools.partial(equal, 'Expect'))
+
+test(noThen)
+test(noThen)
