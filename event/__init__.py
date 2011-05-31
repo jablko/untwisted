@@ -320,3 +320,28 @@ def continuate(cbl):
     return result(None)
 
   return wrapper
+
+def nowThen(result, now=lambda *args, **kwds: event()(*args, **kwds), then=lambda *args, **kwds: event()(*args, **kwds)):
+  wrapper = lambda *args, **kwds: callback(*args, **kwds)
+
+  callback = now
+  try:
+    wrapper.throw = now.throw
+
+  except AttributeError:
+    pass
+
+  try:
+    return result.connect(wrapper)
+
+  finally:
+    callback = then
+    try:
+      wrapper.throw = then.throw
+
+    except AttributeError:
+      try:
+        del wrapper.throw
+
+      except AttributeError:
+        pass

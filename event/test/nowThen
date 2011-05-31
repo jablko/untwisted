@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+
+import functools
+from testify import *
+from untwisted import event
+
+@test
+def now():
+  expect(1)
+
+  sample = event.event()
+  sample('Expect')
+
+  event.nowThen(sample,
+    functools.partial(equal, 'Expect'),
+    functools.partial(ok, False))
+
+@test
+def then():
+  expect(1)
+
+  sample = event.event()
+
+  event.nowThen(sample,
+    functools.partial(ok, False),
+    functools.partial(equal, 'Expect'))
+
+  sample('Expect')

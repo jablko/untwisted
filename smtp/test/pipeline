@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
-import re, untwisted
+import functools, re, untwisted
 from testify import *
 from untwisted import event, rfc5234, rfc5321, smtp
 
 @test
-@event.continuate
 def client():
   expect(6)
 
@@ -29,21 +28,36 @@ def client():
     write = event.sequence()
 
   client(transport)
+
+  event.nowThen(transport.write.shift(),
+    functools.partial(ok, False),
+    lambda actual: ok(re.match(rfc5321.ehlo, actual), actual))
+
   transport.protocol.dataReceived('220\r\n')
 
-  actual = yield transport.write.shift()
-  ok(re.match(rfc5321.ehlo, actual), actual)
+  event.nowThen(transport.write.shift(),
+    functools.partial(ok, False),
+    functools.partial(equal, 'MAIL FROM:<alice@example.com>\r\n'))
+
+  event.nowThen(transport.write.shift(),
+    functools.partial(ok, False),
+    functools.partial(equal, 'RCPT TO:<bob@example.com>\r\n'))
+
+  event.nowThen(transport.write.shift(),
+    functools.partial(ok, False),
+    functools.partial(equal, 'DATA\r\n'))
 
   transport.protocol.dataReceived('250-example.com\r\n250 PIPELINING\r\n')
 
-  equal('MAIL FROM:<alice@example.com>\r\n', (yield transport.write.shift()))
-  equal('RCPT TO:<bob@example.com>\r\n', (yield transport.write.shift()))
-  equal('DATA\r\n', (yield transport.write.shift()))
+  event.nowThen(transport.write.shift(),
+    functools.partial(ok, False),
+    functools.partial(equal, 'Expect\r\n.\r\n'))
+
+  event.nowThen(transport.write.shift(),
+    functools.partial(ok, False),
+    functools.partial(equal, 'QUIT\r\n'))
 
   transport.protocol.dataReceived('250\r\n250\r\n354\r\n')
-
-  equal('Expect\r\n.\r\n', (yield transport.write.shift()))
-  equal('QUIT\r\n', (yield transport.write.shift()))
 
   transport.protocol.dataReceived('250\r\n221\r\n')
 
