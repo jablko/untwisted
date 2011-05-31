@@ -291,11 +291,7 @@ def continuate(cbl):
           itm = gnr.send(*args, **kwds)
 
         except exceptions.StopIteration as e:
-          try:
-            return join()(*e.args, **e.kwds)
-
-          except AttributeError:
-            return join()(*e.args)
+          return join()(*e.args if len(e.args) else (None,), **getattr(e, 'kwds', {}))
 
         result.callback.insert(0, ctx)
 
@@ -306,11 +302,7 @@ def continuate(cbl):
           itm = gnr.throw(*args, **kwds)
 
         except exceptions.StopIteration as e:
-          try:
-            return join()(*e.args, **e.kwds)
-
-          except AttributeError:
-            return join()(*e.args)
+          return join()(*e.args if len(e.args) else (None,), **getattr(e, 'kwds', {}))
 
         result.callback.insert(0, ctx)
 

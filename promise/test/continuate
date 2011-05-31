@@ -42,27 +42,43 @@ def propagateException():
       ok(True)
 
 @test
-def propagateStopIteration():
+def stopIteration():
   expect(2)
 
   @untwisted.call
   @promise.continuate
   def sample():
-    raise promise.StopIteration('First', 'Second', 'Third', True=True, False=False)
+    True or (yield)
 
-    yield
-
-  sample.then(lambda *args, **kwds: (equal(('First', 'Second', 'Third'), args), equal({ 'True': True, 'False': False }, kwds)))
+  @sample.then
+  def _(*args, **kwds):
+    equal((None,), args)
+    equal({}, kwds)
 
 @test
-def propagateStopIterationPromise():
+def stopIterationArgs():
   expect(2)
 
   @untwisted.call
   @promise.continuate
   def sample():
-    raise promise.StopIteration(promise.promise()('First'), promise.promise()('Second'), promise.promise()('Third'), True=True, False=False)
+    raise promise.StopIteration('First', 'Second', 'Third', True=True, False=False) or (yield)
 
-    yield
+  @sample.then
+  def _(*args, **kwds):
+    equal(('First', 'Second', 'Third'), args)
+    equal({ 'True': True, 'False': False }, kwds)
 
-  sample.then(lambda *args, **kwds: (equal(('First', 'Second', 'Third'), args), equal({ 'True': True, 'False': False }, kwds)))
+@test
+def stopIterationPromise():
+  expect(2)
+
+  @untwisted.call
+  @promise.continuate
+  def sample():
+    raise promise.StopIteration(promise.promise()('First'), promise.promise()('Second'), promise.promise()('Third'), True=True, False=False) or (yield)
+
+  @sample.then
+  def _(*args, **kwds):
+    equal(('First', 'Second', 'Third'), args)
+    equal({ 'True': True, 'False': False }, kwds)
