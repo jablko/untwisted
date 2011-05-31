@@ -3,7 +3,7 @@
 import exceptions, gc, re, sys, untwisted
 from StringIO import StringIO
 from testify import *
-from untwisted import event
+from untwisted import promise
 
 class Exception(exceptions.Exception):
   pass
@@ -14,7 +14,7 @@ stderr = sys.stderr
 sys.stderr = StringIO()
 
 try:
-  event.event().throw(Exception('Expect'))
+  promise.promise().throw(Exception('Expect'))
 
 finally:
   stderr, sys.stderr = sys.stderr, stderr
@@ -23,7 +23,7 @@ finally:
 ok(re.match('''(?:  File ".+", line \d+, in .+
     .+
 )+  File "{0}", line \d+, in <module>
-    event.event\(\).throw\(Exception\('Expect'\)\)
+    promise.promise\(\).throw\(Exception\('Expect'\)\)
 Traceback \(most recent call last\):
 (?:  File ".+", line \d+, in .+
     .+
@@ -40,7 +40,7 @@ stderr = sys.stderr
 sys.stderr = StringIO()
 
 try:
-  event.event()('Call').connect(callback)
+  promise.promise()('Call').then(callback)
 
   gc.collect()
 
@@ -70,7 +70,7 @@ stderr = sys.stderr
 sys.stderr = StringIO()
 
 try:
-  event.event().throw(*sys.exc_info())
+  promise.promise().throw(*sys.exc_info())
 
 finally:
   stderr, sys.stderr = sys.stderr, stderr
@@ -96,7 +96,7 @@ stderr = sys.stderr
 sys.stderr = StringIO()
 
 try:
-  event.event().throw()
+  promise.promise().throw()
 
 finally:
   stderr, sys.stderr = sys.stderr, stderr
@@ -123,7 +123,7 @@ stderr = sys.stderr
 sys.stderr = StringIO()
 
 try:
-  event.event().throw(Exception('Throw')).connect(callback)
+  promise.promise().throw(Exception('Throw')).then(callback)
 
   gc.collect()
 
@@ -147,8 +147,8 @@ Exception: Expect
 def callback(*args, **kwds):
   raise Exception('Expect')
 
-sample = event.event()
-sample('Call').connect(callback)
+sample = promise.promise()
+sample('Call').then(callback)
 
 try:
   raise Exception('Intervene')
@@ -160,7 +160,7 @@ stderr = sys.stderr
 sys.stderr = StringIO()
 
 try:
-  sample.connect(untwisted.head(lambda: (yield)))
+  sample.then(untwisted.head(lambda: (yield)))
 
   del sample
 
@@ -182,7 +182,7 @@ Exception: Expect
 
 # Chain with intervene
 
-sample = event.event()
+sample = promise.promise()
 
 stderr = sys.stderr
 sys.stderr = StringIO()
@@ -198,7 +198,7 @@ try:
   except Exception:
     pass
 
-  event.event()('Call').connect(lambda *args, **kwds: sample)
+  promise.promise()('Call').then(lambda *args, **kwds: sample)
 
 finally:
   stderr, sys.stderr = sys.stderr, stderr

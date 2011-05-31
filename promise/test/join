@@ -1,0 +1,23 @@
+#!/usr/bin/env python
+
+import functools
+from testify import *
+from untwisted import promise
+
+@test
+def join():
+  expect(1)
+
+  sample = promise.join()
+  sample(promise.promise()('Expect'))
+
+  sample.then(functools.partial(equal, 'Expect'))
+
+@test
+def joinNonPromise():
+  expect(1)
+
+  sample = promise.join()
+  sample('Expect')
+
+  sample.then(functools.partial(equal, 'Expect'))

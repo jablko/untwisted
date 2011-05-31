@@ -2,18 +2,18 @@
 
 import untwisted
 from testify import *
-from untwisted import event, smtp
+from untwisted import promise, smtp
 
 @test
-@event.continuate
+@promise.continuate
 def data():
   expect(2)
 
   class transport:
     class protocol:
-      dataReceived = event.sequence()
+      dataReceived = promise.sequence()
 
-    write = event.sequence()
+    write = promise.sequence()
 
   client = type.__call__(smtp.client, transport)
   sample = type.__call__(client.mail)
@@ -26,15 +26,15 @@ def data():
   equal('Expect\r\n.\r\n', (yield transport.write.shift()))
 
 @test
-@event.continuate
+@promise.continuate
 def dataCrlf():
   expect(2)
 
   class transport:
     class protocol:
-      dataReceived = event.sequence()
+      dataReceived = promise.sequence()
 
-    write = event.sequence()
+    write = promise.sequence()
 
   client = type.__call__(smtp.client, transport)
   sample = type.__call__(client.mail)
@@ -47,15 +47,15 @@ def dataCrlf():
   equal('Expect\r\n.\r\n', (yield transport.write.shift()))
 
 @test
-@event.continuate
+@promise.continuate
 def reply():
   expect(1)
 
   class transport:
     class protocol:
-      dataReceived = event.sequence()
+      dataReceived = promise.sequence()
 
-    write = event.sequence()
+    write = promise.sequence()
 
   client = type.__call__(smtp.client, transport)
   client.reply(untwisted.wildcard)

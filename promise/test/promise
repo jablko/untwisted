@@ -2,35 +2,35 @@
 
 import exceptions, functools, untwisted
 from testify import *
-from untwisted import event
+from untwisted import promise
 
 class Exception(exceptions.Exception):
   pass
 
-# Connect
-sample = event.event()
-equal(sample, sample.connect('Connect'))
+# Then
+sample = promise.promise()
+equal(sample, sample.then('Then'))
 
 # Call
-sample = event.event()
+sample = promise.promise()
 equal(sample, sample('Call'))
 
 # Throw
-sample = event.event()
+sample = promise.promise()
 equal(sample, sample.throw(Exception('Throw')))
 
 # Suppress traceback
 
-@sample.connect
+@sample.then
 class _:
 
   @staticmethod
   def throw(*args, **kwds):
     pass
 
-# Call then call
+# Call and call
 
-sample = event.event()
+sample = promise.promise()
 sample('Call')
 
 try:
@@ -39,9 +39,9 @@ try:
 except StopIteration:
   pass
 
-# Call then throw
+# Call and throw
 
-sample = event.event()
+sample = promise.promise()
 sample('Call')
 
 try:
@@ -50,9 +50,9 @@ try:
 except StopIteration:
   pass
 
-# Throw then throw
+# Throw and throw
 
-sample = event.event()
+sample = promise.promise()
 sample.throw(Exception('Throw'))
 
 try:
@@ -63,16 +63,16 @@ except StopIteration:
 
 # Suppress traceback
 
-@sample.connect
+@sample.then
 class _:
 
   @staticmethod
   def throw(*args, **kwds):
     pass
 
-# Throw then call
+# Throw and call
 
-sample = event.event()
+sample = promise.promise()
 sample.throw(Exception('Throw'))
 
 try:
@@ -83,7 +83,7 @@ except StopIteration:
 
 # Suppress traceback
 
-@sample.connect
+@sample.then
 class _:
 
   @staticmethod
@@ -91,31 +91,31 @@ class _:
     pass
 
 @test
-def connectThenCall():
+def thenAndCall():
   expect(1)
 
-  sample = event.event()
+  sample = promise.promise()
 
-  sample.connect(functools.partial(equal, 'Expect'))
+  sample.then(functools.partial(equal, 'Expect'))
 
   sample('Expect')
 
 @test
-def callThenConnect():
+def callAndThen():
   expect(1)
 
-  sample = event.event()
+  sample = promise.promise()
   sample('Expect')
 
-  sample.connect(functools.partial(equal, 'Expect'))
+  sample.then(functools.partial(equal, 'Expect'))
 
 @test
-def connectThenThrow():
+def thenAndThrow():
   expect(1)
 
-  sample = event.event()
+  sample = promise.promise()
 
-  @sample.connect
+  @sample.then
   @untwisted.head
   def _():
     try:
@@ -127,13 +127,13 @@ def connectThenThrow():
   sample.throw(Exception('Throw'))
 
 @test
-def throwThenConnect():
+def throwAndThen():
   expect(1)
 
-  sample = event.event()
+  sample = promise.promise()
   sample.throw(Exception('Throw'))
 
-  @sample.connect
+  @sample.then
   @untwisted.head
   def _():
     try:
@@ -146,11 +146,11 @@ def throwThenConnect():
 def noThrow():
   expect(1)
 
-  sample = event.event()
+  sample = promise.promise()
   sample.throw(Exception('Throw'))
-  sample.connect(lambda *args, **kwds: 'Skip')
+  sample.then(lambda *args, **kwds: 'Skip')
 
-  @sample.connect
+  @sample.then
   @untwisted.head
   def _():
     try:
@@ -163,23 +163,23 @@ def noThrow():
 def propagate():
   expect(1)
 
-  sample = event.event()
-  sample('Call').connect(lambda *args, **kwds: 'Expect')
+  sample = promise.promise()
+  sample('Call').then(lambda *args, **kwds: 'Expect')
 
-  sample.connect(functools.partial(equal, 'Expect'))
+  sample.then(functools.partial(equal, 'Expect'))
 
 @test
 def propagateException():
   expect(1)
 
-  sample = event.event()
+  sample = promise.promise()
   sample('Call')
 
-  @sample.connect
+  @sample.then
   def _(*args, **kwds):
     raise Exception('Raise')
 
-  @sample.connect
+  @sample.then
   @untwisted.head
   def _():
     try:
@@ -189,15 +189,15 @@ def propagateException():
       ok(True)
 
 @test
-def propagateAndConnect():
+def propagateAndThen():
   expect(1)
 
-  sample = event.event()
+  sample = promise.promise()
   sample('Call')
 
-  @sample.connect
+  @sample.then
   def _(*args, **kwds):
-    sample.connect(functools.partial(equal, 'Expect'))
+    sample.then(functools.partial(equal, 'Expect'))
 
     return 'Expect'
 
@@ -205,26 +205,26 @@ def propagateAndConnect():
 def chain():
   expect(1)
 
-  sample = event.event()
-  event.event()('Expect').connect(sample)
+  sample = promise.promise()
+  promise.promise()('Expect').then(sample)
 
-  sample.connect(functools.partial(equal, 'Expect'))
+  sample.then(functools.partial(equal, 'Expect'))
 
-# Call then chain
+# Call and chain
 
-sample = event.event()
+sample = promise.promise()
 sample('Call')
 
 try:
-  ok(False, event.event()('Chain').connect(sample))
+  ok(False, promise.promise()('Chain').then(sample))
 
 except StopIteration:
   pass
 
-# Chain then call
+# Chain and call
 
-sample = event.event()
-event.event()('Chain').connect(sample)
+sample = promise.promise()
+promise.promise()('Chain').then(sample)
 
 try:
   ok(False, sample('Call'))
@@ -233,10 +233,10 @@ except StopIteration:
   pass
 
 @test
-def propagateEvent():
+def propagatePromise():
   expect(1)
 
-  sample = event.event()
-  sample('Call').connect(lambda *args, **kwds: event.event()('Expect'))
+  sample = promise.promise()
+  sample('Call').then(lambda *args, **kwds: promise.promise()('Expect'))
 
-  sample.connect(functools.partial(equal, 'Expect'))
+  sample.then(functools.partial(equal, 'Expect'))

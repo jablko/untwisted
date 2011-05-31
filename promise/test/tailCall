@@ -1,0 +1,76 @@
+#!/usr/bin/env python
+
+import functools, sys
+from testify import *
+from untwisted import promise
+
+@test
+def propagate():
+  expect(1)
+
+  sample = promise.promise()
+  for _ in range(sys.getrecursionlimit()):
+    sample.then(lambda count: count + 1)
+
+  sample(0)
+
+  sample.then(functools.partial(equal, sys.getrecursionlimit()))
+
+@test
+def propagageAndThen():
+  expect(1)
+
+  sample = promise.promise()
+
+  def callback(count):
+    if sys.getrecursionlimit() > count + 1:
+      sample.then(callback)
+
+    return count + 1
+
+  sample.then(callback)(0)
+
+  sample.then(functools.partial(equal, sys.getrecursionlimit()))
+
+@test
+def chain():
+  expect(1)
+
+  sample = promise.promise()
+
+  next = sample
+  for _ in range(sys.getrecursionlimit()):
+    prev = next
+    next = promise.promise()
+
+    prev.then(next)
+    next.then(lambda count: count + 1)
+
+  sample(0)
+
+  next.then(functools.partial(equal, sys.getrecursionlimit()))
+
+@test
+def propagatePromise():
+  expect(1)
+
+  sample = promise.promise()
+  for _ in range(sys.getrecursionlimit()):
+    sample.then(lambda count: promise.promise()(count + 1))
+
+  sample(0)
+
+  sample.then(functools.partial(equal, sys.getrecursionlimit()))
+
+@test
+@promise.continuate
+def continuate():
+  expect(1)
+
+  count = 0
+  for _ in range(sys.getrecursionlimit()):
+    yield promise.promise()('Call')
+
+    count += 1
+
+  equal(sys.getrecursionlimit(), count)

@@ -2,10 +2,10 @@
 
 import re, untwisted
 from testify import *
-from untwisted import event, rfc5234, rfc5321, smtp
+from untwisted import promise, rfc5234, rfc5321, smtp
 
 @test
-@event.continuate
+@promise.continuate
 def receive():
   expect(10)
 
@@ -25,9 +25,9 @@ def receive():
 
   class transport:
     class protocol:
-      dataReceived = event.sequence()
+      dataReceived = promise.sequence()
 
-    write = event.sequence()
+    write = promise.sequence()
 
   server(transport)
 

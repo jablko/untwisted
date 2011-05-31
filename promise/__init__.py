@@ -1,17 +1,17 @@
 import exceptions, functools, sys, traceback, untwisted
 
-# Differences from Twisted: Events are also callbacks, whereas deferreds
+# Differences from Twisted: Promises are also callbacks, whereas deferreds
 # aren't, this eliminates .chainDeferred()
 
 # "Callback" or "callable", anything that can be called
 # "Callback" or "coroutine", or variation on coroutine where .send() is
 # .__call__(), a callable with .throw()
-# "Event"? a callback with .connect().  By default .__call__() does nothing.
-# It calls callbacks passed to .connect().  It raises an exception if called
+# "Promise"? a callback with .then().  By default .__call__() does nothing.
+# It calls callbacks passed to .then().  It raises an exception if called
 # twice.  By default .throw() raises the exception?  It calls .throw() on
-# callbacks passed to .connect()?
-class event:
-  def connect(ctx, callback):
+# callbacks passed to .then()?
+class promise:
+  def then(ctx, callback):
     ctx.callback.append(callback)
 
     # Ready to propagate
@@ -29,7 +29,7 @@ class event:
       except IndexError:
         return ctx
 
-      if isinstance(callback, event):
+      if isinstance(callback, promise):
 
         # Already triggered
         if hasattr(callback, 'args'):
@@ -87,10 +87,10 @@ class event:
 
         continue
 
-      if isinstance(result, event):
+      if isinstance(result, promise):
 
         # Tail call optimization
-        #result.connect(ctx)
+        #result.then(ctx)
 
         try:
           ctx.traceback = result.traceback
@@ -173,7 +173,7 @@ class sequence:
       itm = ctx.consume.pop(0)
 
     except IndexError:
-      itm = event()
+      itm = promise()
       ctx.produce.append(itm)
 
     itm(*args, **kwds)
@@ -189,7 +189,7 @@ class sequence:
       return ctx.produce.pop(0)
 
     except IndexError:
-      itm = event()
+      itm = promise()
       ctx.consume.append(itm)
 
       return itm
@@ -200,9 +200,9 @@ class StopIteration(exceptions.StopIteration):
 
     ctx.kwds = kwds
 
-# Join is an event.  When called, its arguments may be other events.  It
-# propagates only after all these events are triggered and calls callbacks with
-# the results of all these events
+# Join is a promise.  When called, its arguments may be other promises.  It
+# propagates only after all these promises are triggered and calls callbacks
+# with the results of all these promises
 #
 # Join is like the following, except,
 #
@@ -215,7 +215,7 @@ class StopIteration(exceptions.StopIteration):
 # def join(*args, **kwds):
 #   raise StopIteration(((yield itm) for itm in args), **kwds)
 #
-class join(event):
+class join(promise):
   def __call__(ctx, *args, **kwds):
 
     # Already triggered
@@ -245,7 +245,7 @@ class join(event):
           itm = rest.pop(0)
 
         except IndexError:
-          return event()(*args, **kwds)
+          return promise()(*args, **kwds)
 
         ctx.callback.insert(0, callback)
 
@@ -253,8 +253,8 @@ class join(event):
 
       ctx.callback.insert(0, callback)
 
-      if isinstance(head, event):
-        head.connect(ctx)
+      if isinstance(head, promise):
+        head.then(ctx)
 
         return ctx
 
@@ -281,9 +281,9 @@ def continuate(cbl):
   # if it's an attribute of another object
   def wrapper(*args, **kwds):
     gnr = cbl(*args, **kwds)
-    result = event()
+    result = promise()
 
-    @result.connect
+    @result.then
     @untwisted.call
     class _:
       def __call__(ctx, *args, **kwds):
@@ -321,7 +321,7 @@ def continuate(cbl):
 
   return wrapper
 
-def nowThen(result, now=lambda *args, **kwds: event()(*args, **kwds), then=lambda *args, **kwds: event()(*args, **kwds)):
+def nowThen(result, now=lambda *args, **kwds: promise()(*args, **kwds), then=lambda *args, **kwds: promise()(*args, **kwds)):
   wrapper = lambda *args, **kwds: callback(*args, **kwds)
 
   callback = now
@@ -332,7 +332,7 @@ def nowThen(result, now=lambda *args, **kwds: event()(*args, **kwds), then=lambd
     pass
 
   try:
-    return result.connect(wrapper)
+    return result.then(wrapper)
 
   finally:
     callback = then

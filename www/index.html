@@ -106,7 +106,7 @@
 
       cleanup()
 
-    doSomeAsyncThing().connect(callback)
+    doSomeAsyncThing().then(callback)
 
   else:
     cleanup()</code>
@@ -120,9 +120,9 @@
       <section>
         <h>After</h>
         <pre>
-<code>from untwisted import event
+<code>from untwisted import promise
 
-@event.continuate
+@promise.continuate
 def example():
   if case1:
     result = yield doSomeAsyncThing()

@@ -1,5 +1,5 @@
 import re, socket, untwisted
-from untwisted import event, rfc5321
+from untwisted import promise, rfc5321
 
 # Cache our domain
 domain = socket.getfqdn()
@@ -50,7 +50,7 @@ class command:
 class client:
   class __metaclass__(type):
 
-    @event.continuate
+    @promise.continuate
     def __call__(ctx, transport):
       ctx = type.__call__(ctx, transport)
 
@@ -81,7 +81,7 @@ class client:
   # interpret only the first digit of the reply and MUST be prepared to deal
   # with unrecognized reply codes by interpreting the first digit only
 
-  @event.continuate
+  @promise.continuate
   def reply(ctx, expect=range(200, 300)):
     while True:
       match = re.match(rfc5321.replyLine, ctx.read)
@@ -116,7 +116,7 @@ class client:
     class __metaclass__(type):
       __get__ = untwisted.ctxual
 
-      @event.continuate
+      @promise.continuate
       def __call__(ctx):
         ctx = type.__call__(ctx)
 
@@ -164,7 +164,7 @@ class client:
     def recipient(ctx):
       raise NotImplementedError
 
-    @event.continuate
+    @promise.continuate
     def dataCmd(ctx, data):
       ctx.ctx.transport.write(str(command('DATA')))
 
@@ -215,7 +215,7 @@ class client:
 class pipeline(client):
   class __metaclass__(client.__metaclass__):
 
-    @event.continuate
+    @promise.continuate
     def __call__(ctx, transport):
       ctx = type.__call__(ctx, transport)
 
@@ -253,7 +253,7 @@ class pipeline(client):
   class mail(client.mail):
     class __metaclass__(client.mail.__metaclass__):
 
-      @event.continuate
+      @promise.continuate
       def __init__(ctx):
         ctx = type.__call__(ctx)
 
@@ -311,7 +311,7 @@ class pipeline(client):
 class server:
   class __metaclass__(type):
 
-    @event.continuate
+    @promise.continuate
     def __call__(ctx, transport):
       ctx = type.__call__(ctx, transport)
 
@@ -323,7 +323,7 @@ class server:
   #greeting = lambda ctx: ctx.transport.write(str(reply(220, '{} Service ready'.format(domain))))
   greeting = lambda ctx: ctx.transport.write(str(reply(220, '{0} Service ready'.format(domain))))
 
-  @event.continuate
+  @promise.continuate
   def command(ctx):
     while True:
       try:
@@ -339,7 +339,7 @@ class server:
     #return ...
     raise StopIteration(result)
 
-  @event.continuate
+  @promise.continuate
   def start(ctx, command, state):
     if 'EHLO' == command.verb:
       #ctx.transport.write(str(reply(250, '{} Requested mail action okay, completed'.format(domain), 'PIPELINING')))
@@ -388,7 +388,7 @@ class server:
     class __metaclass__(type):
       __get__ = untwisted.ctxual
 
-      @event.continuate
+      @promise.continuate
       def __call__(ctx):
         ctx = type.__call__(ctx)
 
@@ -398,7 +398,7 @@ class server:
     def mail(ctx, mailbox):
       raise NotImplementedError
 
-    @event.continuate
+    @promise.continuate
     def start(ctx, command, state):
 
       # MAIL (or SEND, SOML, or SAML) MUST NOT be sent if a mail transaction is
@@ -443,7 +443,7 @@ class server:
     def recipient(ctx, mailbox):
       raise NotImplementedError
 
-    @event.continuate
+    @promise.continuate
     def afterMail(ctx, command, state):
 
       # Once started, a mail transaction consists of a transaction beginning
@@ -485,7 +485,7 @@ class server:
     def data(ctx, data):
       raise NotImplementedError
 
-    @event.continuate
+    @promise.continuate
     def afterRecipient(ctx, command, state):
       if 'DATA' == command.verb:
         ctx.ctx.transport.write(str(reply(354)))

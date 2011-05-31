@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+
+import exceptions, untwisted
+from testify import *
+from untwisted import promise
+
+class Exception(exceptions.Exception):
+  pass
+
+@test
+@promise.continuate
+def continuate():
+  expect(1)
+
+  equal('Expect', (yield promise.promise()('Expect')))
+
+@test
+@promise.continuate
+def continuateNonPromise():
+  expect(1)
+
+  equal('Expect', (yield 'Expect'))
+
+@test
+def propagateException():
+  expect(1)
+
+  @untwisted.call
+  @promise.continuate
+  def sample():
+    raise Exception('Raise')
+
+    yield
+
+  @sample.then
+  @untwisted.head
+  def _():
+    try:
+      ok(False, (yield))
+
+    except Exception:
+      ok(True)
+
+@test
+def propagateStopIteration():
+  expect(2)
+
+  @untwisted.call
+  @promise.continuate
+  def sample():
+    raise promise.StopIteration('First', 'Second', 'Third', True=True, False=False)
+
+    yield
+
+  sample.then(lambda *args, **kwds: (equal(('First', 'Second', 'Third'), args), equal({ 'True': True, 'False': False }, kwds)))
+
+@test
+def propagateStopIterationPromise():
+  expect(2)
+
+  @untwisted.call
+  @promise.continuate
+  def sample():
+    raise promise.StopIteration(promise.promise()('First'), promise.promise()('Second'), promise.promise()('Third'), True=True, False=False)
+
+    yield
+
+  sample.then(lambda *args, **kwds: (equal(('First', 'Second', 'Third'), args), equal({ 'True': True, 'False': False }, kwds)))
