@@ -55,7 +55,7 @@ class promise:
         callback.kwds = ctx.kwds
         ctx.kwds = {}
 
-        if len(ctx.callback):
+        if ctx.callback:
           callback.propagate()
 
         # Tail call optimization
@@ -145,7 +145,7 @@ class promise:
     ctx.trigger = True
 
     #raise args
-    if len(args):
+    if args:
       #type, value=None, traceback=None = *args
       type, value, traceback = (lambda type, value=None, traceback=None: (type, value, traceback))(*args)
       try:
@@ -292,7 +292,7 @@ def continuate(cbl):
           itm = gnr.send(*args, **kwds)
 
         except exceptions.StopIteration as e:
-          return join()(*e.args if len(e.args) else (None,), **getattr(e, 'kwds', {}))
+          return join()(*e.args or (None,), **getattr(e, 'kwds', {}))
 
         result.callback.insert(0, ctx)
 
@@ -303,7 +303,7 @@ def continuate(cbl):
           itm = gnr.throw(*args, **kwds)
 
         except exceptions.StopIteration as e:
-          return join()(*e.args if len(e.args) else (None,), **getattr(e, 'kwds', {}))
+          return join()(*e.args or (None,), **getattr(e, 'kwds', {}))
 
         result.callback.insert(0, ctx)
 

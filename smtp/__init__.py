@@ -34,7 +34,7 @@ class command:
 class reply:
   def __init__(ctx, code, *args):
     ctx.code = code
-    ctx.text = args if len(args) else {
+    ctx.text = args or {
       221: ('Service closing transmission channel',),
       250: ('Requested mail action okay, completed',),
       354: ('Start mail input; end with <CRLF>.<CRLF>',),

@@ -65,7 +65,7 @@ def head(cbl):
       try:
         #head, *rest = e.args
         head, rest = e.args[0], e.args[1:]
-        if len(rest):
+        if rest:
           return (head,) + rest
 
         return head
@@ -85,7 +85,7 @@ def head(cbl):
       try:
         #head, *rest = e.args
         head, rest = e.args[0], e.args[1:]
-        if len(rest):
+        if rest:
           return (head,) + rest
 
         return head
@@ -97,7 +97,7 @@ def head(cbl):
 
 # http://jdbates.blogspot.com/2011/04/ow-ow-ow-python-why-do-you-hurt-so-hard.html
 def identity(head, *rest):
-  if len(rest):
+  if rest:
     return (head,) + rest
 
   return head
