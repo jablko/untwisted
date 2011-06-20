@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import functools
+import untwisted
 from testify import *
 from untwisted import promise
 
@@ -12,8 +12,8 @@ def now():
   sample('Expect')
 
   promise.nowThen(sample,
-    functools.partial(equal, 'Expect'),
-    functools.partial(ok, False))
+    untwisted.partial(equal, 'Expect'),
+    untwisted.partial(ok, False))
 
 @test
 def then():
@@ -22,8 +22,8 @@ def then():
   sample = promise.promise()
 
   promise.nowThen(sample,
-    functools.partial(ok, False),
-    functools.partial(equal, 'Expect'))
+    untwisted.partial(ok, False),
+    untwisted.partial(equal, 'Expect'))
 
   sample('Expect')
 
@@ -34,7 +34,7 @@ def noNow():
   sample('Expect')
   promise.nowThen(sample)
 
-  sample.then(functools.partial(equal, 'Expect'))
+  sample.then(untwisted.partial(equal, 'Expect'))
 
 test(noNow)
 test(noNow)
@@ -46,7 +46,7 @@ def noThen():
   promise.nowThen(sample)
   sample('Expect')
 
-  sample.then(functools.partial(equal, 'Expect'))
+  sample.then(untwisted.partial(equal, 'Expect'))
 
 test(noThen)
 test(noThen)

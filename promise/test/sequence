@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import functools, untwisted
+import untwisted
 from testify import *
 from untwisted import promise
 
@@ -11,7 +11,7 @@ def callThenShift():
   sample = promise.sequence()
   sample('Expect')
 
-  sample.shift().then(functools.partial(equal, 'Expect'))
+  sample.shift().then(untwisted.partial(equal, 'Expect'))
 
 @test
 def shiftThenCall():
@@ -19,6 +19,6 @@ def shiftThenCall():
 
   sample = promise.sequence()
 
-  sample.shift().then(functools.partial(equal, 'Expect'))
+  sample.shift().then(untwisted.partial(equal, 'Expect'))
 
   sample('Expect')

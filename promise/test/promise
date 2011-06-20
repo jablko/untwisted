@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import exceptions, functools, untwisted
+import exceptions, untwisted
 from testify import *
 from untwisted import promise
 
@@ -96,7 +96,7 @@ def thenAndCall():
 
   sample = promise.promise()
 
-  sample.then(functools.partial(equal, 'Expect'))
+  sample.then(untwisted.partial(equal, 'Expect'))
 
   sample('Expect')
 
@@ -107,7 +107,7 @@ def callAndThen():
   sample = promise.promise()
   sample('Expect')
 
-  sample.then(functools.partial(equal, 'Expect'))
+  sample.then(untwisted.partial(equal, 'Expect'))
 
 @test
 def thenAndThrow():
@@ -166,7 +166,7 @@ def propagate():
   sample = promise.promise()
   sample('Call').then(lambda *args, **kwds: 'Expect')
 
-  sample.then(functools.partial(equal, 'Expect'))
+  sample.then(untwisted.partial(equal, 'Expect'))
 
 @test
 def propagateException():
@@ -197,7 +197,7 @@ def propagateAndThen():
 
   @sample.then
   def _(*args, **kwds):
-    sample.then(functools.partial(equal, 'Expect'))
+    sample.then(untwisted.partial(equal, 'Expect'))
 
     return 'Expect'
 
@@ -208,7 +208,7 @@ def chain():
   sample = promise.promise()
   promise.promise()('Expect').then(sample)
 
-  sample.then(functools.partial(equal, 'Expect'))
+  sample.then(untwisted.partial(equal, 'Expect'))
 
 # Call and chain
 
@@ -239,4 +239,4 @@ def propagatePromise():
   sample = promise.promise()
   sample('Call').then(lambda *args, **kwds: promise.promise()('Expect'))
 
-  sample.then(functools.partial(equal, 'Expect'))
+  sample.then(untwisted.partial(equal, 'Expect'))

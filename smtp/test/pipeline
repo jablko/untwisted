@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import functools, re, untwisted
+import re, untwisted
 from testify import *
 from untwisted import promise, rfc5234, rfc5321, smtp
 
@@ -30,28 +30,28 @@ def client():
   client(transport)
 
   promise.nowThen((promise.nowThen(transport.write.shift(),
-        functools.partial(ok, False)),
+        untwisted.partial(ok, False)),
       transport.protocol.dataReceived('220\r\n'))[0],
     lambda actual: ok(re.match(rfc5321.ehlo, actual), actual))
 
   promise.nowThen((promise.nowThen(transport.write.shift(),
-        functools.partial(ok, False)),
+        untwisted.partial(ok, False)),
       transport.protocol.dataReceived('250-example.com\r\n250 PIPELINING\r\n'))[0],
-    functools.partial(equal, 'MAIL FROM:<alice@example.com>\r\n'))
+    untwisted.partial(equal, 'MAIL FROM:<alice@example.com>\r\n'))
 
   promise.nowThen(transport.write.shift(),
-    functools.partial(equal, 'RCPT TO:<bob@example.com>\r\n'))
+    untwisted.partial(equal, 'RCPT TO:<bob@example.com>\r\n'))
 
   promise.nowThen(transport.write.shift(),
-    functools.partial(equal, 'DATA\r\n'))
+    untwisted.partial(equal, 'DATA\r\n'))
 
   promise.nowThen((promise.nowThen(transport.write.shift(),
-        functools.partial(ok, False)),
+        untwisted.partial(ok, False)),
       transport.protocol.dataReceived('250\r\n250\r\n354\r\n'))[0],
-    functools.partial(equal, 'Expect\r\n.\r\n'))
+    untwisted.partial(equal, 'Expect\r\n.\r\n'))
 
   promise.nowThen(transport.write.shift(),
-    functools.partial(equal, 'QUIT\r\n'))
+    untwisted.partial(equal, 'QUIT\r\n'))
 
   transport.protocol.dataReceived('250\r\n221\r\n')
 
@@ -75,7 +75,7 @@ def server():
       yield smtp.server.mail.__get__((yield sample.__get__((yield))()))()
 
   class transport:
-    loseConnection = functools.partial(ok, True)
+    loseConnection = staticmethod(untwisted.partial(ok, True))
 
     class protocol:
       dataReceived = promise.sequence()

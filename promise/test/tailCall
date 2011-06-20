@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import functools, sys
+import sys, untwisted
 from testify import *
 from untwisted import promise
 
@@ -14,7 +14,7 @@ def propagate():
 
   sample(0)
 
-  sample.then(functools.partial(equal, sys.getrecursionlimit()))
+  sample.then(untwisted.partial(equal, sys.getrecursionlimit()))
 
 @test
 def propagageAndThen():
@@ -30,7 +30,7 @@ def propagageAndThen():
 
   sample.then(callback)(0)
 
-  sample.then(functools.partial(equal, sys.getrecursionlimit()))
+  sample.then(untwisted.partial(equal, sys.getrecursionlimit()))
 
 @test
 def chain():
@@ -48,7 +48,7 @@ def chain():
 
   sample(0)
 
-  next.then(functools.partial(equal, sys.getrecursionlimit()))
+  next.then(untwisted.partial(equal, sys.getrecursionlimit()))
 
 @test
 def propagatePromise():
@@ -60,7 +60,7 @@ def propagatePromise():
 
   sample(0)
 
-  sample.then(functools.partial(equal, sys.getrecursionlimit()))
+  sample.then(untwisted.partial(equal, sys.getrecursionlimit()))
 
 @test
 @promise.continuate

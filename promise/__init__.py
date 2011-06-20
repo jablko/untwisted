@@ -1,4 +1,4 @@
-import exceptions, functools, sys, traceback, untwisted
+import exceptions, sys, traceback, untwisted
 
 # Differences from Twisted: Promises are also callbacks, whereas deferreds
 # aren't, this eliminates .chainDeferred()
@@ -85,7 +85,7 @@ class promise:
         result = callback(*args, **kwds)
 
       except:
-        ctx.traceback = untwisted.final(functools.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
+        ctx.traceback = untwisted.final(untwisted.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
 
         ctx.args = sys.exc_info()
         ctx.kwds = {}
@@ -156,7 +156,7 @@ class promise:
 
     import traceback
 
-    ctx.traceback = untwisted.final(functools.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
+    ctx.traceback = untwisted.final(untwisted.partial(sys.stderr.write, ''.join(traceback.format_stack(sys._getframe().f_back)) + traceback.format_exc()))
 
     ctx.args = args
     ctx.kwds = kwds

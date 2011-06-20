@@ -1,4 +1,4 @@
-import functools, weakref
+import weakref
 
 call = lambda cbl: cbl()
 
@@ -73,7 +73,7 @@ def head(cbl):
       except IndexError:
         pass
 
-  @functools.partial(setattr, wrapper, 'throw')
+  @partial(setattr, wrapper, 'throw')
   def throw(*args, **kwds):
     gnr = cbl()
     gnr.next()
@@ -101,6 +101,35 @@ def identity(head, *rest):
     return (head,) + rest
 
   return head
+
+# functools.partial() breaks descriptor,
+# http://docs.python.org/reference/datamodel.html#descriptors
+class partial:
+  __metaclass__ = type
+
+  # No **kwds because, TypeError: unhashable type: 'dict'
+  def __get__(ctx, *args):
+    try:
+      return cache[ctx, args]
+
+    except KeyError:
+      result = cache[ctx, args] = partial(ctx.cbl.__get__(*args), *ctx.args, **ctx.kwds)
+
+      return result
+
+  def __init__(ctx, cbl, *args, **kwds):
+    ctx.cbl = cbl
+    ctx.args = args
+    ctx.kwds = kwds
+
+  def __call__(ctx, *args, **kwds):
+    totalArgs = list(ctx.args)
+    totalArgs.extend(args)
+
+    totalKwds = dict(ctx.kwds)
+    totalKwds.update(kwds)
+
+    return ctx.cbl(*totalArgs, **totalKwds)
 
 @call
 class wildcard:
