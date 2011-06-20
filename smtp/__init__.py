@@ -4,22 +4,6 @@ from untwisted import promise, rfc5321
 # Cache our domain
 domain = socket.getfqdn()
 
-class reply:
-  def __init__(ctx, code, *args):
-    ctx.code = code
-    ctx.text = args if len(args) else {
-      221: ('Service closing transmission channel',),
-      250: ('Requested mail action okay, completed',),
-      354: ('Start mail input; end with <CRLF>.<CRLF>',),
-      500: ('Syntax error, command unrecognized',),
-      502: ('Command not implemented',),
-      503: ('Bad sequence of commands',),
-      555: ('MAIL FROM/RCPT TO parameters not recognized or not implemented',)}[code]
-
-  __int__ = lambda ctx: ctx.code
-
-  __str__ = lambda ctx: ''.join(str(ctx.code) + '-' + text + '\r\n' for text in ctx.text[:-1]) + str(ctx.code) + ' ' + ctx.text[-1] + '\r\n'
-
 class command:
   def __init__(ctx, verb, *args):
     ctx.verb = verb
@@ -46,6 +30,22 @@ class command:
       pass
 
     return str + '\r\n'
+
+class reply:
+  def __init__(ctx, code, *args):
+    ctx.code = code
+    ctx.text = args if len(args) else {
+      221: ('Service closing transmission channel',),
+      250: ('Requested mail action okay, completed',),
+      354: ('Start mail input; end with <CRLF>.<CRLF>',),
+      500: ('Syntax error, command unrecognized',),
+      502: ('Command not implemented',),
+      503: ('Bad sequence of commands',),
+      555: ('MAIL FROM/RCPT TO parameters not recognized or not implemented',)}[code]
+
+  __int__ = lambda ctx: ctx.code
+
+  __str__ = lambda ctx: ''.join(str(ctx.code) + '-' + text + '\r\n' for text in ctx.text[:-1]) + str(ctx.code) + ' ' + ctx.text[-1] + '\r\n'
 
 class client:
   class __metaclass__(type):
