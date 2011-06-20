@@ -8,6 +8,11 @@ sample = smtp.reply(123, 'First', 'Second', 'Third')
 equal(123, int(sample))
 equal('123-First\r\n123-Second\r\n123 Third\r\n', str(sample))
 
+sample = smtp.reply(123)
+
+equal(123, int(sample))
+equal('123\r\n', str(sample))
+
 sample = smtp.command('VERB')
 
 equal('VERB', sample.verb)
