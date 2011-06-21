@@ -106,18 +106,17 @@ class client:
   @promise.continuate
   def reply(ctx, expect=range(200, 300)):
     while True:
-      match = re.match(rfc5321.replyLine, ctx.read)
-      if match:
+      try:
+        result = rfc5321.replyLine.match(ctx.read, '( replyCode, textstring )')
+
         break
 
-      ctx.read += yield ctx.transport.protocol.dataReceived.shift()
+      except ValueError:
+        ctx.read += yield ctx.transport.protocol.dataReceived.shift()
 
-    #ctx.read = ctx.read[len(match):]
-    ctx.read = ctx.read[match.end():]
+    ctx.read = ctx.read[len(result):]
 
-    # TODO Extract multiple textstring, regex currently supports only last one
-    result = reply(int(match.group(1)), match.group(2))
-
+    result = reply(int(result.replyCode), *map(str, result.textstring))
     if int(result) not in expect:
       raise result
 
@@ -383,17 +382,16 @@ class server:
       # concluded with a successful DATA command, or if the previous one was
       # aborted, e.g., with a RSET or new EHLO
       if 'MAIL' == command.verb:
-        match = re.match(rfc5321.mail, str(command))
         try:
-          if not match:
-            raise reply(555)
-
           try:
-            yield ctx.mail(match.group(1))
+            yield ctx.mail(rfc5321.mail.match(str(command), 'mailbox ( localPart, domain, addressLiteral )'))
 
           # TODO Log
           except NotImplementedError:
             raise reply(502)
+
+          except ValueError:
+            raise reply(555)
 
           raise reply(250)
 
@@ -425,17 +423,16 @@ class server:
       # Once started, a mail transaction consists of a transaction beginning
       # command, one or more RCPT commands, and a DATA command, in that order
       if 'RCPT' == command.verb:
-        match = re.match(rfc5321.rcpt, str(command))
         try:
-          if not match:
-            raise reply(555)
-
           try:
-            yield ctx.recipient(match.group(1))
+            yield ctx.recipient(rfc5321.rcpt.match(str(command), 'mailbox ( localPart, domain, addressLiteral )'))
 
           # TODO Log
           except NotImplementedError:
             raise reply(502)
+
+          except ValueError:
+            raise reply(555)
 
           raise reply(250)
 

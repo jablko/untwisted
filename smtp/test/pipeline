@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import re, untwisted
+from qwer import *
 from testify import *
 from untwisted import promise, rfc5234, rfc5321, smtp
 
@@ -30,7 +31,7 @@ def client():
   promise.nowThen((promise.nowThen(transport.write.shift(),
         untwisted.partial(ok, False)),
       transport.protocol.dataReceived('220\r\n'))[0],
-    lambda actual: ok(re.match(rfc5321.ehlo, actual), actual))
+    untwisted.compose(untwisted.partial(ok, True), rfc5321.ehlo.match))
 
   promise.nowThen((promise.nowThen(transport.write.shift(),
         untwisted.partial(ok, False)),
@@ -63,8 +64,8 @@ def server():
     @untwisted.each
     def mail():
       class sample(smtp.server.mail):
-        mail = staticmethod(untwisted.each(lambda: equal('alice@example.com', (yield))))
-        recipient = staticmethod(untwisted.each(lambda: equal('bob@example.com', (yield))))
+        mail = staticmethod(untwisted.each(lambda: equal('alice@example.com', str((yield)))))
+        recipient = staticmethod(untwisted.each(lambda: equal('bob@example.com', str((yield)))))
         data = staticmethod(untwisted.each(lambda: equal('Expect', (yield))))
 
       # QUIT
@@ -80,13 +81,11 @@ def server():
 
   server(transport)
 
-  actual = yield transport.write.shift()
-  ok(re.match('(?:220-(?:' + rfc5321.textstring + ')?' + rfc5234.CRLF + ')*220(?: ' + rfc5321.textstring + ')?' + rfc5234.CRLF, actual), actual)
+  ok(True, qwer('(?:220-(?:', rfc5321.textstring, ')?', rfc5234.CRLF, ')*220(?: ', rfc5321.textstring, ')?', rfc5234.CRLF).match((yield transport.write.shift())))
 
   transport.protocol.dataReceived('EHLO example.com\r\n')
 
-  actual = yield transport.write.shift()
-  ok(re.match('(?:250-(?:' + rfc5321.textstring + ')?' + rfc5234.CRLF + ')*250 PIPELINING' + rfc5234.CRLF, actual), actual)
+  ok(True, qwer('(?:250-(?:', rfc5321.textstring, ')?', rfc5234.CRLF, ')*250 PIPELINING', rfc5234.CRLF).match((yield transport.write.shift())))
 
   transport.protocol.dataReceived('MAIL FROM:<alice@example.com>\r\nRCPT TO:<bob@example.com>\r\nDATA\r\n')
 

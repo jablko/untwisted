@@ -2,6 +2,18 @@ import weakref
 
 call = lambda cbl: cbl()
 
+def compose(*args):
+  #head, *rest = reversed(args)
+  head, rest = (lambda head, *rest: (head, rest))(*reversed(args))
+  def wrapper(*args, **kwds):
+    result = head(*args, **kwds)
+    for cbl in rest:
+      result = cbl(result)
+
+    return result
+
+  return wrapper
+
 cache = weakref.WeakValueDictionary()
 def ctxual(ctx, instance, *args):
   try:

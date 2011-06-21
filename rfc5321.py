@@ -1,105 +1,106 @@
 import rfc5234, rfc5322
+from qwer import *
 
-letDig = '(?:' + rfc5234.ALPHA + '|' + rfc5234.DIGIT + ')'
-ldhStr = '(?:' + rfc5234.ALPHA + '|' + rfc5234.DIGIT + '|-)*' + letDig
-subDomain = letDig + '(?:' + ldhStr + ')?'
-domain = subDomain + '(?:\.' + subDomain + ')*'
+letDig = qwer('(?:', rule('rfc5234.ALPHA'), '|', rule('rfc5234.DIGIT'), ')')
+ldhStr = qwer('(?:', rule('rfc5234.ALPHA'), '|', rule('rfc5234.DIGIT'), '|-)*', rule('letDig'))
+subDomain = qwer(rule('letDig'), '(?:', rule('ldhStr'), ')?')
+domain = qwer(rule('subDomain'), '(?:\.', rule('subDomain'), ')*')
 
 # Representing a decimal integer value in the range 0 through 255
-snum = '(?:' + rfc5234.DIGIT + '){1,3}'
+snum = qwer('(?:', rule('rfc5234.DIGIT'), '){1,3}')
 
-ipv4AddressLiteral = snum + '(?:\.' + snum + '){3}'
-ipv6Hex = '(?:' + rfc5234.HEXDIG + '){1,4}'
-ipv6Full = ipv6Hex + '(?::' + ipv6Hex + '){7}'
+ipv4AddressLiteral = qwer(rule('snum'), '(?:\.', rule('snum'), '){3}')
+ipv6Hex = qwer('(?:', rule('rfc5234.HEXDIG'), '){1,4}')
+ipv6Full = qwer(rule('ipv6Hex'), '(?::', rule('ipv6Hex'), '){7}')
 
 # The "::" represents at least 2 16-bit groups of zeros.  No more than 6 groups
 # in addition to the "::" may be present
-ipv6Comp = '(?:' + ipv6Hex + '(?::' + ipv6Hex + '){,5})?::(?:' + ipv6Hex + '(?::' + ipv6Hex + '){,5})?'
+ipv6Comp = qwer('(?:', rule('ipv6Hex'), '(?::', rule('ipv6Hex'), '){,5})?::(?:', rule('ipv6Hex'), '(?::', rule('ipv6Hex'), '){,5})?')
 
-ipv6v4Full = ipv6Hex + '(?::' + ipv6Hex + '){5}:' + ipv4AddressLiteral
+ipv6v4Full = qwer(rule('ipv6Hex'), '(?::', rule('ipv6Hex'), '){5}:', rule('ipv4AddressLiteral'))
 
 # The "::" represents at least 2 16-bit groups of zeros.  No more than 4 groups
 # in addition to the "::" and IPv4-address-literal may be present
-ipv6v4Comp = '(?:' + ipv6Hex + '(?::' + ipv6Hex + '){,3})?::(?:' + ipv6Hex + '(?::' + ipv6Hex + '){,3}:)?' + ipv4AddressLiteral
+ipv6v4Comp = qwer('(?:', rule('ipv6Hex'), '(?::', rule('ipv6Hex'), '){,3})?::(?:', rule('ipv6Hex'), '(?::', rule('ipv6Hex'), '){,3}:)?', rule('ipv4AddressLiteral'))
 
-ipv6Addr = '(?:' + ipv6Full + '|' + ipv6Comp + '|' + ipv6v4Full + '|' + ipv6v4Comp + ')'
-ipv6AddressLiteral = 'IPv6:' + ipv6Addr
+ipv6Addr = qwer('(?:', rule('ipv6Full'), '|', rule('ipv6Comp'), '|', rule('ipv6v4Full'), '|', rule('ipv6v4Comp'), ')')
+ipv6AddressLiteral = qwer('IPv6:', rule('ipv6Addr'))
 
 # Standardized-tag MUST be specified in a Standards-Track RFC and registered
 # with IANA
-standardizedTag = ldhStr
+standardizedTag = rule('ldhStr')
 
 # Printable US-ASCII characters not including "[", "]", or "\"
-dcontent = '[!-Z^-~]'
+dcontent = qwer('[!-Z^-~]')
 
-generalAddressLiteral = standardizedTag + ':' + '(?:' + dcontent + ')+'
-addressLiteral = '\[(?:' + ipv4AddressLiteral + '|' + ipv6AddressLiteral + '|' + generalAddressLiteral + ')]'
+generalAddressLiteral = qwer(rule('standardizedTag'), ':', '(?:', rule('dcontent'), ')+')
+addressLiteral = qwer('\[(?:', rule('ipv4AddressLiteral'), '|', rule('ipv6AddressLiteral'), '|', rule('generalAddressLiteral'), ')]')
 
-ehlo = 'EHLO (?:' + domain + '|' + addressLiteral + ')' + rfc5234.CRLF
+ehlo = qwer('EHLO (?:', rule('domain'), '|', rule('addressLiteral'), ')', rule('rfc5234.CRLF'))
 
-atDomain = '@' + domain
+atDomain = qwer('@', rule('domain'))
 
 # Note that this form, the so-called "source route", MUST be accepted, SHOULD
 # NOT be generated, and SHOULD be ignored
-adl = atDomain + '(?:,' + atDomain + ')*'
+adl = qwer(rule('atDomain'), '(?:,', rule('atDomain'), ')*')
 
-atom = '(?:' + rfc5322.atext + ')+'
-dotString = atom + '(?:\.' + atom + ')*'
-qtextSmtp = '[ !#-[\]-~]'
-quotedPairSmtp = '\\[ -~]'
-qcontentSmtp = '(?:' + qtextSmtp + '|' + quotedPairSmtp + ')'
-quotedString = rfc5234.DQUOTE + '(?:' + qcontentSmtp + ')*' + rfc5234.DQUOTE
-localPart = '(?:' + dotString + '|' + quotedString + ')'
-mailbox = localPart + '@(?:' + domain + '|' + addressLiteral + ')'
-path = '<(?:' + adl + ':)?(' + mailbox + ')>'
-reversePath = '(?:' + path + '|<>)'
-esmtpKeyword = '(?:' + rfc5234.ALPHA + '|' + rfc5234.DIGIT + ')(?:' + rfc5234.ALPHA + '|' + rfc5234.DIGIT + '|-)*'
+atom = qwer('(?:', rule('rfc5322.atext'), ')+')
+dotString = qwer(rule('atom'), '(?:\.', rule('atom'), ')*')
+qtextSmtp = qwer('[ !#-[\]-~]')
+quotedPairSmtp = qwer('\\[ -~]')
+qcontentSmtp = qwer('(?:', rule('qtextSmtp'), '|', rule('quotedPairSmtp'), ')')
+quotedString = qwer(rule('rfc5234.DQUOTE'), '(?:', rule('qcontentSmtp'), ')*', rule('rfc5234.DQUOTE'))
+localPart = qwer('(?:', rule('dotString'), '|', rule('quotedString'), ')')
+mailbox = qwer(rule('localPart'), '@(?:', rule('domain'), '|', rule('addressLiteral'), ')')
+path = qwer('<(?:', rule('adl'), ':)?', rule('mailbox'), '>')
+reversePath = qwer('(?:', rule('path'), '|<>)')
+esmtpKeyword = qwer('(?:', rule('rfc5234.ALPHA'), '|', rule('rfc5234.DIGIT'), ')(?:', rule('rfc5234.ALPHA'), '|', rule('rfc5234.DIGIT'), '|-)*')
 
 # Any CHAR excluding "=", SP, and control characters.  If this string is an
 # email address, i.e. a Mailbox, then the "xtext" syntax SHOULD be used
-esmtpValue = '[!-<>-~]+'
+esmtpValue = qwer('[!-<>-~]+')
 
-esmtpParam = esmtpKeyword + '(?:=' + esmtpValue + ')?'
-mailParameters = esmtpParam + '(?: ' + esmtpParam + ')*'
+esmtpParam = qwer(rule('esmtpKeyword'), '(?:=', rule('esmtpValue'), ')?')
+mailParameters = qwer(rule('esmtpParam'), '(?: ', rule('esmtpParam'), ')*')
 
-mail = 'MAIL FROM:' + reversePath + '(?:' + mailParameters + ')?' + rfc5234.CRLF
+mail = qwer('MAIL FROM:', rule('reversePath'), '(?:', rule('mailParameters'), ')?', rule('rfc5234.CRLF'))
 
-forwardPath = path
-rcptParameters = esmtpParam + '(?: ' + esmtpParam + ')*'
+forwardPath = rule('path')
+rcptParameters = qwer(rule('esmtpParam'), '(?: ', rule('esmtpParam'), ')*')
 
-rcpt = 'RCPT TO:(?:<Postmaster@' + domain + '>|<Postmaster>|' + forwardPath + ')(?: ' + rcptParameters + ')?' + rfc5234.CRLF
+rcpt = qwer('RCPT TO:(?:<Postmaster@', rule('domain'), '>|<Postmaster>|', rule('forwardPath'), ')(?: ', rule('rcptParameters'), ')?', rule('rfc5234.CRLF'))
 
 # HT, SP, printable US-ASCII
-textstring = '[\t -~]+'
+textstring = qwer('[\t -~]+')
 
-replyCode = '[2-5][0-5][0-9]'
+replyCode = qwer('[2-5][0-5][0-9]')
 
-replyLine = '(?:' + replyCode + '-(?:' + textstring + ')?' + rfc5234.CRLF + ')*(' + replyCode + ')(?: (' + textstring + '))?' + rfc5234.CRLF
+replyLine = qwer('(?:', rule('replyCode'), '-(?:', rule('textstring'), ')?', rule('rfc5234.CRLF'), ')*', rule('replyCode'), '(?: ', rule('textstring'), ')?', rule('rfc5234.CRLF'))
 
 # Information derived by server from TCP connection not client EHLO
-tcpInfo = '(?:' + addressLiteral + '|' + domain + rfc5322.FWS + addressLiteral + ')'
+tcpInfo = qwer('(?:', rule('addressLiteral'), '|', rule('domain'), rule('rfc5322.FWS'), rule('addressLiteral'), ')')
 
-extendedDomain = '(?:' + domain + '|' + domain + rfc5322.FWS + '\(' + tcpInfo + '\)|' + addressLiteral + rfc5322.FWS + '\(' + tcpInfo + '\))'
-fromDomain = 'from' + rfc5322.FWS + extendedDomain
-byDomain = rfc5322.CFWS + 'by' + rfc5322.FWS + extendedDomain
-addtlLink = atom
-link = '(?:TCP|' + addtlLink + ')'
-via = rfc5322.CFWS + 'via' + rfc5322.FWS + link
+extendedDomain = qwer('(?:', rule('domain'), '|', rule('domain'), rule('rfc5322.FWS'), '\(', rule('tcpInfo'), '\)|', rule('addressLiteral'), rule('rfc5322.FWS'), '\(', rule('tcpInfo'), '\))')
+fromDomain = qwer('from', rule('rfc5322.FWS'), rule('extendedDomain'))
+byDomain = qwer(rule('rfc5322.CFWS'), 'by', rule('rfc5322.FWS'), rule('extendedDomain'))
+addtlLink = rule('atom')
+link = qwer('(?:TCP|', rule('addtlLink'), ')')
+via = qwer(rule('rfc5322.CFWS'), 'via', rule('rfc5322.FWS'), rule('link'))
 
 # Upstream client authenticated,
 # http://thread.gmane.org/gmane.mail.postfix.user/215958
-protocol = 'ESMTPA'
+protocol = qwer('ESMTPA')
 
-With = rfc5322.CFWS + 'with' + rfc5322.FWS + protocol
-id = rfc5322.CFWS + 'id' + rfc5322.FWS + '(?:' + atom + '|' + rfc5322.msgId + ')'
-For = rfc5322.CFWS + 'for' + rfc5322.FWS + '(?:' + path + '|' + mailbox + ')'
-string = '(?:' + atom + '|' + quotedString + ')'
+With = qwer(rule('rfc5322.CFWS'), 'with', rule('rfc5322.FWS'), rule('protocol'))
+id = qwer(rule('rfc5322.CFWS'), 'id', rule('rfc5322.FWS'), '(?:', rule('atom'), '|', rule('rfc5322.msgId'), ')')
+For = qwer(rule('rfc5322.CFWS'), 'for', rule('rfc5322.FWS'), '(?:', rule('path'), '|', rule('mailbox'), ')')
+string = qwer('(?:', rule('atom'), '|', rule('quotedString'), ')')
 
 # Additional standard clauses may be added in this location by future standards
 # and registered with IANA.  SMTP servers SHOULD NOT use unregistered names
-additionalRegisteredClauses = rfc5322.CFWS + atom + rfc5322.FWS + string
+additionalRegisteredClauses = qwer(rule('rfc5322.CFWS'), rule('atom'), rule('rfc5322.FWS'), rule('string'))
 
-optInfo = '(?:' + via + ')?(?:' + With + ')?(?:' + id + ')?(?:' + For + ')?(?:' + additionalRegisteredClauses + ')?'
-stamp = fromDomain + byDomain + optInfo + '(?:' + rfc5322.CFWS + ')?;' + rfc5322.FWS + rfc5322.dateTime
+optInfo = qwer('(?:', rule('via'), ')?(?:', rule('With'), ')?(?:', rule('id'), ')?(?:', rule('For'), ')?(?:', rule('additionalRegisteredClauses'), ')?')
+stamp = qwer(rule('fromDomain'), rule('byDomain'), rule('optInfo'), '(?:', rule('rfc5322.CFWS'), ')?;', rule('rfc5322.FWS'), rule('rfc5322.dateTime'))
 
-timeStampLine = 'Received:' + rfc5322.FWS + stamp + rfc5234.CRLF
+timeStampLine = qwer('Received:', rule('rfc5322.FWS'), rule('stamp'), rule('rfc5234.CRLF'))

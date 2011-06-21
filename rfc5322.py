@@ -1,68 +1,69 @@
 import rfc5234
+from qwer import *
 
 # Folding white space
-FWS = '(?:(?:' + rfc5234.WSP + ')*' + rfc5234.CRLF + ')?(?:' + rfc5234.WSP + ')+'
+FWS = qwer('(?:(?:', rule('rfc5234.WSP'), ')*', rule('rfc5234.CRLF'), ')?(?:', rule('rfc5234.WSP'), ')+')
 
 # Printable US-ASCII characters not including "(", ")", or "\"
-ctext = '[!-\'*-[\]-~]'
+ctext = qwer('[!-\'*-[\]-~]')
 
-quotedPair = '\\\(?:' + rfc5234.VCHAR + '|' + rfc5234.WSP + ')'
+quotedPair = qwer('\\\(?:', rule('rfc5234.VCHAR'), '|', rule('rfc5234.WSP'), ')')
 
 # Recursive
-ccontent = '(?:' + ctext + '|' + quotedPair + ')'
+ccontent = qwer('(?:', rule('ctext'), '|', rule('quotedPair'), ')')
 
-comment = '\((?:(?:' + FWS + ')?' + ccontent + ')*(?:' + FWS + ')?\)'
-CFWS = '(?:(?:(?:' + FWS + ')?' + comment + ')+(?:' + FWS + ')?|' + FWS + ')'
+comment = qwer('\((?:(?:', rule('FWS'), ')?', rule('ccontent'), ')*(?:', rule('FWS'), ')?\)')
+CFWS = qwer('(?:(?:(?:', rule('FWS'), ')?', rule('comment'), ')+(?:', rule('FWS'), ')?|', rule('FWS'), ')')
 
 # Printable US-ASCII characters not including specials.  Used for atoms
-atext = '(?:[!#$%&\'*+\-/=?^_`{|}~]|' + rfc5234.ALPHA + '|' + rfc5234.DIGIT + ')'
+atext = qwer('(?:[!#$%&\'*+\-/=?^_`{|}~]|', rule('rfc5234.ALPHA'), '|', rule('rfc5234.DIGIT'), ')')
 
-atom = '(?:' + CFWS + ')?(?:' + atext + ')+(?:' + CFWS + ')?'
+atom = qwer('(?:', rule('CFWS'), ')?(?:', rule('atext'), ')+(?:', rule('CFWS'), ')?')
 
 # Printable US-ASCII characters not including "\" or the quote character
-qtext = '[!#-[\]-~]'
+qtext = qwer('[!#-[\]-~]')
 
-qcontent = '(?:' + qtext + '|' + quotedPair + ')'
-quotedString = '(' + CFWS + ')?' + rfc5234.DQUOTE + '(?:(?:' + FWS + ')?' + qcontent + ')*(?:' + FWS + ')?' + rfc5234.DQUOTE + '(?:' + CFWS + ')?'
-word = '(?:' + atom + '|' + quotedString + ')'
-phrase = '(?:' + word + ')+'
-displayName = phrase
-dotAtomText = '(?:' + atext + ')+(?:\.(?:' + atext + ')+)*'
-dotAtom = '(' + CFWS + ')?' + dotAtomText + '(' + CFWS + ')?'
-localPart = '(?:' + dotAtom + '|' + quotedString + ')'
+qcontent = qwer('(?:', rule('qtext'), '|', rule('quotedPair'), ')')
+quotedString = qwer('(', rule('CFWS'), ')?', rule('rfc5234.DQUOTE'), '(?:(?:', rule('FWS'), ')?', rule('qcontent'), ')*(?:', rule('FWS'), ')?', rule('rfc5234.DQUOTE'), '(?:', rule('CFWS'), ')?')
+word = qwer('(?:', rule('atom'), '|', rule('quotedString'), ')')
+phrase = qwer('(?:', rule('word'), ')+')
+displayName = rule('phrase')
+dotAtomText = qwer('(?:', rule('atext'), ')+(?:\.(?:', rule('atext'), ')+)*')
+dotAtom = qwer('(', rule('CFWS'), ')?', rule('dotAtomText'), '(', rule('CFWS'), ')?')
+localPart = qwer('(?:', rule('dotAtom'), '|', rule('quotedString'), ')')
 
 # Printable US-ASCII characters not including "[", "]", or "\"
-dtext = '[!-Z^-~]'
+dtext = qwer('[!-Z^-~]')
 
-domainLiteral = '(?:' + CFWS + ')?\[(?:(?:' + FWS + ')?' + dtext + ')*(?:' + FWS + ')?](' + CFWS + ')?'
-domain = '(?:' + dotAtom + '|' + domainLiteral + ')'
-addrSpec = localPart + '@' + domain
-angleAddr = '((?:' + CFWS + ')?<)' + addrSpec + '(>(?:' + CFWS + ')?)'
-nameAddr = '(' + displayName + ')?' + angleAddr
-mailbox = '(?:' + nameAddr + '|' + addrSpec + ')'
+domainLiteral = qwer('(?:', rule('CFWS'), ')?\[(?:(?:', rule('FWS'), ')?', rule('dtext'), ')*(?:', rule('FWS'), ')?](', rule('CFWS'), ')?')
+domain = qwer('(?:', rule('dotAtom'), '|', rule('domainLiteral'), ')')
+addrSpec = qwer(rule('localPart'), '@', rule('domain'))
+angleAddr = qwer('((?:', rule('CFWS'), ')?<)', rule('addrSpec'), '(>(?:', rule('CFWS'), ')?)')
+nameAddr = qwer('(', rule('displayName'), ')?', rule('angleAddr'))
+mailbox = qwer('(?:', rule('nameAddr'), '|', rule('addrSpec'), ')')
 
-From = 'From:' + mailbox + rfc5234.CRLF
+From = qwer('From:', rule('mailbox'), rule('rfc5234.CRLF'))
 
-idLeft = dotAtomText
-noFoldLiteral = '\[(?:' + dtext + ')*]'
-idRight = '(?:' + dotAtomText + '|' + noFoldLiteral + ')'
-msgId = '(?:' + CFWS + ')?<(' + idLeft + '@' + idRight + ')>(?:' + CFWS + ')?'
+idLeft = rule('dotAtomText')
+noFoldLiteral = qwer('\[(?:', rule('dtext'), ')*]')
+idRight = qwer('(?:', rule('dotAtomText'), '|', rule('noFoldLiteral'), ')')
+msgId = qwer('(?:', rule('CFWS'), ')?<', rule('idLeft'), '@', rule('idRight'), '>(?:', rule('CFWS'), ')?')
 
-inReplyTo = 'In-Reply-To:(?:' + msgId + ')+' + rfc5234.CRLF
+inReplyTo = qwer('In-Reply-To:(?:', rule('msgId'), ')+', rule('rfc5234.CRLF'))
 
-references = 'References:(?:' + msgId + ')+' + rfc5234.CRLF
+references = qwer('References:(?:', rule('msgId'), ')+', rule('rfc5234.CRLF'))
 
-messageId = 'Message-ID:' + msgId + rfc5234.CRLF
+messageId = qwer('Message-ID:', rule('msgId'), rule('rfc5234.CRLF'))
 
-dayOfWeek = '(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)'
-day = '(?:' + FWS + ')?(?:' + rfc5234.DIGIT + '){1,2}' + FWS
-month = '(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
-year = FWS + '(?:' + rfc5234.DIGIT + '){4,}' + FWS
-date = day + month + year
-hour = '(?:' + rfc5234.DIGIT + '){2}'
-minute = '(?:' + rfc5234.DIGIT + '){2}'
-second = '(?:' + rfc5234.DIGIT + '){2}'
-timeOfDay = hour + ':' + minute + '(?::' + second + ')?'
-zone = FWS + '[+-](?:' + rfc5234.DIGIT + '){4}'
-time = timeOfDay + zone
-dateTime = '(?:' + dayOfWeek + ',)?' + date + time + '(?:' + CFWS + ')?'
+dayOfWeek = qwer('(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)')
+day = qwer('(?:', rule('FWS'), ')?(?:', rule('rfc5234.DIGIT'), '){1,2}', rule('FWS'))
+month = qwer('(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)')
+year = qwer(rule('FWS'), '(?:', rule('rfc5234.DIGIT'), '){4,}', rule('FWS'))
+date = qwer(rule('day'), rule('month'), rule('year'))
+hour = qwer('(?:', rule('rfc5234.DIGIT'), '){2}')
+minute = qwer('(?:', rule('rfc5234.DIGIT'), '){2}')
+second = qwer('(?:', rule('rfc5234.DIGIT'), '){2}')
+timeOfDay = qwer(rule('hour'), ':', rule('minute'), '(?::', rule('second'), ')?')
+zone = qwer(rule('FWS'), '[+-](?:', rule('rfc5234.DIGIT'), '){4}')
+time = qwer(rule('timeOfDay'), rule('zone'))
+dateTime = qwer('(?:', rule('dayOfWeek'), ',)?', rule('date'), rule('time'), '(?:', rule('CFWS'), ')?')

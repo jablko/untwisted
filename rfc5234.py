@@ -1,14 +1,16 @@
-ALPHA = '[A-Za-z]'
+from qwer import *
+
+ALPHA = qwer('[A-Za-z]')
 
 # Use local newlines
-CRLF = '\r\n'
+CRLF = qwer('\r\n')
 
-DIGIT = '\d'
-DQUOTE = '"'
-HEXDIG = '[0-9ABCDEF]'
+DIGIT = qwer('\d')
+DQUOTE = qwer('"')
+HEXDIG = qwer('[0-9ABCDEF]')
 
 # Visible (printing) characters
-VCHAR = '[!-~]'
+VCHAR = qwer('[!-~]')
 
 # White space
-WSP = '[\t ]'
+WSP = qwer('[\t ]')
