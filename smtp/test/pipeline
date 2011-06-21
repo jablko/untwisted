@@ -14,9 +14,7 @@ def client():
     def mail():
       class sample(smtp.pipeline.mail):
         mail = iter(('alice@example.com',)).next
-
         recipient = iter(('bob@example.com',)).next
-
         data = iter(('Expect',)).next
 
       yield sample.__get__((yield))()
@@ -66,9 +64,7 @@ def server():
     def mail():
       class sample(smtp.server.mail):
         mail = staticmethod(untwisted.each(lambda: equal('alice@example.com', (yield))))
-
         recipient = staticmethod(untwisted.each(lambda: equal('bob@example.com', (yield))))
-
         data = staticmethod(untwisted.each(lambda: equal('Expect', (yield))))
 
       # QUIT

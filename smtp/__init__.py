@@ -44,7 +44,6 @@ class reply:
       555: ('MAIL FROM/RCPT TO parameters not recognized or not implemented',)}[code]
 
   __int__ = lambda ctx: ctx.code
-
   __str__ = lambda ctx: ''.join(str(ctx.code) + '-' + text + '\r\n' for text in ctx.text[:-1]) + str(ctx.code) + ' ' + ctx.text[-1] + '\r\n'
 
 class client:

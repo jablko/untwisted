@@ -14,9 +14,7 @@ def send():
     def mail():
       class sample(smtp.client.mail):
         mail = iter(('alice@example.com',)).next
-
         recipient = iter(('bob@example.com',)).next
-
         data = iter(('Expect',)).next
 
       yield sample.__get__((yield))()

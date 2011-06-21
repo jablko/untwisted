@@ -15,9 +15,7 @@ def receive():
     def mail():
       class sample(smtp.server.mail):
         mail = staticmethod(untwisted.each(lambda: equal('alice@example.com', (yield))))
-
         recipient = staticmethod(untwisted.each(lambda: equal('bob@example.com', (yield))))
-
         data = staticmethod(untwisted.each(lambda: equal('Expect', (yield))))
 
       # QUIT
