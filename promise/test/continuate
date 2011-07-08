@@ -62,12 +62,12 @@ def stopIterationArgs():
   @untwisted.call
   @promise.continuate
   def sample():
-    raise promise.StopIteration('First', 'Second', 'Third', True=True, False=False) or (yield)
+    raise promise.StopIteration('First', 'Second', 'Third', First='Tsrif', Second='Dnoces', Third='Driht') or (yield)
 
   @sample.then
   def _(*args, **kwds):
     equal(('First', 'Second', 'Third'), args)
-    equal({ 'True': True, 'False': False }, kwds)
+    equal({ 'First': 'Tsrif', 'Second': 'Dnoces', 'Third': 'Driht' }, kwds)
 
 @test
 def stopIterationPromise():
@@ -76,9 +76,9 @@ def stopIterationPromise():
   @untwisted.call
   @promise.continuate
   def sample():
-    raise promise.StopIteration(promise.promise()('First'), promise.promise()('Second'), promise.promise()('Third'), True=True, False=False) or (yield)
+    raise promise.StopIteration(promise.promise()('First'), promise.promise()('Second'), promise.promise()('Third'), First='Tsrif', Second='Dnoces', Third='Driht') or (yield)
 
   @sample.then
   def _(*args, **kwds):
     equal(('First', 'Second', 'Third'), args)
-    equal({ 'True': True, 'False': False }, kwds)
+    equal({ 'First': 'Tsrif', 'Second': 'Dnoces', 'Third': 'Driht' }, kwds)
