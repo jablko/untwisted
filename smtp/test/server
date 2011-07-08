@@ -5,7 +5,6 @@ from testify import *
 from untwisted import promise, smtp
 
 @test
-@promise.continuate
 def quit():
   expect(2)
 
@@ -14,12 +13,13 @@ def quit():
     write = promise.sequence()
 
   server = type.__call__(smtp.server, transport)
-  server.start(smtp.command('QUIT'), None)
 
-  equal('221 Service closing transmission channel\r\n', (yield transport.write.shift()))
+  promise.nowThen((promise.nowThen(transport.write.shift(),
+        untwisted.partial(ok, False)),
+      server.start(smtp.command('QUIT'), None))[0],
+    untwisted.partial(equal, '221 Service closing transmission channel\r\n'))
 
 @test
-@promise.continuate
 def command():
   expect(1)
 
@@ -33,4 +33,4 @@ def command():
   server.command()
   transport.protocol.dataReceived('IGNORE\r\nEXPECT\r\n')
 
-  equal('EXPECT\r\n', str((yield server.command())))
+  server.command().then(untwisted.compose(untwisted.partial(equal, 'EXPECT\r\n'), str))

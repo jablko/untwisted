@@ -5,7 +5,6 @@ from testify import *
 from untwisted import promise, smtp
 
 @test
-@promise.continuate
 def data():
   expect(2)
 
@@ -17,16 +16,18 @@ def data():
 
   client = type.__call__(smtp.client, transport)
   sample = type.__call__(client.mail)
-  sample.dataCmd('Expect')
 
-  equal('DATA\r\n', (yield transport.write.shift()))
+  promise.nowThen((promise.nowThen(transport.write.shift(),
+        untwisted.partial(ok, False)),
+      sample.dataCmd('Expect'))[0],
+    untwisted.partial(equal, 'DATA\r\n'))
 
-  transport.protocol.dataReceived('354\r\n')
-
-  equal('Expect\r\n.\r\n', (yield transport.write.shift()))
+  promise.nowThen((promise.nowThen(transport.write.shift(),
+        untwisted.partial(ok, False)),
+      transport.protocol.dataReceived('354\r\n'))[0],
+    untwisted.partial(equal, 'Expect\r\n.\r\n'))
 
 @test
-@promise.continuate
 def dataCrlf():
   expect(2)
 
@@ -38,16 +39,18 @@ def dataCrlf():
 
   client = type.__call__(smtp.client, transport)
   sample = type.__call__(client.mail)
-  sample.dataCmd('Expect\r\n')
 
-  equal('DATA\r\n', (yield transport.write.shift()))
+  promise.nowThen((promise.nowThen(transport.write.shift(),
+        untwisted.partial(ok, False)),
+      sample.dataCmd('Expect\r\n'))[0],
+    untwisted.partial(equal, 'DATA\r\n'))
 
-  transport.protocol.dataReceived('354\r\n')
-
-  equal('Expect\r\n.\r\n', (yield transport.write.shift()))
+  promise.nowThen((promise.nowThen(transport.write.shift(),
+        untwisted.partial(ok, False)),
+      transport.protocol.dataReceived('354\r\n'))[0],
+    untwisted.partial(equal, 'Expect\r\n.\r\n'))
 
 @test
-@promise.continuate
 def reply():
   expect(1)
 
@@ -61,4 +64,4 @@ def reply():
   client.reply(untwisted.wildcard)
   transport.protocol.dataReceived('456 Ignore\r\n234 Expect\r\n')
 
-  equal('234 Expect\r\n', str((yield client.reply())))
+  client.reply().then(untwisted.compose(untwisted.partial(equal, '234 Expect\r\n'), str))
