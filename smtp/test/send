@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import re, untwisted
+import untwisted
 from testify import *
 from untwisted import promise, rfc5321, smtp
 

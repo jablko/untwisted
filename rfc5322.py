@@ -24,22 +24,22 @@ atom = qwer('(?:', rule('CFWS'), ')?(?:', rule('atext'), ')+(?:', rule('CFWS'), 
 qtext = qwer('[!#-[\]-~]')
 
 qcontent = qwer('(?:', rule('qtext'), '|', rule('quotedPair'), ')')
-quotedString = qwer('(', rule('CFWS'), ')?', rule('rfc5234.DQUOTE'), '(?:(?:', rule('FWS'), ')?', rule('qcontent'), ')*(?:', rule('FWS'), ')?', rule('rfc5234.DQUOTE'), '(?:', rule('CFWS'), ')?')
+quotedString = qwer('(?:', rule('CFWS'), ')?', rule('rfc5234.DQUOTE'), '(?:(?:', rule('FWS'), ')?', rule('qcontent'), ')*(?:', rule('FWS'), ')?', rule('rfc5234.DQUOTE'), '(?:', rule('CFWS'), ')?')
 word = qwer('(?:', rule('atom'), '|', rule('quotedString'), ')')
 phrase = qwer('(?:', rule('word'), ')+')
 displayName = rule('phrase')
 dotAtomText = qwer('(?:', rule('atext'), ')+(?:\.(?:', rule('atext'), ')+)*')
-dotAtom = qwer('(', rule('CFWS'), ')?', rule('dotAtomText'), '(', rule('CFWS'), ')?')
+dotAtom = qwer('(?:', rule('CFWS'), ')?', rule('dotAtomText'), '(?:', rule('CFWS'), ')?')
 localPart = qwer('(?:', rule('dotAtom'), '|', rule('quotedString'), ')')
 
 # Printable US-ASCII characters not including "[", "]", or "\"
 dtext = qwer('[!-Z^-~]')
 
-domainLiteral = qwer('(?:', rule('CFWS'), ')?\[(?:(?:', rule('FWS'), ')?', rule('dtext'), ')*(?:', rule('FWS'), ')?](', rule('CFWS'), ')?')
+domainLiteral = qwer('(?:', rule('CFWS'), ')?\[(?:(?:', rule('FWS'), ')?', rule('dtext'), ')*(?:', rule('FWS'), ')?](?:', rule('CFWS'), ')?')
 domain = qwer('(?:', rule('dotAtom'), '|', rule('domainLiteral'), ')')
 addrSpec = qwer(rule('localPart'), '@', rule('domain'))
-angleAddr = qwer('((?:', rule('CFWS'), ')?<)', rule('addrSpec'), '(>(?:', rule('CFWS'), ')?)')
-nameAddr = qwer('(', rule('displayName'), ')?', rule('angleAddr'))
+angleAddr = qwer('(?:', rule('CFWS'), ')?<', rule('addrSpec'), '>(?:', rule('CFWS'), ')?')
+nameAddr = qwer('(?:', rule('displayName'), ')?', rule('angleAddr'))
 mailbox = qwer('(?:', rule('nameAddr'), '|', rule('addrSpec'), ')')
 
 From = qwer('From:', rule('mailbox'), rule('rfc5234.CRLF'))
