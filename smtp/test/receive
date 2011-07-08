@@ -5,55 +5,59 @@ from qwer import *
 from testify import *
 from untwisted import promise, rfc5234, rfc5321, smtp
 
-@test
-@promise.continuate
-def receive():
-  expect(11)
+expect(11)
 
-  class server(smtp.server):
+class server(smtp.server):
 
-    @untwisted.each
-    def mail():
-      class sample(smtp.server.mail):
-        mail = staticmethod(untwisted.each(lambda: equal('alice@example.com', str((yield)))))
-        recipient = staticmethod(untwisted.each(lambda: equal('bob@example.com', str((yield)))))
-        data = staticmethod(untwisted.each(lambda: equal('Expect', (yield))))
+  @untwisted.each
+  def mail():
+    class sample(smtp.server.mail):
+      mail = staticmethod(untwisted.each(lambda: equal('alice@example.com', str((yield)))))
+      recipient = staticmethod(untwisted.each(lambda: equal('bob@example.com', str((yield)))))
+      data = staticmethod(untwisted.each(lambda: equal('Expect', (yield))))
 
-      # QUIT
-      yield smtp.server.mail.__get__((yield sample.__get__((yield))()))()
+    # QUIT
+    yield smtp.server.mail.__get__((yield sample.__get__((yield))()))()
 
-  class transport:
-    loseConnection = staticmethod(untwisted.partial(ok, True))
+class transport:
+  loseConnection = staticmethod(untwisted.partial(ok, True))
 
-    class protocol:
-      dataReceived = promise.sequence()
+  class protocol:
+    dataReceived = promise.sequence()
 
-    write = promise.sequence()
+  write = promise.sequence()
 
-  server(transport)
+server(transport)
 
-  ok(True, qwer('(?:220-(?:', rfc5321.textstring, ')?', rfc5234.CRLF, ')*220(?: ', rfc5321.textstring, ')?', rfc5234.CRLF).match((yield transport.write.shift())))
+promise.nowThen(transport.write.shift(),
+  untwisted.compose(untwisted.partial(ok, True), qwer('(?:220-(?:', rfc5321.textstring, ')?', rfc5234.CRLF, ')*220(?: ', rfc5321.textstring, ')?', rfc5234.CRLF).match))
 
-  transport.protocol.dataReceived('EHLO example.com\r\n')
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('EHLO example.com\r\n'))[0],
+  untwisted.compose(untwisted.partial(ok, True), qwer('(?:250-(?:', rfc5321.textstring, ')?', rfc5234.CRLF, ')*250(?: ', rfc5321.textstring, ')?', rfc5234.CRLF).match))
 
-  ok(True, qwer('(?:250-(?:', rfc5321.textstring, ')?', rfc5234.CRLF, ')*250(?: ', rfc5321.textstring, ')?', rfc5234.CRLF).match((yield transport.write.shift())))
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('MAIL FROM:<alice@example.com>\r\n'))[0],
+  untwisted.partial(equal, '250 Requested mail action okay, completed\r\n'))
 
-  transport.protocol.dataReceived('MAIL FROM:<alice@example.com>\r\n')
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('RCPT TO:<bob@example.com>\r\n'))[0],
+  untwisted.partial(equal, '250 Requested mail action okay, completed\r\n'))
 
-  equal('250 Requested mail action okay, completed\r\n', (yield transport.write.shift()))
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('DATA\r\n'))[0],
+  untwisted.partial(equal, '354 Start mail input; end with <CRLF>.<CRLF>\r\n'))
 
-  transport.protocol.dataReceived('RCPT TO:<bob@example.com>\r\n')
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('Expect\r\n.\r\n'))[0],
+  untwisted.partial(equal, '250 Requested mail action okay, completed\r\n'))
 
-  equal('250 Requested mail action okay, completed\r\n', (yield transport.write.shift()))
-
-  transport.protocol.dataReceived('DATA\r\n')
-
-  equal('354 Start mail input; end with <CRLF>.<CRLF>\r\n', (yield transport.write.shift()))
-
-  transport.protocol.dataReceived('Expect\r\n.\r\n')
-
-  equal('250 Requested mail action okay, completed\r\n', (yield transport.write.shift()))
-
-  transport.protocol.dataReceived('QUIT\r\n')
-
-  equal('221 Service closing transmission channel\r\n', (yield transport.write.shift()))
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('QUIT\r\n'))[0],
+  untwisted.partial(equal, '221 Service closing transmission channel\r\n'))
