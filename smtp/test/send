@@ -10,12 +10,14 @@ class client(smtp.client):
 
   @untwisted.each
   def mail():
+    ctx = yield
+
     class sample(smtp.client.mail):
       mail = iter(('alice@example.com',)).next
       recipient = iter(('bob@example.com',)).next
       data = iter(('Expect',)).next
 
-    yield sample.__get__((yield))()
+    yield sample.__get__(ctx)()
 
 class transport:
   class protocol:

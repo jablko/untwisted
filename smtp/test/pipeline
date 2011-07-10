@@ -13,12 +13,14 @@ def client():
 
     @untwisted.each
     def mail():
+      ctx = yield
+
       class sample(smtp.pipeline.mail):
         mail = iter(('alice@example.com',)).next
         recipient = iter(('bob@example.com',)).next
         data = iter(('Expect',)).next
 
-      yield sample.__get__((yield))()
+      yield sample.__get__(ctx)()
 
   class transport:
     class protocol:
@@ -62,13 +64,17 @@ def server():
 
     @untwisted.each
     def mail():
+      ctx = yield
+
       class sample(smtp.server.mail):
         mail = staticmethod(untwisted.each(lambda: equal('alice@example.com', str((yield)))))
         recipient = staticmethod(untwisted.each(lambda: equal('bob@example.com', str((yield)))))
         data = staticmethod(untwisted.each(lambda: equal('Expect', (yield))))
 
+      ctx = yield sample.__get__(ctx)()
+
       # QUIT
-      yield smtp.server.mail.__get__((yield sample.__get__((yield))()))()
+      yield smtp.server.mail.__get__(ctx)()
 
   class transport:
     loseConnection = staticmethod(untwisted.partial(ok, True))
