@@ -108,11 +108,7 @@ def head(cbl):
   return wrapper
 
 # http://jdbates.blogspot.com/2011/04/ow-ow-ow-python-why-do-you-hurt-so-hard.html
-def identity(head, *rest):
-  if rest:
-    return (head,) + rest
-
-  return head
+identity = lambda ctx: ctx
 
 # functools.partial() breaks descriptor,
 # http://docs.python.org/reference/datamodel.html#descriptors
