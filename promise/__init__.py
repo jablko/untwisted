@@ -325,27 +325,15 @@ def nowThen(ctx, now=lambda *args, **kwds: promise()(*args, **kwds), then=lambda
 # was a promise
 #
 # compose(etc., third, second, first) is point free (pointless) variation of
-# the following, except that compose() also supports the case that the first
-# result isn't a promise,
+# the following,
 #
-# lambda *args, **kwds: first(*args, **kwds).then(second).then(third).then(etc.)
+# lambda *args, **kwds: promise()(*args, **kwds).then(first).then(second).then(third).then(etc.)
 #
 def compose(*args):
   def wrapper(*nstArgs, **nstKwds):
-    sgra = reversed(args)
-
-    def callback(*nstArgs, **nstKwds):
-      try:
-        result = sgra.next()(*nstArgs, **nstKwds)
-
-      except exceptions.StopIteration:
-        return promise()(*nstArgs, **nstKwds)
-
-      ctx.callback.insert(0, callback)
-
-      return result
-
-    ctx = promise().then(callback)
+    ctx = promise()
+    for itm in reversed(args):
+      ctx.then(itm)
 
     return ctx(*nstArgs, **nstKwds)
 
