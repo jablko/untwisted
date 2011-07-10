@@ -78,7 +78,7 @@ def head(cbl):
         #head, *rest = e.args
         head, rest = e.args[0], e.args[1:]
         if rest:
-          return (head,) + rest
+          return e.args
 
         return head
 
@@ -98,7 +98,7 @@ def head(cbl):
         #head, *rest = e.args
         head, rest = e.args[0], e.args[1:]
         if rest:
-          return (head,) + rest
+          return e.args
 
         return head
 
