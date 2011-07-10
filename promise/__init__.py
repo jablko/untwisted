@@ -146,7 +146,7 @@ class promise:
 
     #raise args
     if args:
-      #type, value=None, traceback=None = *args
+      #type, value=None, traceback=None = args
       type, value, traceback = (lambda type, value=None, traceback=None: (type, value, traceback))(*args)
       try:
         raise type, value, traceback

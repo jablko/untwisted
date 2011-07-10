@@ -3,7 +3,7 @@ import weakref
 call = lambda cbl: cbl()
 
 def compose(*args):
-  #head, *rest = reversed(args)
+  #*rest, head = args
   head, rest = (lambda head, *rest: (head, rest))(*reversed(args))
   def wrapper(*args, **kwds):
     result = head(*args, **kwds)
