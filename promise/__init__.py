@@ -329,12 +329,4 @@ def nowThen(ctx, now=lambda *args, **kwds: promise()(*args, **kwds), then=lambda
 #
 # lambda *args, **kwds: promise()(*args, **kwds).then(first).then(second).then(third).then(etc.)
 #
-def compose(*args):
-  def wrapper(*nstArgs, **nstKwds):
-    ctx = promise()
-    for itm in reversed(args):
-      ctx.then(itm)
-
-    return ctx(*nstArgs, **nstKwds)
-
-  return wrapper
+compose = lambda *args: lambda *nstArgs, **nstKwds: reduce(promise.then, reversed(args), promise())(*nstArgs, **nstKwds)
