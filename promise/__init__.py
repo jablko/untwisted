@@ -282,32 +282,31 @@ def continuate(cbl):
   # if it's an attribute of another object
   def wrapper(*args, **kwds):
     gnr = cbl(*args, **kwds)
-    result = promise()
 
-    @result.then
-    @untwisted.call
-    class _:
-      def __call__(ctx, *args, **kwds):
-        try:
-          itm = gnr.send(*args, **kwds)
+    def callback(*args, **kwds):
+      try:
+        itm = gnr.send(*args, **kwds)
 
-        except exceptions.StopIteration as e:
-          return join()(*e.args or (None,), **getattr(e, 'kwds', {}))
+      except exceptions.StopIteration as e:
+        return join()(*e.args or (None,), **getattr(e, 'kwds', {}))
 
-        result.callback.insert(0, ctx)
+      result.callback.insert(0, callback)
 
-        return itm
+      return itm
 
-      def throw(ctx, *args, **kwds):
-        try:
-          itm = gnr.throw(*args, **kwds)
+    @untwisted.partial(setattr, callback, 'throw')
+    def throw(*args, **kwds):
+      try:
+        itm = gnr.throw(*args, **kwds)
 
-        except exceptions.StopIteration as e:
-          return join()(*e.args or (None,), **getattr(e, 'kwds', {}))
+      except exceptions.StopIteration as e:
+        return join()(*e.args or (None,), **getattr(e, 'kwds', {}))
 
-        result.callback.insert(0, ctx)
+      result.callback.insert(0, callback)
 
-        return itm
+      return itm
+
+    result = promise().then(callback)
 
     # gnr.send(None)
     return result(None)
