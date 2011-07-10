@@ -201,85 +201,67 @@ class StopIteration(exceptions.StopIteration):
 
     ctx.kwds = kwds
 
-# Join is a promise.  When called, its arguments may be other promises.  It
-# propagates only after all these promises are triggered and calls callbacks
-# with the results of all these promises
+# Join promises into one promise, which only propagates after all these
+# promises are triggered.  join() supports a mixture of arguments which are and
+# aren't promises.  Callbacks subscribed to the joined promise are called with
+# one argument for each argument to join(): If the argument to join() was a
+# promise then the argument to the callback is this promise's result, otherwise
+# it's the original argument
 #
 # Join is like the following, except,
 #
-#  * this is infinitely recursive because continuate calls join
+#  * this is infinitely recursive because @continuate depends on join()
 #
 #  * this isn't a generator function!  "yield" yields extra values from the
-#    list comprehension - it doesn't form a generator function
+#    list comprehension - it doesn't form a generator function.  Bracketing the
+#    list comprehension with "[]" solves this, however
 #
 # @continuate
 # def join(*args, **kwds):
-#   raise StopIteration(((yield itm) for itm in args), **kwds)
+#   #return ...
+#   raise StopIteration(*((yield itm) for itm in args), **kwds)
 #
-class join(promise):
-  def __call__(ctx, *args, **kwds):
+def join(*args, **kwds):
+  try:
+    #head, *rest = args
+    head, rest = args[0], iter(args[1:])
 
-    # Already triggered
-    if ctx.trigger:
-      raise StopIteration
+  except IndexError:
+    return promise()(*args, **kwds)
 
-    ctx.trigger = True
+  args = []
+  def callback(*nstArgs, **nstKwds):
+    args.append(*nstArgs)
+    kwds.update(nstKwds)
 
     try:
-      #head, *rest = args
-      head, rest = args[0], args[1:]
+      result = rest.next()
 
-      # Can iterate with iterator or list, not tuple
-      rest = list(rest)
+    except exceptions.StopIteration:
+      return promise()(*args, **kwds)
 
-      args = []
-      def callback(*argsItm, **kwdsItm):
-        try:
-          args.append(*argsItm)
+    ctx.callback.insert(0, callback)
 
-        except TypeError:
-          args.append(argsItm)
+    return result
 
-        kwds.update(*kwdsItm)
-
-        try:
-          itm = rest.pop(0)
-
-        except IndexError:
-          return promise()(*args, **kwds)
-
-        ctx.callback.insert(0, callback)
-
-        return itm
-
-      ctx.callback.insert(0, callback)
-
-      if isinstance(head, promise):
-        head.then(ctx)
-
-        return ctx
-
-      ctx.args = head,
-      ctx.kwds = {}
-
-    except IndexError:
-      ctx.args = args
-      ctx.kwds = kwds
-
-    ctx.propagate()
+  ctx = promise().then(callback)
+  if isinstance(head, promise):
+    head.then(ctx)
 
     return ctx
 
+  return ctx(head)
+
 # If continuate is a class, then wrapper (aka .__call__()) is either a method
-# or a class, and neither a method nor a class behaves like a function if it's
-# an attribute of another object.  The first argument of a method is always a
-# continuate instance and the first argument of a class is wrapper (aka
-# .__call__()) instance.  untwisted.ctxual is a workaround, but a function is
-# simpler
+# or a class, and neither a method nor a class behaves like a function when
+# it's an attribute of another object.  The first argument of a method is
+# always a continuate instance and the first argument of a class is wrapper
+# (aka .__call__()) instance.  untwisted.ctxual() is a workaround, but a
+# function is simpler
 def continuate(cbl):
 
   # If cbl is a function and wrapper is a class then it doesn't behave like cbl
-  # if it's an attribute of another object
+  # when it's an attribute of another object
   def wrapper(*args, **kwds):
     gnr = cbl(*args, **kwds)
 
@@ -288,7 +270,7 @@ def continuate(cbl):
         result = gnr.send(*args, **kwds)
 
       except exceptions.StopIteration as e:
-        return join()(*e.args or (None,), **getattr(e, 'kwds', {}))
+        return join(*e.args or (None,), **getattr(e, 'kwds', {}))
 
       ctx.callback.insert(0, callback)
 
@@ -300,7 +282,7 @@ def continuate(cbl):
         result = gnr.throw(*args, **kwds)
 
       except exceptions.StopIteration as e:
-        return join()(*e.args or (None,), **getattr(e, 'kwds', {}))
+        return join(*e.args or (None,), **getattr(e, 'kwds', {}))
 
       ctx.callback.insert(0, callback)
 

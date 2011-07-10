@@ -8,8 +8,7 @@ from untwisted import promise
 def join():
   expect(1)
 
-  sample = promise.join()
-  sample(promise.promise()('Expect'))
+  sample = promise.join(promise.promise()('Expect'))
 
   sample.then(untwisted.partial(equal, 'Expect'))
 
@@ -17,7 +16,6 @@ def join():
 def joinNonPromise():
   expect(1)
 
-  sample = promise.join()
-  sample('Expect')
+  sample = promise.join('Expect')
 
   sample.then(untwisted.partial(equal, 'Expect'))
