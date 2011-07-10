@@ -285,35 +285,35 @@ def continuate(cbl):
 
     def callback(*args, **kwds):
       try:
-        itm = gnr.send(*args, **kwds)
+        result = gnr.send(*args, **kwds)
 
       except exceptions.StopIteration as e:
         return join()(*e.args or (None,), **getattr(e, 'kwds', {}))
 
-      result.callback.insert(0, callback)
+      ctx.callback.insert(0, callback)
 
-      return itm
+      return result
 
     @untwisted.partial(setattr, callback, 'throw')
     def throw(*args, **kwds):
       try:
-        itm = gnr.throw(*args, **kwds)
+        result = gnr.throw(*args, **kwds)
 
       except exceptions.StopIteration as e:
         return join()(*e.args or (None,), **getattr(e, 'kwds', {}))
 
-      result.callback.insert(0, callback)
+      ctx.callback.insert(0, callback)
 
-      return itm
+      return result
 
-    result = promise().then(callback)
+    ctx = promise().then(callback)
 
     # gnr.send(None)
-    return result(None)
+    return ctx(None)
 
   return wrapper
 
-def nowThen(result, now=lambda *args, **kwds: promise()(*args, **kwds), then=lambda *args, **kwds: promise()(*args, **kwds)):
+def nowThen(ctx, now=lambda *args, **kwds: promise()(*args, **kwds), then=lambda *args, **kwds: promise()(*args, **kwds)):
   wrapper = lambda *args, **kwds: callback(*args, **kwds)
 
   callback = now
@@ -324,7 +324,7 @@ def nowThen(result, now=lambda *args, **kwds: promise()(*args, **kwds), then=lam
     pass
 
   try:
-    return result.then(wrapper)
+    return ctx.then(wrapper)
 
   finally:
     callback = then
