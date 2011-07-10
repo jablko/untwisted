@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+
+import untwisted
+from testify import *
+from untwisted import promise
+
+expect(3)
+
+sample = promise.compose(lambda *args, **kwds: (promise.promise()('Third'), equal('Second', *args, **kwds))[0], lambda *args, **kwds: (promise.promise()('Second'), equal('First', *args, **kwds))[0])('First')
+
+sample.then(untwisted.partial(equal, 'Third'))

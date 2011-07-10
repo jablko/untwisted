@@ -319,3 +319,34 @@ def nowThen(ctx, now=lambda *args, **kwds: promise()(*args, **kwds), then=lambda
 
       except AttributeError:
         pass
+
+# Variation of untwisted.compose() which only calls arguments after the result
+# of the previous argument is triggered, if the result of the previous argument
+# was a promise
+#
+# compose(etc., third, second, first) is point free (pointless) variation of
+# the following, except that compose() also supports the case that the first
+# result isn't a promise,
+#
+# lambda *args, **kwds: first(*args, **kwds).then(second).then(third).then(etc.)
+#
+def compose(*args):
+  def wrapper(*nstArgs, **nstKwds):
+    sgra = reversed(args)
+
+    def callback(*nstArgs, **nstKwds):
+      try:
+        result = sgra.next()(*nstArgs, **nstKwds)
+
+      except exceptions.StopIteration:
+        return promise()(*nstArgs, **nstKwds)
+
+      ctx.callback.insert(0, callback)
+
+      return result
+
+    ctx = promise().then(callback)
+
+    return ctx(*nstArgs, **nstKwds)
+
+  return wrapper
