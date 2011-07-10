@@ -8,14 +8,14 @@ class connect:
     except KeyError:
       import MySQLdb as module
 
-    ctx.connect = untwisted.partial(module.connect, *args, **kwds)
-    ctx.conn = ctx.connect()
+    ctx.connect = untwisted.compose(untwisted.partial(setattr, ctx, 'conn'), untwisted.partial(module.connect, *args, **kwds))
+    ctx.connect()
 
   def cursor(ctx):
     try:
       return ctx.conn.cursor()
 
     except:
-      ctx.conn = ctx.connect()
+      ctx.connect()
 
       return ctx.conn.cursor()
