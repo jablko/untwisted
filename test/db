@@ -85,6 +85,39 @@ def executeArgs():
   db.connect(module=module).cursor().execute('Operation', 'First', 'Second', 'Third')
 
 @test
+def executeGoneAway():
+  expect(4)
+
+  class module:
+    class OperationalError:
+      pass
+
+    @classmethod
+    @untwisted.each
+    def connect():
+      yield
+
+      class sample:
+        class cursor:
+          def execute(ctx, operation, params):
+            equal('Expect', operation)
+            equal((), params)
+
+            raise module.OperationalError
+
+      yield sample
+
+      class sample:
+        class cursor:
+          def execute(ctx, operation, params):
+            equal('Expect', operation)
+            equal((), params)
+
+      yield sample
+
+  db.connect(module=module).cursor().execute('Expect')
+
+@test
 def fetchone():
   class module:
     class connect:
