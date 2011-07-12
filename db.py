@@ -4,6 +4,7 @@ class connect:
   def __init__(ctx, *args, **kwds):
     try:
       module = kwds['module']
+      del kwds['module']
 
     except KeyError:
       import MySQLdb as module

@@ -10,7 +10,7 @@ class module:
   class connect:
     def __init__(ctx, *args, **kwds):
       equal(('First', 'Second', 'Third'), args)
-      equal({ 'First': 'Tsrif', 'Second': 'Dnoces', 'Third': 'Driht', 'module': module }, kwds)
+      equal({ 'First': 'Tsrif', 'Second': 'Dnoces', 'Third': 'Driht' }, kwds)
 
     class cursor:
       def __init__(ctx):
