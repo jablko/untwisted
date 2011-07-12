@@ -1,15 +1,18 @@
 #!/usr/bin/env python
 
+import untwisted
 from testify import *
 from untwisted import db
 
-expect(2)
+expect(3)
 
 class module:
+  class connect:
+    def __init__(ctx, *args, **kwds):
+      equal(('First', 'Second', 'Third'), args)
+      equal({ 'First': 'Tsrif', 'Second': 'Dnoces', 'Third': 'Driht', 'module': module }, kwds)
 
-  @staticmethod
-  def connect(*args, **kwds):
-    equal(('First', 'Second', 'Third'), args)
-    equal({ 'First': 'Tsrif', 'Second': 'Dnoces', 'Third': 'Driht', 'module': module }, kwds)
+    cursor = untwisted.partial(ok, True)
 
-db.connect('First', 'Second', 'Third', First='Tsrif', Second='Dnoces', Third='Driht', module=module)
+conn = db.connect('First', 'Second', 'Third', First='Tsrif', Second='Dnoces', Third='Driht', module=module)
+conn.cursor()
