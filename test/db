@@ -4,28 +4,91 @@ import untwisted
 from testify import *
 from untwisted import db
 
-expect(7)
+@test
+def connect():
+  expect(2)
 
-class module:
-  class connect:
-    def __init__(ctx, *args, **kwds):
+  class module:
+
+    @staticmethod
+    def connect(*args, **kwds):
       equal(('First', 'Second', 'Third'), args)
       equal({ 'First': 'Tsrif', 'Second': 'Dnoces', 'Third': 'Driht' }, kwds)
 
-    class cursor:
-      def __init__(ctx):
-        ok(True)
+  db.connect('First', 'Second', 'Third', First='Tsrif', Second='Dnoces', Third='Driht', module=module)
 
-      close = untwisted.partial(ok, True)
+@test
+def cursor():
+  expect(1)
 
-      def execute(ctx, operation, params):
-        equal('Expect', operation)
-        equal((), params)
+  class module:
+    class connect:
+      cursor = untwisted.partial(ok, True)
 
-      fetchone = lambda ctx: 'Expect'
+  db.connect(module=module).cursor()
 
-conn = db.connect('First', 'Second', 'Third', First='Tsrif', Second='Dnoces', Third='Driht', module=module)
-cursor = conn.cursor()
-cursor.close()
-cursor.execute('Expect')
-equal('Expect', cursor.fetchone())
+@test
+def close():
+  expect(1)
+
+  class module:
+    class connect:
+      class cursor:
+        close = untwisted.partial(ok, True)
+
+  db.connect(module=module).cursor().close()
+
+@test
+def execute():
+  expect(2)
+
+  class module:
+    class connect:
+      class cursor:
+        def execute(ctx, operation, params):
+          equal('Expect', operation)
+          equal((), params)
+
+  db.connect(module=module).cursor().execute('Expect')
+
+@test
+def executeScalar():
+  expect(1)
+
+  class module:
+    class connect:
+      class cursor:
+        execute = lambda ctx, operation, params: equal('Expect', params)
+
+  db.connect(module=module).cursor().execute('Operation', 'Expect')
+
+@test
+def executeSequence():
+  expect(1)
+
+  class module:
+    class connect:
+      class cursor:
+        execute = lambda ctx, operation, params: equal(('First', 'Second', 'Third'), params)
+
+  db.connect(module=module).cursor().execute('Operation', ('First', 'Second', 'Third'))
+
+@test
+def executeArgs():
+  expect(1)
+
+  class module:
+    class connect:
+      class cursor:
+        execute = lambda ctx, operation, params: equal(('First', 'Second', 'Third'), params)
+
+  db.connect(module=module).cursor().execute('Operation', 'First', 'Second', 'Third')
+
+@test
+def fetchone():
+  class module:
+    class connect:
+      class cursor:
+        fetchone = lambda ctx: 'Expect'
+
+  equal('Expect', db.connect(module=module).cursor().fetchone())
