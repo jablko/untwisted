@@ -29,18 +29,20 @@ def cursor():
 
 @test
 def close():
-  expect(1)
+  expect(2)
 
   class module:
     class connect:
       class cursor:
         close = untwisted.partial(ok, True)
 
-  db.connect(module=module).cursor().close()
+  cursor = db.connect(module=module).cursor()
+
+  equal(cursor, cursor.close())
 
 @test
 def execute():
-  expect(2)
+  expect(3)
 
   class module:
     class connect:
@@ -49,7 +51,9 @@ def execute():
           equal('Expect', operation)
           equal((), params)
 
-  db.connect(module=module).cursor().execute('Expect')
+  cursor = db.connect(module=module).cursor()
+
+  equal(cursor, cursor.execute('Expect'))
 
 @test
 def executeScalar():

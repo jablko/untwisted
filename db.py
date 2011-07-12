@@ -21,7 +21,7 @@ class connect:
     def __init__(ctx):
       ctx.cursor = ctx.ctx.conn.cursor()
 
-    close = lambda ctx: ctx.cursor.close()
+    close = lambda ctx: (ctx, ctx.cursor.close())[0]
 
     def execute(ctx, operation, *args):
       try:
@@ -31,11 +31,13 @@ class connect:
         pass
 
       try:
-        return ctx.cursor.execute(operation, args)
+        ctx.cursor.execute(operation, args)
 
       except ctx.ctx.module.OperationalError:
         ctx.cursor = ctx.ctx.connect().conn.cursor()
 
-        return ctx.cursor.execute(operation, args)
+        ctx.cursor.execute(operation, args)
+
+      return ctx
 
     fetchone = lambda ctx: ctx.cursor.fetchone()
