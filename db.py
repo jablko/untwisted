@@ -11,9 +11,30 @@ class connect:
     ctx.connect = lambda: (ctx, setattr(ctx, 'conn', module.connect(*args, **kwds)))[0]
     ctx.connect()
 
-  def cursor(ctx):
-    try:
-      return ctx.conn.cursor()
+    ctx.module = module
 
-    except:
-      return ctx.connect().conn.cursor()
+  class cursor:
+    class __metaclass__(type):
+      __get__ = untwisted.ctxual
+
+    def __init__(ctx):
+      ctx.cursor = ctx.ctx.conn.cursor()
+
+    close = lambda ctx: ctx.cursor.close()
+
+    def execute(ctx, operation, *args):
+      try:
+        args, = args
+
+      except ValueError:
+        pass
+
+      try:
+        return ctx.cursor.execute(operation, args)
+
+      except ctx.ctx.module.OperationalError:
+        ctx.cursor = ctx.ctx.connect().conn.cursor()
+
+        return ctx.cursor.execute(operation, args)
+
+    fetchone = lambda ctx: ctx.cursor.fetchone()
