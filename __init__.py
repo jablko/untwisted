@@ -5,14 +5,8 @@ call = lambda cbl: cbl()
 def compose(*args):
   #*rest, head = args
   head, rest = (lambda head, *rest: (head, rest))(*reversed(args))
-  def wrapper(*args, **kwds):
-    result = head(*args, **kwds)
-    for cbl in rest:
-      result = cbl(result)
 
-    return result
-
-  return wrapper
+  return lambda *args, **kwds: reduce(lambda result, cbl: cbl(result), rest, head(*args, **kwds))
 
 cache = weakref.WeakValueDictionary()
 def ctxual(ctx, instance, *args):
