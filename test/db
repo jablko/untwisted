@@ -4,7 +4,7 @@ import untwisted
 from testify import *
 from untwisted import db
 
-expect(3)
+expect(7)
 
 class module:
   class connect:
@@ -12,7 +12,20 @@ class module:
       equal(('First', 'Second', 'Third'), args)
       equal({ 'First': 'Tsrif', 'Second': 'Dnoces', 'Third': 'Driht', 'module': module }, kwds)
 
-    cursor = untwisted.partial(ok, True)
+    class cursor:
+      def __init__(ctx):
+        ok(True)
+
+      close = untwisted.partial(ok, True)
+
+      def execute(ctx, operation, params):
+        equal('Expect', operation)
+        equal((), params)
+
+      fetchone = lambda ctx: 'Expect'
 
 conn = db.connect('First', 'Second', 'Third', First='Tsrif', Second='Dnoces', Third='Driht', module=module)
-conn.cursor()
+cursor = conn.cursor()
+cursor.close()
+cursor.execute('Expect')
+equal('Expect', cursor.fetchone())
