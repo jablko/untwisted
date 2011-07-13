@@ -110,12 +110,12 @@ class partial:
   __metaclass__ = type
 
   # No **kwds because, TypeError: unhashable type: 'dict'
-  def __get__(ctx, *args):
+  def __get__(ctx, instance=None, owner=None):
     try:
-      return cache[ctx, args]
+      return cache[ctx, instance, owner]
 
     except KeyError:
-      result = cache[ctx, args] = partial(ctx.cbl.__get__(*args), *ctx.args, **ctx.kwds)
+      result = cache[ctx, instance, owner] = partial(ctx.cbl.__get__(instance, owner), *ctx.args, **ctx.kwds)
 
       return result
 
