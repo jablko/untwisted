@@ -33,7 +33,7 @@ Traceback \(most recent call last\):
 # Raise
 
 # Don't use decorator to avoid any assignment
-def callback(*args, **kwds):
+def callback(_):
   raise Exception('Expect')
 
 stderr = sys.stderr
@@ -116,7 +116,7 @@ Exception: Expect
 class callback:
 
   @staticmethod
-  def throw(*args, **kwds):
+  def throw(_):
     raise Exception('Expect')
 
 stderr = sys.stderr
@@ -144,7 +144,7 @@ Exception: Expect
 # Raise with intervene
 
 # Don't use decorator to avoid any assignment
-def callback(*args, **kwds):
+def callback(_):
   raise Exception('Expect')
 
 sample = promise.promise()
@@ -198,7 +198,7 @@ try:
   except Exception:
     pass
 
-  promise.promise()('Call').then(lambda *args, **kwds: sample)
+  promise.promise()('Call').then(lambda _: sample)
 
 finally:
   stderr, sys.stderr = sys.stderr, stderr

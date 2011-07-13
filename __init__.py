@@ -9,7 +9,7 @@ def compose(*args):
   return lambda *args, **kwds: reduce(lambda result, cbl: cbl(result), rest, head(*args, **kwds))
 
 cache = weakref.WeakValueDictionary()
-def ctxual(ctx, instance, *args):
+def ctxual(ctx, instance, *_):
   try:
     return cache[ctx, instance]
 

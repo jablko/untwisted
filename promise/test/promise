@@ -25,7 +25,7 @@ equal(sample, sample.throw(Exception('Throw')))
 class _:
 
   @staticmethod
-  def throw(*args, **kwds):
+  def throw(_):
     pass
 
 # Call and call
@@ -67,7 +67,7 @@ except StopIteration:
 class _:
 
   @staticmethod
-  def throw(*args, **kwds):
+  def throw(_):
     pass
 
 # Throw and call
@@ -87,7 +87,7 @@ except StopIteration:
 class _:
 
   @staticmethod
-  def throw(*args, **kwds):
+  def throw(_):
     pass
 
 @test
@@ -148,7 +148,7 @@ def noThrow():
 
   sample = promise.promise()
   sample.throw(Exception('Throw'))
-  sample.then(lambda *args, **kwds: 'Skip')
+  sample.then(lambda _: 'Skip')
 
   @sample.then
   @untwisted.head
@@ -164,7 +164,7 @@ def propagate():
   expect(1)
 
   sample = promise.promise()
-  sample('Call').then(lambda *args, **kwds: 'Expect')
+  sample('Call').then(lambda _: 'Expect')
 
   sample.then(untwisted.partial(equal, 'Expect'))
 
@@ -176,7 +176,7 @@ def propagateException():
   sample('Call')
 
   @sample.then
-  def _(*args, **kwds):
+  def _(_):
     raise Exception('Raise')
 
   @sample.then
@@ -196,7 +196,7 @@ def propagateAndThen():
   sample('Call')
 
   @sample.then
-  def _(*args, **kwds):
+  def _(_):
     sample.then(untwisted.partial(equal, 'Expect'))
 
     return 'Expect'
@@ -237,6 +237,6 @@ def propagatePromise():
   expect(1)
 
   sample = promise.promise()
-  sample('Call').then(lambda *args, **kwds: promise.promise()('Expect'))
+  sample('Call').then(lambda _: promise.promise()('Expect'))
 
   sample.then(untwisted.partial(equal, 'Expect'))
