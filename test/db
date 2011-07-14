@@ -122,6 +122,54 @@ def executeGoneAway():
   db.connect(module=module).cursor().execute('Expect')
 
 @test
+def executemany():
+  expect(3)
+
+  class module:
+    class connect:
+      class cursor:
+        def executemany(ctx, operation, params):
+          equal('Expect', operation)
+          equal(('First', 'Second', 'Third'), params)
+
+  cursor = db.connect(module=module).cursor()
+
+  equal(cursor, cursor.executemany('Expect', 'First', 'Second', 'Third'))
+
+@test
+def executemanyGoneAway():
+  expect(4)
+
+  class module:
+    class OperationalError:
+      pass
+
+    @classmethod
+    @untwisted.each
+    def connect():
+      yield
+
+      class sample:
+        class cursor:
+          def executemany(ctx, operation, params):
+            equal('Expect', operation)
+            equal(('First', 'Second', 'Third'), params)
+
+            raise module.OperationalError
+
+      yield sample
+
+      class sample:
+        class cursor:
+          def executemany(ctx, operation, params):
+            equal('Expect', operation)
+            equal(('First', 'Second', 'Third'), params)
+
+      yield sample
+
+  db.connect(module=module).cursor().executemany('Expect', 'First', 'Second', 'Third')
+
+@test
 def fetchone():
   class module:
     class connect:

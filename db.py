@@ -39,4 +39,14 @@ class connect:
 
       return ctx
 
+    def executemany(ctx, operation, *args):
+      try:
+        ctx.cursor.executemany(operation, args)
+
+      except ctx.ctx.module.OperationalError:
+        ctx.cursor = ctx.ctx.connect().conn.cursor()
+        ctx.cursor.executemany(operation, args)
+
+      return ctx
+
     fetchone = lambda ctx: ctx.cursor.fetchone()
