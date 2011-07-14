@@ -190,9 +190,14 @@ def iterable():
 
 @test
 def next():
+  expect(2)
+
   class module:
     class connect:
       class cursor:
-        fetchone = lambda ctx: 'Expect'
+        def fetchone(ctx):
+          ok(True)
+
+          return 'Expect'
 
   equal('Expect', db.connect(module=module).cursor().next())
