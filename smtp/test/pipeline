@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+
+import untwisted
+from testify import *
+from untwisted import promise, smtp
+
+@test
+def ehlo():
+  expect(1)
+
+  class transport:
+    class protocol:
+      dataReceived = promise.sequence()
+
+    write = promise.sequence()
+
+  client = type.__call__(smtp.pipeline, transport)
+  sample = type.__call__(client.mail)
+  sample.mailCmd('alice@example.com')
+
+  transport.protocol.dataReceived('234 Ignore\r\n256 Expect\r\n')
+
+  client.ehloCmd().then(untwisted.compose(untwisted.partial(equal, '256 Expect\r\n'), str))
+
+@test
+def data():
+  expect(1)
+
+  class transport:
+    class protocol:
+      dataReceived = promise.sequence()
+
+    write = promise.sequence()
+
+  client = type.__call__(smtp.pipeline, transport)
+  sample = type.__call__(client.mail)
+  sample.mailCmd('alice@example.com')
+
+  transport.protocol.dataReceived('456 Not expect\r\n234 Ignore\r\n256 Expect\r\n')
+
+  result = sample.dataCmd('Data')
+
+  # Suppress traceback
+
+  @result.then
+  class _:
+
+    @staticmethod
+    def throw(type, value, traceback):
+      pass
+
+  client.reply().then(untwisted.compose(untwisted.partial(equal, '256 Expect\r\n'), str))

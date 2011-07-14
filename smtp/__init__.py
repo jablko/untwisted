@@ -98,30 +98,41 @@ class client:
   def __init__(ctx, transport):
     ctx.transport = transport
 
+  head = None
+
   # Since some servers may generate other replies under special circumstances,
   # and to allow for future extension, SMTP clients SHOULD, when possible,
   # interpret only the first digit of the reply and MUST be prepared to deal
   # with unrecognized reply codes by interpreting the first digit only
-
-  @promise.continuate
   def reply(ctx, expect=range(200, 300)):
-    while True:
+
+    @untwisted.partial(setattr, ctx, 'head')
+    @untwisted.call
+    @promise.continuate
+    def _():
       try:
-        result = rfc5321.replyLine.match(ctx.read, '( replyCode, textstring )')
+        yield ctx.head
 
-        break
+      finally:
+        while True:
+          try:
+            result = rfc5321.replyLine.match(ctx.read, '( replyCode, textstring )')
 
-      except ValueError:
-        ctx.read += yield ctx.transport.protocol.dataReceived.shift()
+            break
 
-    ctx.read = ctx.read[len(result):]
+          except ValueError:
+            ctx.read += yield ctx.transport.protocol.dataReceived.shift()
 
-    result = reply(int(result.replyCode), *map(str, result.textstring))
-    if int(result) not in expect:
-      raise result
+        ctx.read = ctx.read[len(result):]
 
-    #return ...
-    raise StopIteration(result)
+      result = reply(int(result.replyCode), *map(str, result.textstring))
+      if int(result) not in expect:
+        raise result
+
+      #return ...
+      raise StopIteration(result)
+
+    return ctx.head
 
   def ehloCmd(ctx):
     ctx.transport.write(str(command('EHLO', domain)))
@@ -229,27 +240,13 @@ class client:
     return ctx.reply()
 
 class pipeline(client):
-  count = 0
-
   class mail(client.mail):
-    def mailCmd(ctx, mailbox):
-      #ctx.ctx.transport.write(str(command('MAIL FROM:<{}>'.format(mailbox))))
-      ctx.ctx.transport.write(str(command('MAIL FROM:<{0}>'.format(mailbox))))
-
-      ctx.ctx.count += 1
-
-    def rcptCmd(ctx, mailbox):
-      #ctx.ctx.transport.write(str(command('RCPT TO:<{}>'.format(mailbox))))
-      ctx.ctx.transport.write(str(command('RCPT TO:<{0}>'.format(mailbox))))
-
-      ctx.ctx.count += 1
+    mailCmd = lambda ctx, mailbox: promise.promise()(client.mail.mailCmd(ctx, mailbox))
+    rcptCmd = lambda ctx, mailbox: promise.promise()(client.mail.rcptCmd(ctx, mailbox))
 
     @promise.continuate
     def dataCmd(ctx, data):
       ctx.ctx.transport.write(str(command('DATA')))
-
-      for _ in range(ctx.ctx.count):
-        yield ctx.ctx.reply()
 
       yield ctx.ctx.reply(range(300, 400))
 
@@ -262,19 +259,8 @@ class pipeline(client):
 
       ctx.ctx.transport.write(data)
 
-      ctx.ctx.count = 1
-
-  @promise.continuate
-  def quitCmd(ctx):
-    ctx.transport.write(str(command('QUIT')))
-
-    for _ in range(ctx.count):
-      yield ctx.reply()
-
-    ctx.count = 0
-
-    #return ...
-    raise StopIteration(ctx.reply())
+      #return ...
+      raise StopIteration(promise.promise()(ctx.ctx.reply()))
 
 class server:
   class __metaclass__(type):
