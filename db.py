@@ -35,7 +35,6 @@ class connect:
 
       except ctx.ctx.module.OperationalError:
         ctx.cursor = ctx.ctx.connect().conn.cursor()
-
         ctx.cursor.execute(operation, args)
 
       return ctx
