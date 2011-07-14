@@ -3,13 +3,17 @@ import exceptions, sys, traceback, untwisted
 # Differences from Twisted: Promises are also callbacks, whereas deferreds
 # aren't, this eliminates .chainDeferred()
 
-# "Callback" or "callable", anything that can be called
-# "Callback" or "coroutine", or variation on coroutine where .send() is
-# .__call__(), a callable with .throw()
+# "Callable" or "callback", anything that can be called
+# "Callback" or variation on generator where .send() is .__call__(), a callable
+# with .throw()
 # "Promise"? a callback with .then().  By default .__call__() does nothing.
 # It calls callbacks passed to .then().  It raises an exception if called
 # twice.  By default .throw() raises the exception?  It calls .throw() on
 # callbacks passed to .then()?
+
+# Think promise is a monad, but what value is this perspective?
+# http://www.valuedlessons.com/2008/01/monads-in-python-with-nice-syntax.html
+
 class promise:
   trigger = False
 
@@ -46,11 +50,12 @@ class promise:
           callback.traceback = ctx.traceback
           del ctx.traceback
 
+        # Don't worry about callback.traceback: Can't be without .args
         except AttributeError:
           pass
 
         callback.args = ctx.args
-        ctx.args = ()
+        ctx.args = callback,
 
         callback.kwds = ctx.kwds
         ctx.kwds = {}
@@ -101,16 +106,18 @@ class promise:
           ctx.traceback = result.traceback
           del result.traceback
 
+        # Don't worry about ctx.traceback: del above
         except AttributeError:
           pass
 
         try:
           ctx.args = result.args
-          result.args = ()
+          result.args = ctx,
 
           ctx.kwds = result.kwds
           result.kwds = {}
 
+        # Not yet triggered
         except AttributeError:
           result.callback.append(ctx)
 
