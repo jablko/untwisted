@@ -170,10 +170,29 @@ def executemanyGoneAway():
   db.connect(module=module).cursor().executemany('Expect', 'First', 'Second', 'Third')
 
 @test
-def fetchone():
+def iterable():
+  class module:
+    class connect:
+      class cursor:
+
+        @untwisted.each
+        def fetchone():
+          yield
+
+          yield 'First'
+          yield 'Second'
+          yield 'Third'
+
+          while True:
+            yield
+
+  equiv(('First', 'Second', 'Third'), db.connect(module=module).cursor())
+
+@test
+def next():
   class module:
     class connect:
       class cursor:
         fetchone = lambda ctx: 'Expect'
 
-  equal('Expect', db.connect(module=module).cursor().fetchone())
+  equal('Expect', db.connect(module=module).cursor().next())

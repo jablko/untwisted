@@ -49,4 +49,11 @@ class connect:
 
       return ctx
 
-    fetchone = lambda ctx: ctx.cursor.fetchone()
+    __iter__ = untwisted.identity
+
+    def next(ctx):
+      result = ctx.cursor.fetchone()
+      if result:
+        return result
+
+      raise StopIteration
