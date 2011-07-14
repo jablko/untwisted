@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import untwisted
+import gc, re, sys, untwisted
+from StringIO import StringIO
 from testify import *
 from untwisted import promise, smtp
 
@@ -64,3 +65,52 @@ def reply():
   transport.protocol.dataReceived('234 Ignore\r\n256 Expect\r\n')
 
   client.reply().then(untwisted.compose(untwisted.partial(equal, '256 Expect\r\n'), str))
+
+@test
+def replyTraceback():
+  class transport:
+    class protocol:
+      dataReceived = promise.sequence()
+
+  client = type.__call__(smtp.client, transport)
+
+  transport.protocol.dataReceived('456 Not expect\r\n')
+
+  stderr = sys.stderr
+  sys.stderr = StringIO()
+
+  try:
+    client.reply()
+    client.reply()
+
+    del client, transport
+
+    gc.collect()
+
+  finally:
+    stderr, sys.stderr = sys.stderr, stderr
+
+  ok(re.match('''(?:  File ".+", line \d+, in .+
+    .+
+)+Traceback \(most recent call last\):
+(?:  File ".+", line \d+, in .+
+    .+
+)+reply: 456 Not expect\r\n
+''', stderr.getvalue()), stderr.getvalue())
+
+@test
+def replyNotHead():
+  expect(1)
+
+  class transport:
+    class protocol:
+      dataReceived = promise.sequence()
+
+  client = type.__call__(smtp.client, transport)
+  sample = client.reply()
+
+  transport.protocol.dataReceived('234 Expect\r\n')
+
+  client.reply()
+
+  sample.then(untwisted.compose(untwisted.partial(equal, '234 Expect\r\n'), str))

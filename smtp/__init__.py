@@ -98,39 +98,56 @@ class client:
   def __init__(ctx, transport):
     ctx.transport = transport
 
-  head = None
+  head = promise.promise()(None)
 
   # Since some servers may generate other replies under special circumstances,
   # and to allow for future extension, SMTP clients SHOULD, when possible,
   # interpret only the first digit of the reply and MUST be prepared to deal
   # with unrecognized reply codes by interpreting the first digit only
   def reply(ctx, expect=range(200, 300)):
+    prev = ctx.head
 
-    @untwisted.partial(setattr, ctx, 'head')
-    @untwisted.call
-    @promise.continuate
-    def _():
+    ctx.head = promise.promise()
+    prev.then(ctx.head)
+
+    clone = promise.promise()
+    ctx.head.then(clone)
+
+    @ctx.head.then
+    def _(_):
       try:
-        yield ctx.head
+        prev.traceback = clone.traceback
 
-      finally:
-        while True:
-          try:
-            result = rfc5321.replyLine.match(ctx.read, '( replyCode, textstring )')
+      except AttributeError:
+        pass
 
-            break
+      prev.args = clone.args
+      prev.kwds = clone.kwds
 
-          except ValueError:
-            ctx.read += yield ctx.transport.protocol.dataReceived.shift()
+    @ctx.head.then
+    @promise.continuate
+    def _(_):
+      while True:
+        try:
+          replyLine = rfc5321.replyLine.match(ctx.read, '( replyCode, textstring )')
 
-        ctx.read = ctx.read[len(result):]
+          break
 
-      result = reply(int(result.replyCode), *map(str, result.textstring))
-      if int(result) not in expect:
-        raise result
+        except ValueError:
+          ctx.read += yield ctx.transport.protocol.dataReceived.shift()
+
+      ctx.read = ctx.read[len(replyLine):]
+
+      @clone.then
+      def _(_):
+        result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
+        if int(result) not in expect:
+          raise result
+
+        return result
 
       #return ...
-      raise StopIteration(result)
+      raise StopIteration(clone)
 
     return ctx.head
 
