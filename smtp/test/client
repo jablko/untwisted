@@ -58,10 +58,9 @@ def reply():
     class protocol:
       dataReceived = promise.sequence()
 
-    write = promise.sequence()
-
   client = type.__call__(smtp.client, transport)
-  client.reply(untwisted.wildcard)
-  transport.protocol.dataReceived('456 Ignore\r\n234 Expect\r\n')
+  client.reply()
 
-  client.reply().then(untwisted.compose(untwisted.partial(equal, '234 Expect\r\n'), str))
+  transport.protocol.dataReceived('234 Ignore\r\n256 Expect\r\n')
+
+  client.reply().then(untwisted.compose(untwisted.partial(equal, '256 Expect\r\n'), str))

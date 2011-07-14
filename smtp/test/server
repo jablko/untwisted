@@ -27,10 +27,9 @@ def command():
     class protocol:
       dataReceived = promise.sequence()
 
-    write = promise.sequence()
-
   server = type.__call__(smtp.server, transport)
   server.command()
+
   transport.protocol.dataReceived('IGNORE\r\nEXPECT\r\n')
 
   server.command().then(untwisted.compose(untwisted.partial(equal, 'EXPECT\r\n'), str))
