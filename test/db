@@ -201,3 +201,22 @@ def next():
           return 'Expect'
 
   equal('Expect', db.connect(module=module).cursor().next())
+
+@test
+def block():
+  expect(4)
+
+  class module:
+    class connect:
+      class cursor:
+        def __init__(ctx):
+          ok(True)
+
+        close = untwisted.partial(ok, True)
+
+        def execute(ctx, operation, params):
+          equal('Expect', operation)
+          equal((), params)
+
+  for cursor in db.connect(module=module):
+    cursor.execute('Expect')

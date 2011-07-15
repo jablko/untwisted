@@ -57,3 +57,12 @@ class connect:
         return result
 
       raise StopIteration
+
+  def __iter__(ctx):
+    cursor = ctx.cursor()
+
+    try:
+      yield cursor
+
+    finally:
+      cursor.close()
