@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+
+import untwisted
+from testify import *
+from untwisted import promise, rfc5321, smtp
+
+expect(6)
+
+class client(smtp.pipeline):
+
+  @untwisted.each
+  def mail():
+    ctx = yield
+
+    class sample(smtp.pipeline.mail):
+      mail = iter(('alice@example.com',)).next
+      recipient = iter(('bob@example.com',)).next
+      data = iter(('Expect',)).next
+
+    yield sample.__get__(ctx)()
+
+class transport:
+  class protocol:
+    dataReceived = promise.sequence()
+
+  write = promise.sequence()
+
+client(transport)
+
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('220\r\n'))[0],
+  untwisted.compose(untwisted.partial(ok, True), rfc5321.ehlo.match))
+
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('250\r\n'))[0],
+  untwisted.partial(equal, 'MAIL FROM:<alice@example.com>\r\n'))
+
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('250\r\n'))[0],
+  untwisted.partial(equal, 'RCPT TO:<bob@example.com>\r\n'))
+
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('250\r\n'))[0],
+  untwisted.partial(equal, 'DATA\r\n'))
+
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('354\r\n'))[0],
+  untwisted.partial(equal, 'Expect\r\n.\r\n'))
+
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('250\r\n'))[0],
+  untwisted.partial(equal, 'QUIT\r\n'))
+
+transport.protocol.dataReceived('221\r\n')

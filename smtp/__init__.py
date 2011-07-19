@@ -257,9 +257,31 @@ class client:
     return ctx.reply()
 
 class pipeline(client):
+  pipeline = False
+
+  @promise.continuate
+  def ehloCmd(ctx):
+    result = yield client.ehloCmd(ctx)
+
+    ctx.pipeline = 'PIPELINING' in result.text[1:]
+
+    #return ...
+    raise StopIteration(result)
+
   class mail(client.mail):
-    mailCmd = lambda ctx, mailbox: promise.promise()(client.mail.mailCmd(ctx, mailbox))
-    rcptCmd = lambda ctx, mailbox: promise.promise()(client.mail.rcptCmd(ctx, mailbox))
+    def mailCmd(ctx, mailbox):
+      result = client.mail.mailCmd(ctx, mailbox)
+      if ctx.ctx.pipeline:
+        result = promise.promise()(result)
+
+      return result
+
+    def rcptCmd(ctx, mailbox):
+      result = client.mail.rcptCmd(ctx, mailbox)
+      if ctx.ctx.pipeline:
+        result = promise.promise()(result)
+
+      return result
 
     @promise.continuate
     def dataCmd(ctx, data):
@@ -276,8 +298,12 @@ class pipeline(client):
 
       ctx.ctx.transport.write(data)
 
+      result = ctx.ctx.reply()
+      if ctx.ctx.pipeline:
+        result = promise.promise()(result)
+
       #return ...
-      raise StopIteration(promise.promise()(ctx.ctx.reply()))
+      raise StopIteration(result)
 
 class server:
   class __metaclass__(type):
