@@ -2,7 +2,7 @@
 
 import untwisted
 from testify import *
-from untwisted import promise, rfc5321, smtp
+from untwisted import promise, smtp
 
 expect(6)
 
@@ -25,12 +25,14 @@ class transport:
 
   write = promise.sequence()
 
+smtp.domain = 'example.com'
+
 client(transport)
 
 promise.nowThen((promise.nowThen(transport.write.shift(),
       untwisted.partial(ok, False)),
     transport.protocol.dataReceived('220\r\n'))[0],
-  untwisted.compose(untwisted.partial(ok, True), rfc5321.ehlo.match))
+  untwisted.partial(equal, 'EHLO example.com\r\n'))
 
 promise.nowThen((promise.nowThen(transport.write.shift(),
       untwisted.partial(ok, False)),
