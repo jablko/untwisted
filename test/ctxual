@@ -12,3 +12,21 @@ sample = outer()
 
 equal(sample, sample.inner.ctx)
 equal(sample.inner, sample.inner)
+
+a = outer()
+b = outer()
+
+ok(b.inner is not a.inner)
+
+class outer:
+  class a:
+    class __metaclass__(type):
+      __get__ = untwisted.ctxual
+
+  class b:
+    class __metaclass__(type):
+      __get__ = untwisted.ctxual
+
+sample = outer()
+
+ok(sample.b is not sample.a)
