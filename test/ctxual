@@ -32,7 +32,7 @@ sample = outer()
 ok(sample.b is not sample.a)
 
 @test
-def instance():
+def finalInstance():
   expect(1)
 
   class outer:
@@ -49,7 +49,7 @@ def instance():
   gc.collect()
 
 @test
-def ctx():
+def finalCtx():
   expect(1)
 
   class outer:
@@ -58,6 +58,42 @@ def ctx():
         __get__ = untwisted.ctxual
 
   sample = outer()
+
+  ref = weakref.ref(sample.inner, untwisted.partial(ok, True))
+
+  del outer.inner
+
+  gc.collect()
+
+@test
+def cycleInstance():
+  expect(1)
+
+  class outer:
+    class inner:
+      class __metaclass__(type):
+        __get__ = untwisted.ctxual
+
+  sample = outer()
+  sample.cycle = sample.inner
+
+  ref = weakref.ref(sample.inner, untwisted.partial(ok, True))
+
+  del sample
+
+  gc.collect()
+
+@test
+def cycleCtx():
+  expect(1)
+
+  class outer:
+    class inner:
+      class __metaclass__(type):
+        __get__ = untwisted.ctxual
+
+  sample = outer()
+  outer.__dict__['inner'].cycle = sample.inner
 
   ref = weakref.ref(sample.inner, untwisted.partial(ok, True))
 

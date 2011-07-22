@@ -8,13 +8,20 @@ def compose(*args):
 
   return lambda *args, **kwds: reduce(lambda result, cbl: cbl(result), rest, head(*args, **kwds))
 
+# http://jdbates.blogspot.com/2011/07/in-python-how-can-you-associate-one.html
 cache = weakref.WeakValueDictionary()
 def ctxual(ctx, instance, *_):
   try:
-    return cache[ctx, instance]
+    key = weakref.ref(ctx), weakref.ref(instance)
+
+  except TypeError:
+    key = weakref.ref(ctx), instance
+
+  try:
+    return cache[key]
 
   except KeyError:
-    result = cache[ctx, instance] = type(ctx)(ctx.__name__, (ctx,), { 'ctx': instance })
+    result = cache[key] = type(ctx)(ctx.__name__, (ctx,), { 'ctx': instance })
 
     return result
 
