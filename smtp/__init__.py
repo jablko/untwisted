@@ -251,6 +251,11 @@ class client:
     def data(ctx):
       raise NotImplementedError
 
+  def rsetCmd(ctx):
+    ctx.transport.write(str(command('RSET')))
+
+    return ctx.reply()
+
   def quitCmd(ctx):
     ctx.transport.write(str(command('QUIT')))
 
@@ -304,6 +309,13 @@ class pipeline(client):
 
       #return ...
       raise StopIteration(result)
+
+  def rsetCmd(ctx):
+    result = client.rsetCmd(ctx)
+    if ctx.pipeline:
+      result = promise.promise()(result)
+
+    return result
 
 class server:
   class __metaclass__(type):
