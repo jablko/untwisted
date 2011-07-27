@@ -18,6 +18,14 @@ class connect:
         def __init__(ctx):
           ctx.dataReceived = promise.sequence()
 
+          # .dataReceived() must return falsy: SelectReactor._doReadOrWrite()
+
+          __call__ = ctx.dataReceived.__call__
+
+          @untwisted.partial(setattr, ctx.dataReceived, '__call__')
+          def _(*args, **kwds):
+            __call__(*args, **kwds)
+
     ctx.connector = tcp.Connector(host, port, factory, timeout, bindAddress, reactor)
 
   def __call__(ctx):
@@ -40,6 +48,14 @@ class listen:
 
         def __init__(ctx):
           ctx.dataReceived = promise.sequence()
+
+          # .dataReceived() must return falsy: SelectReactor._doReadOrWrite()
+
+          __call__ = ctx.dataReceived.__call__
+
+          @untwisted.partial(setattr, ctx.dataReceived, '__call__')
+          def _(*args, **kwds):
+            __call__(*args, **kwds)
 
     ctx.port = tcp.Port(port, factory, interface=interface)
     ctx.port.startListening()
