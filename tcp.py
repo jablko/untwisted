@@ -21,7 +21,7 @@ class connect:
     ctx.connector = tcp.Connector(host, port, factory, timeout, bindAddress, reactor)
 
   def __call__(ctx):
-    ctx.connector.then()
+    ctx.connector.connect()
 
     return ctx.transport.shift()
 
