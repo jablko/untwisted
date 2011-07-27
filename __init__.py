@@ -75,16 +75,14 @@ def head(cbl):
       gnr.send(*args, **kwds)
 
     except StopIteration as e:
-      try:
-        #head, *rest = e.args
-        head, rest = e.args[0], e.args[1:]
-        if rest:
+      if e.args:
+        try:
+          head, = e.args
+
+        except ValueError:
           return e.args
 
         return head
-
-      except IndexError:
-        pass
 
   @partial(setattr, result, 'throw')
   def throw(*args, **kwds):
@@ -95,16 +93,14 @@ def head(cbl):
       gnr.throw(*args, **kwds)
 
     except StopIteration as e:
-      try:
-        #head, *rest = e.args
-        head, rest = e.args[0], e.args[1:]
-        if rest:
+      if e.args:
+        try:
+          head, = e.args
+
+        except ValueError:
           return e.args
 
         return head
-
-      except IndexError:
-        pass
 
   return result
 
