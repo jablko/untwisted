@@ -259,17 +259,17 @@ def join(*args, **kwds):
 
   return ctx(head)
 
-# If continuate is a class, then wrapper (aka .__call__()) is either a method
+# If continuate is a class, then result (aka .__call__()) is either a method
 # or a class, and neither a method nor a class behaves like a function when
 # it's an attribute of another object.  The first argument of a method is
-# always a continuate instance and the first argument of a class is wrapper
+# always a continuate instance and the first argument of a class is result
 # (aka .__call__()) instance.  untwisted.ctxual() is a workaround, but a
 # function is simpler
 def continuate(cbl):
 
-  # If cbl is a function and wrapper is a class then it doesn't behave like cbl
+  # If cbl is a function and result is a class then it doesn't behave like cbl
   # when it's an attribute of another object
-  def wrapper(*args, **kwds):
+  def result(*args, **kwds):
     gnr = cbl(*args, **kwds)
 
     def callback(*args, **kwds):
@@ -300,7 +300,7 @@ def continuate(cbl):
     # gnr.send(None)
     return ctx(None)
 
-  return wrapper
+  return result
 
 def nowThen(ctx, now=lambda *args, **kwds: promise()(*args, **kwds), then=lambda *args, **kwds: promise()(*args, **kwds)):
   wrapper = lambda *args, **kwds: callback(*args, **kwds)

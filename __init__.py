@@ -31,10 +31,10 @@ def each(cbl):
 
   # gnr.send() not a descriptor,
   # http://docs.python.org/reference/datamodel.html#descriptors
-  wrapper = lambda *args, **kwds: gnr.send(*args, **kwds)
-  wrapper.throw = gnr.throw
+  result = lambda *args, **kwds: gnr.send(*args, **kwds)
+  result.throw = gnr.throw
 
-  return wrapper
+  return result
 
 # Callback is called after there are no references to this final instance, or
 # after this final instance is garbage collected if it's part of a collectable
@@ -67,7 +67,7 @@ class final:
     ref[ctx] = weakref.ref(ctx, lambda ref: callback())
 
 def head(cbl):
-  def wrapper(*args, **kwds):
+  def result(*args, **kwds):
     gnr = cbl()
     gnr.next()
 
@@ -86,7 +86,7 @@ def head(cbl):
       except IndexError:
         pass
 
-  @partial(setattr, wrapper, 'throw')
+  @partial(setattr, result, 'throw')
   def throw(*args, **kwds):
     gnr = cbl()
     gnr.next()
@@ -106,7 +106,7 @@ def head(cbl):
       except IndexError:
         pass
 
-  return wrapper
+  return result
 
 # http://jdbates.blogspot.com/2011/04/ow-ow-ow-python-why-do-you-hurt-so-hard.html
 identity = lambda ctx: ctx
