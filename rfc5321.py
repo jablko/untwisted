@@ -87,10 +87,12 @@ addtlLink = rule('atom')
 link = qwer('(?:TCP|', rule('addtlLink'), ')')
 via = qwer(rule('rfc5322.CFWS'), 'via', rule('rfc5322.FWS'), rule('link'))
 
-# Upstream client authenticated,
-# http://thread.gmane.org/gmane.mail.postfix.user/215958
-protocol = qwer('ESMTPA')
+# Additional standard names for protocols are registered with the Internet
+# Assigned Numbers Authority (IANA) in the "mail parameters" registry.  SMTP
+# servers SHOULD NOT use unregistered names
+attdlProtocol = rule('atom')
 
+protocol = qwer('(?:ESMTP|SMTP|', rule('attdlProtocol'), ')')
 With = qwer(rule('rfc5322.CFWS'), 'with', rule('rfc5322.FWS'), rule('protocol'))
 id = qwer(rule('rfc5322.CFWS'), 'id', rule('rfc5322.FWS'), '(?:', rule('atom'), '|', rule('rfc5322.msgId'), ')')
 For = qwer(rule('rfc5322.CFWS'), 'for', rule('rfc5322.FWS'), '(?:', rule('path'), '|', rule('mailbox'), ')')
