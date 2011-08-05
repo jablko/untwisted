@@ -114,6 +114,7 @@ class client:
     ctx.head.then(clone)
 
     @ctx.head.then
+    @promise.continuate
     def _(_):
       try:
         prev.traceback = clone.traceback
@@ -124,9 +125,6 @@ class client:
       prev.args = clone.args
       prev.kwds = clone.kwds
 
-    @ctx.head.then
-    @promise.continuate
-    def _(_):
       while True:
         try:
           replyLine = rfc5321.replyLine.match(ctx.read, '( replyCode, textstring )')
@@ -138,16 +136,14 @@ class client:
 
       ctx.read = ctx.read[len(replyLine):]
 
-      @clone.then
-      def _(_):
-        result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
-        if int(result) not in expect:
-          raise result
+      yield clone
 
-        return result
+      result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
+      if int(result) not in expect:
+        raise result
 
       #return ...
-      raise StopIteration(clone)
+      raise StopIteration(result)
 
     return ctx.head
 
