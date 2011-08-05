@@ -4,7 +4,7 @@ from untwisted import promise
 
 class connect:
   def __init__(ctx, host, port, timeout=30, bindAddress=None):
-    ctx.transport = promise.sequence()
+    transport = promise.sequence()
 
     # Extend protocol.ClientFactory for .startedConnecting()
 
@@ -13,7 +13,7 @@ class connect:
 
       # Extend protocol.Protocol for .connectionLost()
       class protocol(protocol.Protocol):
-        makeConnection = ctx.transport
+        makeConnection = transport
 
         def __init__(ctx):
           ctx.dataReceived = promise.sequence()
@@ -26,16 +26,15 @@ class connect:
           def _(*args, **kwds):
             __call__(*args, **kwds)
 
-    ctx.connector = tcp.Connector(host, port, factory, timeout, bindAddress, reactor)
+    @untwisted.partial(setattr, ctx, '__call__')
+    def _():
+      tcp.Connector(host, port, factory, timeout, bindAddress, reactor).connect()
 
-  def __call__(ctx):
-    ctx.connector.connect()
-
-    return ctx.transport.shift()
+      return transport.shift()
 
 class listen:
   def __init__(ctx, port, interface=''):
-    ctx.transport = promise.sequence()
+    transport = promise.sequence()
 
     # Extend protocol.Factory for .doStart()
 
@@ -44,7 +43,7 @@ class listen:
 
       # Extend protocol.Protocol for .connectionLost()
       class protocol(protocol.Protocol):
-        makeConnection = ctx.transport
+        makeConnection = transport
 
         def __init__(ctx):
           ctx.dataReceived = promise.sequence()
@@ -57,8 +56,6 @@ class listen:
           def _(*args, **kwds):
             __call__(*args, **kwds)
 
-    ctx.port = tcp.Port(port, factory, interface=interface)
-    ctx.port.startListening()
+    tcp.Port(port, factory, interface=interface).startListening()
 
-  def __call__(ctx):
-    return ctx.transport.shift()
+    ctx.__call__ = transport.shift
