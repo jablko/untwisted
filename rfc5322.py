@@ -55,7 +55,8 @@ references = qwer('References:(?:', rule('msgId'), ')+', rule('rfc5234.CRLF'))
 
 messageId = qwer('Message-ID:', rule('msgId'), rule('rfc5234.CRLF'))
 
-dayOfWeek = qwer('(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)')
+dayName = qwer('(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)')
+dayOfWeek = qwer('(?:', rule('FWS'), ')?', rule('dayName'))
 day = qwer('(?:', rule('FWS'), ')?(?:', rule('rfc5234.DIGIT'), '){1,2}', rule('FWS'))
 month = qwer('(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)')
 year = qwer(rule('FWS'), '(?:', rule('rfc5234.DIGIT'), '){4,}', rule('FWS'))
@@ -67,3 +68,5 @@ timeOfDay = qwer(rule('hour'), ':', rule('minute'), '(?::', rule('second'), ')?'
 zone = qwer(rule('FWS'), '[+-](?:', rule('rfc5234.DIGIT'), '){4}')
 time = qwer(rule('timeOfDay'), rule('zone'))
 dateTime = qwer('(?:', rule('dayOfWeek'), ',)?', rule('date'), rule('time'), '(?:', rule('CFWS'), ')?')
+
+origDate = qwer('Date:', rule('dateTime'), rule('rfc5234.CRLF'))
