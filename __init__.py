@@ -31,7 +31,15 @@ def each(cbl):
 
   # gnr.send() not a descriptor,
   # http://docs.python.org/reference/datamodel.html#descriptors
-  result = lambda *args, **kwds: gnr.send(*args, **kwds)
+  def result(*args, **kwds):
+    try:
+      head, = args
+
+    except ValueError:
+      return gnr.send(args, **kwds)
+
+    return gnr.send(head, **kwds)
+
   result.throw = gnr.throw
 
   return result
