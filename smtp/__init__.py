@@ -9,16 +9,14 @@ class command:
     ctx.verb = verb
 
     try:
-      ctx.verb, ctx.text = verb.split(' ', 1)
-
-    except ValueError:
-      pass
-
-    try:
       ctx.text, = args
 
     except ValueError:
-      pass
+      try:
+        ctx.verb, ctx.text = verb.split(' ', 1)
+
+      except ValueError:
+        pass
 
   def __str__(ctx):
     result = ctx.verb
