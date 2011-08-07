@@ -16,11 +16,11 @@ def ehlo():
 
   client = type.__call__(smtp.pipeline, transport)
   sample = type.__call__(client.mail)
-  sample.mailCmd('alice@example.com')
+  sample.mail('alice@example.com')
 
   transport.protocol.dataReceived('234 Ignore\r\n256 Expect\r\n')
 
-  client.ehloCmd().then(untwisted.compose(untwisted.partial(equal, '256 Expect\r\n'), str))
+  client.ehlo().then(untwisted.compose(untwisted.partial(equal, '256 Expect\r\n'), str))
 
 @test
 def data():
@@ -34,11 +34,11 @@ def data():
 
   client = type.__call__(smtp.pipeline, transport)
   sample = type.__call__(client.mail)
-  sample.mailCmd('alice@example.com')
+  sample.mail('alice@example.com')
 
   transport.protocol.dataReceived('456 Not expect\r\n234 Ignore\r\n256 Expect\r\n')
 
-  result = sample.dataCmd('Data')
+  result = sample.data('Content')
 
   # Suppress traceback
 

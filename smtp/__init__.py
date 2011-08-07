@@ -73,13 +73,13 @@ class client:
       yield ctx.reply()
 
       try:
-        yield ctx.ehloCmd()
+        yield ctx.ehlo()
 
       except reply as e:
         if int(e) not in (500, 502):
           raise
 
-        yield ctx.heloCmd()
+        yield ctx.helo()
 
       while True:
         try:
@@ -89,7 +89,7 @@ class client:
           break
 
       #return ...
-      raise StopIteration(ctx.quitCmd())
+      raise StopIteration(ctx.quit())
 
   read = ''
 
@@ -142,12 +142,12 @@ class client:
 
     return ctx.head
 
-  def ehloCmd(ctx):
+  def ehlo(ctx):
     ctx.transport.write(str(command('EHLO', domain)))
 
     return ctx.reply()
 
-  def heloCmd(ctx):
+  def helo(ctx):
     ctx.transport.write(str(command('HELO', domain)))
 
     return ctx.reply()
@@ -160,13 +160,13 @@ class client:
       def __call__(ctx):
         ctx = type.__call__(ctx)
 
-        result = yield ctx.mail()
+        result = yield ctx.sender()
         if not isinstance(result, reply):
-          yield ctx.mailCmd(result)
+          yield ctx.mail(result)
 
         result = yield ctx.recipient()
         if not isinstance(result, reply):
-          yield ctx.rcptCmd(result)
+          yield ctx.rcpt(result)
 
         while True:
           try:
@@ -176,28 +176,28 @@ class client:
             break
 
           if not isinstance(result, reply):
-            yield ctx.rcptCmd(result)
+            yield ctx.rcpt(result)
 
-        result = yield ctx.data()
+        result = yield ctx.content()
         if not isinstance(result, reply):
           #return ...
-          raise StopIteration(ctx.dataCmd(result))
+          raise StopIteration(ctx.data(result))
 
         #return ...
         raise StopIteration(result)
 
-    def mailCmd(ctx, mailbox):
-      #ctx.ctx.transport.write(str(command('MAIL FROM:<{}>'.format(mailbox))))
-      ctx.ctx.transport.write(str(command('MAIL FROM:<{0}>'.format(mailbox))))
+    def mail(ctx, sender):
+      #ctx.ctx.transport.write(str(command('MAIL FROM:<{}>'.format(sender))))
+      ctx.ctx.transport.write(str(command('MAIL FROM:<{0}>'.format(sender))))
 
       return ctx.ctx.reply()
 
-    def mail(ctx):
+    def sender(ctx):
       raise NotImplementedError
 
-    def rcptCmd(ctx, mailbox):
-      #ctx.ctx.transport.write(str(command('RCPT TO:<{}>'.format(mailbox))))
-      ctx.ctx.transport.write(str(command('RCPT TO:<{0}>'.format(mailbox))))
+    def rcpt(ctx, recipient):
+      #ctx.ctx.transport.write(str(command('RCPT TO:<{}>'.format(recipient))))
+      ctx.ctx.transport.write(str(command('RCPT TO:<{0}>'.format(recipient))))
 
       return ctx.ctx.reply()
 
@@ -205,7 +205,7 @@ class client:
       raise NotImplementedError
 
     @promise.continuate
-    def dataCmd(ctx, data):
+    def data(ctx, content):
       ctx.ctx.transport.write(str(command('DATA')))
 
       # Since some servers may generate other replies under special
@@ -220,7 +220,7 @@ class client:
       # inserted at the beginning of the line
 
       # Lookbehind requires fixed width pattern
-      data = re.sub('(^|\r\n)\.', '\\1..', data)
+      content = re.sub('(^|\r\n)\.', '\\1..', content)
 
       # An extra <CRLF> MUST NOT be added, as that would cause an empty line to
       # be added to the message.  The only exception to this rule would arise
@@ -229,25 +229,25 @@ class client:
       # SMTP system MUST either reject the message as invalid or add <CRLF> in
       # order to have the receiving SMTP server recognize the "end of data"
       # condition
-      if '\r\n' != data[-2:]:
-        data += '\r\n'
+      if '\r\n' != content[-2:]:
+        content += '\r\n'
 
-      data += '.\r\n'
+      content += '.\r\n'
 
-      ctx.ctx.transport.write(data)
+      ctx.ctx.transport.write(content)
 
       #return ...
       raise StopIteration(ctx.ctx.reply())
 
-    def data(ctx):
+    def content(ctx):
       raise NotImplementedError
 
-  def rsetCmd(ctx):
+  def rset(ctx):
     ctx.transport.write(str(command('RSET')))
 
     return ctx.reply()
 
-  def quitCmd(ctx):
+  def quit(ctx):
     ctx.transport.write(str(command('QUIT')))
 
     return ctx.reply()
@@ -256,8 +256,8 @@ class pipeline(client):
   pipeline = False
 
   @promise.continuate
-  def ehloCmd(ctx):
-    result = yield client.ehloCmd(ctx)
+  def ehlo(ctx):
+    result = yield client.ehlo(ctx)
 
     ctx.pipeline = 'PIPELINING' in result.text[1:]
 
@@ -265,34 +265,34 @@ class pipeline(client):
     raise StopIteration(result)
 
   class mail(client.mail):
-    def mailCmd(ctx, mailbox):
-      result = client.mail.mailCmd(ctx, mailbox)
+    def mail(ctx, sender):
+      result = client.mail.mail(ctx, sender)
       if ctx.ctx.pipeline:
         result = promise.promise()(result)
 
       return result
 
-    def rcptCmd(ctx, mailbox):
-      result = client.mail.rcptCmd(ctx, mailbox)
+    def rcpt(ctx, recipient):
+      result = client.mail.rcpt(ctx, recipient)
       if ctx.ctx.pipeline:
         result = promise.promise()(result)
 
       return result
 
     @promise.continuate
-    def dataCmd(ctx, data):
+    def data(ctx, content):
       ctx.ctx.transport.write(str(command('DATA')))
 
       yield ctx.ctx.reply(range(300, 400))
 
-      data = re.sub('(^|\r\n)\.', '\\1..', data)
+      content = re.sub('(^|\r\n)\.', '\\1..', content)
 
-      if '\r\n' != data[-2:]:
-        data += '\r\n'
+      if '\r\n' != content[-2:]:
+        content += '\r\n'
 
-      data += '.\r\n'
+      content += '.\r\n'
 
-      ctx.ctx.transport.write(data)
+      ctx.ctx.transport.write(content)
 
       result = ctx.ctx.reply()
       if ctx.ctx.pipeline:
@@ -301,8 +301,8 @@ class pipeline(client):
       #return ...
       raise StopIteration(result)
 
-  def rsetCmd(ctx):
-    result = client.rsetCmd(ctx)
+  def rset(ctx):
+    result = client.rset(ctx)
     if ctx.pipeline:
       result = promise.promise()(result)
 
@@ -402,7 +402,7 @@ class server:
         #return ...
         raise StopIteration(ctx.start((yield ctx.ctx.command()), ctx.start))
 
-    def mail(ctx, mailbox):
+    def sender(ctx, sender):
       raise NotImplementedError
 
     @promise.continuate
@@ -416,7 +416,7 @@ class server:
       if 'MAIL' == command.verb:
         try:
           try:
-            yield ctx.mail(rfc5321.mail.match(str(command), 'mailbox ( localPart, domain, addressLiteral )'))
+            yield ctx.sender(rfc5321.mail.match(str(command), 'mailbox ( localPart, domain, addressLiteral )'))
 
           # TODO Log
           except NotImplementedError:
@@ -432,7 +432,7 @@ class server:
 
           if int(e) in range(200, 300):
             #return ...
-            raise StopIteration(ctx.afterMail((yield ctx.ctx.command()), ctx.afterMail))
+            raise StopIteration(ctx.afterSender((yield ctx.ctx.command()), ctx.afterSender))
 
           #return ...
           raise StopIteration(state((yield ctx.ctx.command()), state))
@@ -446,11 +446,11 @@ class server:
       #return ...
       raise StopIteration(ctx.ctx.start(command, state))
 
-    def recipient(ctx, mailbox):
+    def recipient(ctx, recipient):
       raise NotImplementedError
 
     @promise.continuate
-    def afterMail(ctx, command, state):
+    def afterSender(ctx, command, state):
 
       # Once started, a mail transaction consists of a transaction beginning
       # command, one or more RCPT commands, and a DATA command, in that order
@@ -487,7 +487,7 @@ class server:
       #return ...
       raise StopIteration(ctx.ctx.start(command, state))
 
-    def data(ctx, data):
+    def content(ctx, content):
       raise NotImplementedError
 
     @promise.continuate
@@ -497,7 +497,7 @@ class server:
 
         while True:
           try:
-            data, ctx.ctx.read = ctx.ctx.read.split('\r\n.\r\n', 1)
+            content, ctx.ctx.read = ctx.ctx.read.split('\r\n.\r\n', 1)
 
             break
 
@@ -511,11 +511,11 @@ class server:
         # deleted
 
         # Lookbehind requires fixed width pattern
-        data = re.sub('(^|\r\n)\.(?=.)', '\\1', data)
+        content = re.sub('(^|\r\n)\.(?=.)', '\\1', content)
 
         try:
           try:
-            yield ctx.data(data)
+            yield ctx.content(content)
 
           # TODO Log
           except NotImplementedError:
@@ -534,4 +534,4 @@ class server:
           raise StopIteration(state((yield ctx.ctx.command()), state))
 
       #return ...
-      raise StopIteration(ctx.afterMail(command, state))
+      raise StopIteration(ctx.afterSender(command, state))

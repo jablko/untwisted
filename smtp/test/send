@@ -13,9 +13,9 @@ class client(smtp.client):
     ctx = yield
 
     class sample(smtp.client.mail):
-      mail = iter(('alice@example.com',)).next
+      sender = iter(('alice@example.com',)).next
       recipient = iter(('bob@example.com',)).next
-      data = iter(('Expect',)).next
+      content = iter(('Expect',)).next
 
     yield sample.__get__(ctx)()
 

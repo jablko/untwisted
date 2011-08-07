@@ -13,9 +13,9 @@ class server(smtp.server):
     ctx = yield
 
     class sample(smtp.server.mail):
-      mail = staticmethod(untwisted.each(lambda: equal('alice@example.com', str((yield)))))
+      sender = staticmethod(untwisted.each(lambda: equal('alice@example.com', str((yield)))))
       recipient = staticmethod(untwisted.each(lambda: equal('bob@example.com', str((yield)))))
-      data = staticmethod(untwisted.each(lambda: equal('Expect', (yield))))
+      content = staticmethod(untwisted.each(lambda: equal('Expect', (yield))))
 
     ctx = yield sample.__get__(ctx)()
 
