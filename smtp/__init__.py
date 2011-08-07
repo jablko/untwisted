@@ -253,37 +253,161 @@ class client:
     return ctx.reply()
 
 class pipeline(client):
+  class __metaclass__(client.__metaclass__):
+
+    @promise.continuate
+    def __call__(ctx, transport):
+      ctx = type.__call__(ctx, transport)
+
+      # Greeting
+      yield ctx.reply()
+
+      try:
+        yield ctx.ehlo()
+
+      except reply as e:
+        if int(e) not in (500, 502):
+          raise
+
+        yield ctx.helo()
+
+      while True:
+        try:
+          ctx.mail()
+
+        except StopIteration:
+          break
+
+      #return ...
+      raise StopIteration(ctx.quit())
+
   pipeline = False
+
+  group = promise.promise()(None)
 
   @promise.continuate
   def ehlo(ctx):
-    result = yield client.ehlo(ctx)
+    if not ctx.pipeline:
 
-    ctx.pipeline = 'PIPELINING' in result.text[1:]
+      @ctx.head.then
+      def result(_):
+        ctx.head = promise.promise()(None)
+
+        result = client.ehlo(ctx)
+
+        @result.then
+        def _(result):
+          ctx.pipeline = 'PIPELINING' in result.text[1:]
+
+          return result
+
+        return result
+
+      #return ...
+      raise StopIteration(result)
+
+    yield ctx.group
+
+    ctx.group = client.ehlo(ctx)
+
+    @ctx.group.then
+    def _(result):
+      ctx.pipeline = 'PIPELINING' in result.text[1:]
+
+      return result
 
     #return ...
-    raise StopIteration(result)
+    raise StopIteration(ctx.group)
 
   class mail(client.mail):
+    class __metaclass__(client.mail.__metaclass__):
+
+      @promise.continuate
+      def __call__(ctx):
+        ctx = type.__call__(ctx)
+
+        result = yield ctx.sender()
+        if not isinstance(result, reply):
+          ctx.mail(result)
+
+        result = yield ctx.recipient()
+        if not isinstance(result, reply):
+          ctx.rcpt(result)
+
+        while True:
+          try:
+            result = yield ctx.recipient()
+
+          except StopIteration:
+            break
+
+          if not isinstance(result, reply):
+            ctx.rcpt(result)
+
+        result = yield ctx.content()
+        if not isinstance(result, reply):
+          #return ...
+          raise StopIteration(ctx.data(result))
+
+        #return ...
+        raise StopIteration(result)
+
+    @promise.continuate
     def mail(ctx, sender):
-      result = client.mail.mail(ctx, sender)
-      if ctx.ctx.pipeline:
-        result = promise.promise()(result)
+      if not ctx.ctx.pipeline:
 
-      return result
+        @ctx.ctx.head.then
+        def result(_):
+          ctx.ctx.head = promise.promise()(None)
 
+          return client.mail.mail(ctx, sender)
+
+        #return ...
+        raise StopIteration(result)
+
+      yield ctx.ctx.group
+
+      #return ...
+      raise StopIteration(client.mail.mail(ctx, sender))
+
+    @promise.continuate
     def rcpt(ctx, recipient):
-      result = client.mail.rcpt(ctx, recipient)
-      if ctx.ctx.pipeline:
-        result = promise.promise()(result)
+      if not ctx.ctx.pipeline:
 
-      return result
+        @ctx.ctx.head.then
+        def result(_):
+          ctx.ctx.head = promise.promise()(None)
+
+          return client.mail.rcpt(ctx, recipient)
+
+        #return ...
+        raise StopIteration(result)
+
+      yield ctx.ctx.group
+
+      #return ...
+      raise StopIteration(client.mail.rcpt(ctx, recipient))
 
     @promise.continuate
     def data(ctx, content):
+      if not ctx.ctx.pipeline:
+
+        @ctx.ctx.head.then
+        def result(_):
+          ctx.ctx.head = promise.promise()(None)
+
+          return client.mail.data(ctx, content)
+
+        #return ...
+        raise StopIteration(result)
+
+      yield ctx.ctx.group
+
       ctx.ctx.transport.write(str(command('DATA')))
 
-      yield ctx.ctx.reply(range(300, 400))
+      ctx.ctx.group = ctx.ctx.reply(range(300, 400))
+
+      yield ctx.ctx.group
 
       content = re.sub('(^|\r\n)\.', '\\1..', content)
 
@@ -294,19 +418,44 @@ class pipeline(client):
 
       ctx.ctx.transport.write(content)
 
-      result = ctx.ctx.reply()
-      if ctx.ctx.pipeline:
-        result = promise.promise()(result)
+      #return ...
+      raise StopIteration(ctx.ctx.reply())
+
+  @promise.continuate
+  def rset(ctx):
+    if not ctx.pipeline:
+
+      @ctx.head.then
+      def result(_):
+        ctx.head = promise.promise()
+
+        return client.rset(ctx)
 
       #return ...
       raise StopIteration(result)
 
-  def rset(ctx):
-    result = client.rset(ctx)
-    if ctx.pipeline:
-      result = promise.promise()(result)
+    yield ctx.group
 
-    return result
+    #return ...
+    raise StopIteration(client.rset(ctx))
+
+  @promise.continuate
+  def quit(ctx):
+    if not ctx.pipeline:
+
+      @ctx.head.then
+      def result(_):
+        ctx.head = promise.promise()
+
+        return client.quit(ctx)
+
+      #return ...
+      raise StopIteration(result)
+
+    yield ctx.group
+
+    #return ...
+    raise StopIteration(client.quit(ctx))
 
 class server:
   class __metaclass__(type):
