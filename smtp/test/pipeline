@@ -15,8 +15,8 @@ def ehlo():
     write = promise.sequence()
 
   client = type.__call__(smtp.pipeline, transport)
-  sample = type.__call__(client.mail)
-  sample.mail('alice@example.com')
+  mail = type.__call__(client.mail)
+  mail.mail('alice@example.com')
 
   transport.protocol.dataReceived('234 Ignore\r\n256 Expect\r\n')
 
@@ -33,12 +33,12 @@ def data():
     write = promise.sequence()
 
   client = type.__call__(smtp.pipeline, transport)
-  sample = type.__call__(client.mail)
-  sample.mail('alice@example.com')
+  mail = type.__call__(client.mail)
+  mail.mail('alice@example.com')
 
   transport.protocol.dataReceived('456 Not expect\r\n234 Ignore\r\n256 Expect\r\n')
 
-  result = sample.data('Content')
+  result = mail.data('Content')
 
   # Suppress traceback
 

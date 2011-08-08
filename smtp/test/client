@@ -16,11 +16,11 @@ def data():
     write = promise.sequence()
 
   client = type.__call__(smtp.client, transport)
-  sample = type.__call__(client.mail)
+  mail = type.__call__(client.mail)
 
   promise.nowThen((promise.nowThen(transport.write.shift(),
         untwisted.partial(ok, False)),
-      sample.data('Expect'))[0],
+      mail.data('Expect'))[0],
     untwisted.partial(equal, 'DATA\r\n'))
 
   promise.nowThen((promise.nowThen(transport.write.shift(),
@@ -39,11 +39,11 @@ def dataCrlf():
     write = promise.sequence()
 
   client = type.__call__(smtp.client, transport)
-  sample = type.__call__(client.mail)
+  mail = type.__call__(client.mail)
 
   promise.nowThen((promise.nowThen(transport.write.shift(),
         untwisted.partial(ok, False)),
-      sample.data('Expect\r\n'))[0],
+      mail.data('Expect\r\n'))[0],
     untwisted.partial(equal, 'DATA\r\n'))
 
   promise.nowThen((promise.nowThen(transport.write.shift(),
@@ -107,10 +107,10 @@ def replyNotHead():
       dataReceived = promise.sequence()
 
   client = type.__call__(smtp.client, transport)
-  sample = client.reply()
+  reply = client.reply()
 
   transport.protocol.dataReceived('234 Expect\r\n')
 
   client.reply()
 
-  sample.then(untwisted.compose(untwisted.partial(equal, '234 Expect\r\n'), str))
+  reply.then(untwisted.compose(untwisted.partial(equal, '234 Expect\r\n'), str))
