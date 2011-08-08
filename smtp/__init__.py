@@ -269,20 +269,37 @@ class pipeline(client):
 
   def ehlo(ctx):
     if not ctx.pipeline:
+      prev = ctx.head
+      ctx.head = promise.promise()
+
+      prev.then(ctx.head.then(promise.promise()))
 
       @ctx.head.then
-      def result(_):
-        ctx.head = promise.promise()(None)
+      def result(clone):
+        try:
+          prev.traceback = clone.traceback
 
-        result = client.ehlo(ctx)
+        except AttributeError:
+          pass
 
-        @result.then
-        def _(result):
-          ctx.pipeline = 'PIPELINING' in result.text[1:]
+        prev.args = clone.args
+        prev.kwds = clone.kwds
+
+        @clone.then
+        def _(_):
+          ctx.head = promise.promise()(None)
+
+          result = client.ehlo(ctx)
+
+          @result.then
+          def _(result):
+            ctx.pipeline = 'PIPELINING' in result.text[1:]
+
+            return result
 
           return result
 
-        return result
+        return clone
 
       return result
 
@@ -331,12 +348,29 @@ class pipeline(client):
 
     def mail(ctx, sender):
       if not ctx.ctx.pipeline:
+        prev = ctx.ctx.head
+        ctx.ctx.head = promise.promise()
+
+        prev.then(ctx.ctx.head.then(promise.promise()))
 
         @ctx.ctx.head.then
-        def result(_):
-          ctx.ctx.head = promise.promise()(None)
+        def result(clone):
+          try:
+            prev.traceback = clone.traceback
 
-          return client.mail.mail(ctx, sender)
+          except AttributeError:
+            pass
+
+          prev.args = clone.args
+          prev.kwds = clone.kwds
+
+          @clone.then
+          def _(_):
+            ctx.ctx.head = promise.promise()(None)
+
+            return client.mail.mail(ctx, sender)
+
+          return clone
 
         return result
 
@@ -344,12 +378,29 @@ class pipeline(client):
 
     def rcpt(ctx, recipient):
       if not ctx.ctx.pipeline:
+        prev = ctx.ctx.head
+        ctx.ctx.head = promise.promise()
+
+        prev.then(ctx.ctx.head.then(promise.promise()))
 
         @ctx.ctx.head.then
-        def result(_):
-          ctx.ctx.head = promise.promise()(None)
+        def result(clone):
+          try:
+            prev.traceback = clone.traceback
 
-          return client.mail.rcpt(ctx, recipient)
+          except AttributeError:
+            pass
+
+          prev.args = clone.args
+          prev.kwds = clone.kwds
+
+          @clone.then
+          def _(_):
+            ctx.ctx.head = promise.promise()(None)
+
+            return client.mail.rcpt(ctx, recipient)
+
+          return clone
 
         return result
 
@@ -357,12 +408,29 @@ class pipeline(client):
 
     def data(ctx, content):
       if not ctx.ctx.pipeline:
+        prev = ctx.ctx.head
+        ctx.ctx.head = promise.promise()
+
+        prev.then(ctx.ctx.head.then(promise.promise()))
 
         @ctx.ctx.head.then
-        def result(_):
-          ctx.ctx.head = promise.promise()(None)
+        def result(clone):
+          try:
+            prev.traceback = clone.traceback
 
-          return client.mail.data(ctx, content)
+          except AttributeError:
+            pass
+
+          prev.args = clone.args
+          prev.kwds = clone.kwds
+
+          @clone.then
+          def _(_):
+            ctx.ctx.head = promise.promise()(None)
+
+            return client.mail.data(ctx, content)
+
+          return clone
 
         return result
 
@@ -370,12 +438,29 @@ class pipeline(client):
 
   def rset(ctx):
     if not ctx.pipeline:
+      prev = ctx.head
+      ctx.head = promise.promise()
+
+      prev.then(ctx.head.then(promise.promise()))
 
       @ctx.head.then
-      def result(_):
-        ctx.head = promise.promise()
+      def result(clone):
+        try:
+          prev.traceback = clone.traceback
 
-        return client.rset(ctx)
+        except AttributeError:
+          pass
+
+        prev.args = clone.args
+        prev.kwds = clone.kwds
+
+        @clone.then
+        def _(_):
+          ctx.head = promise.promise()
+
+          return client.rset(ctx)
+
+        return clone
 
       return result
 
@@ -383,12 +468,29 @@ class pipeline(client):
 
   def quit(ctx):
     if not ctx.pipeline:
+      prev = ctx.head
+      ctx.head = promise.promise()
+
+      prev.then(ctx.head.then(promise.promise()))
 
       @ctx.head.then
-      def result(_):
-        ctx.head = promise.promise()
+      def result(clone):
+        try:
+          prev.traceback = clone.traceback
 
-        return client.quit(ctx)
+        except AttributeError:
+          pass
+
+        prev.args = clone.args
+        prev.kwds = clone.kwds
+
+        @clone.then
+        def _(_):
+          ctx.head = promise.promise()
+
+          return client.quit(ctx)
+
+        return clone
 
       return result
 

@@ -50,3 +50,22 @@ def data():
       pass
 
   client.reply().then(untwisted.compose(untwisted.partial(equal, '256 Expect\r\n'), str))
+
+@test
+def ehloNotHead():
+  expect(1)
+
+  class transport:
+    class protocol:
+      dataReceived = promise.sequence()
+
+    write = promise.sequence()
+
+  client = type.__call__(smtp.pipeline, transport)
+  reply = client.ehlo()
+
+  transport.protocol.dataReceived('234 Expect\r\n')
+
+  client.ehlo()
+
+  reply.then(untwisted.compose(untwisted.partial(equal, '234 Expect\r\n'), str))
