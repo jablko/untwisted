@@ -38,11 +38,11 @@ def data():
 
   transport.protocol.dataReceived('456 Not expect\r\n234 Ignore\r\n256 Expect\r\n')
 
-  result = mail.data('Content')
+  reply = mail.data('Content')
 
   # Suppress traceback
 
-  @result.then
+  @reply.then
   class _:
 
     @staticmethod
