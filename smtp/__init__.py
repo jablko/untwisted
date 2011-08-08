@@ -106,16 +106,13 @@ class client:
   # with unrecognized reply codes by interpreting the first digit only
   def reply(ctx, expect=range(200, 300)):
     prev = ctx.head
-
     ctx.head = promise.promise()
-    prev.then(ctx.head)
 
-    clone = promise.promise()
-    ctx.head.then(clone)
+    prev.then(ctx.head.then(promise.promise()))
 
     @ctx.head.then
     @promise.continuate
-    def _(_):
+    def _(clone):
       try:
         prev.traceback = clone.traceback
 
