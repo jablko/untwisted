@@ -181,7 +181,7 @@ class client:
         result = yield ctx.content()
         if not isinstance(result, reply):
           #return ...
-          raise StopIteration(ctx.data(result))
+          raise StopIteration((yield ctx.data(result)))
 
         #return ...
         raise StopIteration(result)
@@ -204,7 +204,16 @@ class client:
     def recipient(ctx):
       raise NotImplementedError
 
-    @promise.continuate
+    # Aesthetics : ( DATA involves two replies, and we may need to distinguish
+    # because only if the second reply is an error is the transaction complete.
+    # Also the first reply must be received before more commands can be issued,
+    # but the second reply can start a pipeline command group.  Don't want to
+    # split .data() into two methods because they're *always* called together.
+    # So far no need for first reply value (it should always be 354 unless it's
+    # an error) - just whether it's an error, and when it's received.  So
+    # .data() returns a promise that's fulfilled when the first reply is
+    # received.  If the first reply isn't an error, then it's fulfilled with
+    # another promise, which is fulfilled when the second reply is received
     def data(ctx, content):
       ctx.ctx.transport.write(str(command('DATA')))
 
@@ -213,7 +222,7 @@ class client:
       # when possible, interpret only the first digit of the reply and MUST be
       # prepared to deal with unrecognized reply codes by interpreting the
       # first digit only
-      yield ctx.ctx.reply(range(300, 400))
+      result = ctx.ctx.reply(range(300, 400))
 
       # Before sending a line of mail text, the SMTP client checks the first
       # character of the line.  If it is a period, one additional period is
@@ -234,10 +243,13 @@ class client:
 
       content += '.\r\n'
 
-      ctx.ctx.transport.write(content)
+      @result.then
+      def _(_):
+        ctx.ctx.transport.write(content)
 
-      #return ...
-      raise StopIteration(ctx.ctx.reply())
+        return promise.promise()(ctx.ctx.reply())
+
+      return result
 
     def content(ctx):
       raise NotImplementedError
@@ -253,39 +265,8 @@ class client:
     return ctx.reply()
 
 class pipeline(client):
-  class __metaclass__(client.__metaclass__):
-
-    @promise.continuate
-    def __call__(ctx, transport):
-      ctx = type.__call__(ctx, transport)
-
-      # Greeting
-      yield ctx.reply()
-
-      try:
-        yield ctx.ehlo()
-
-      except reply as e:
-        if int(e) not in (500, 502):
-          raise
-
-        yield ctx.helo()
-
-      while True:
-        try:
-          ctx.mail()
-
-        except StopIteration:
-          break
-
-      #return ...
-      raise StopIteration(ctx.quit())
-
   pipeline = False
 
-  group = promise.promise()(None)
-
-  @promise.continuate
   def ehlo(ctx):
     if not ctx.pipeline:
 
@@ -303,21 +284,17 @@ class pipeline(client):
 
         return result
 
-      #return ...
-      raise StopIteration(result)
+      return result
 
-    yield ctx.group
+    result = client.ehlo(ctx)
 
-    ctx.group = client.ehlo(ctx)
-
-    @ctx.group.then
+    @result.then
     def _(result):
       ctx.pipeline = 'PIPELINING' in result.text[1:]
 
       return result
 
-    #return ...
-    raise StopIteration(ctx.group)
+    return result
 
   class mail(client.mail):
     class __metaclass__(client.mail.__metaclass__):
@@ -352,7 +329,6 @@ class pipeline(client):
         #return ...
         raise StopIteration(result)
 
-    @promise.continuate
     def mail(ctx, sender):
       if not ctx.ctx.pipeline:
 
@@ -362,15 +338,10 @@ class pipeline(client):
 
           return client.mail.mail(ctx, sender)
 
-        #return ...
-        raise StopIteration(result)
+        return result
 
-      yield ctx.ctx.group
+      return client.mail.mail(ctx, sender)
 
-      #return ...
-      raise StopIteration(client.mail.mail(ctx, sender))
-
-    @promise.continuate
     def rcpt(ctx, recipient):
       if not ctx.ctx.pipeline:
 
@@ -380,15 +351,10 @@ class pipeline(client):
 
           return client.mail.rcpt(ctx, recipient)
 
-        #return ...
-        raise StopIteration(result)
+        return result
 
-      yield ctx.ctx.group
+      return client.mail.rcpt(ctx, recipient)
 
-      #return ...
-      raise StopIteration(client.mail.rcpt(ctx, recipient))
-
-    @promise.continuate
     def data(ctx, content):
       if not ctx.ctx.pipeline:
 
@@ -398,30 +364,10 @@ class pipeline(client):
 
           return client.mail.data(ctx, content)
 
-        #return ...
-        raise StopIteration(result)
+        return result
 
-      yield ctx.ctx.group
+      return client.mail.data(ctx, content)
 
-      ctx.ctx.transport.write(str(command('DATA')))
-
-      ctx.ctx.group = ctx.ctx.reply(range(300, 400))
-
-      yield ctx.ctx.group
-
-      content = re.sub('(^|\r\n)\.', '\\1..', content)
-
-      if '\r\n' != content[-2:]:
-        content += '\r\n'
-
-      content += '.\r\n'
-
-      ctx.ctx.transport.write(content)
-
-      #return ...
-      raise StopIteration(ctx.ctx.reply())
-
-  @promise.continuate
   def rset(ctx):
     if not ctx.pipeline:
 
@@ -431,15 +377,10 @@ class pipeline(client):
 
         return client.rset(ctx)
 
-      #return ...
-      raise StopIteration(result)
+      return result
 
-    yield ctx.group
+    return client.rset(ctx)
 
-    #return ...
-    raise StopIteration(client.rset(ctx))
-
-  @promise.continuate
   def quit(ctx):
     if not ctx.pipeline:
 
@@ -449,13 +390,9 @@ class pipeline(client):
 
         return client.quit(ctx)
 
-      #return ...
-      raise StopIteration(result)
+      return result
 
-    yield ctx.group
-
-    #return ...
-    raise StopIteration(client.quit(ctx))
+    return client.quit(ctx)
 
 class server:
   class __metaclass__(type):
