@@ -269,29 +269,26 @@ class pipeline(client):
 
   def reply(ctx, expect=range(200, 300)):
     if ctx.head.trigger and not hasattr(ctx.head, 'args'):
+      def callback(read):
+        try:
+          replyLine = rfc5321.replyLine.match(read, '( replyCode, textstring )')
 
-      @untwisted.call
-      @promise.continuate
-      def result():
-        while True:
-          try:
-            replyLine = rfc5321.replyLine.match(ctx.read, '( replyCode, textstring )')
+        except ValueError:
+          asdf.callback.insert(0, callback)
 
-            break
+          return ctx.transport.protocol.dataReceived.shift().then(read.__add__)
 
-          except ValueError:
-            ctx.read += yield ctx.transport.protocol.dataReceived.shift()
-
-        ctx.read = ctx.read[len(replyLine):]
+        ctx.read = read[len(replyLine):]
 
         result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
         if int(result) not in expect:
           raise result
 
-        #return ...
-        raise StopIteration(result)
+        return result
 
-      return result
+      asdf = promise.promise().then(callback)
+
+      return asdf(ctx.read)
 
     return client.reply(ctx, expect)
 
