@@ -267,6 +267,34 @@ class client:
 class pipeline(client):
   pipeline = False
 
+  def reply(ctx, expect=range(200, 300)):
+    if ctx.head.trigger and not hasattr(ctx.head, 'args'):
+
+      @untwisted.call
+      @promise.continuate
+      def result():
+        while True:
+          try:
+            replyLine = rfc5321.replyLine.match(ctx.read, '( replyCode, textstring )')
+
+            break
+
+          except ValueError:
+            ctx.read += yield ctx.transport.protocol.dataReceived.shift()
+
+        ctx.read = ctx.read[len(replyLine):]
+
+        result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
+        if int(result) not in expect:
+          raise result
+
+        #return ...
+        raise StopIteration(result)
+
+      return result
+
+    return client.reply(ctx, expect)
+
   def ehlo(ctx):
     if not ctx.pipeline:
       prev = ctx.head
@@ -287,8 +315,6 @@ class pipeline(client):
 
         @clone.then
         def _(_):
-          ctx.head = promise.promise()(None)
-
           result = client.ehlo(ctx)
 
           @result.then
@@ -354,7 +380,7 @@ class pipeline(client):
         prev.then(ctx.ctx.head.then(promise.promise()))
 
         @ctx.ctx.head.then
-        def result(clone):
+        def _(clone):
           try:
             prev.traceback = clone.traceback
 
@@ -364,15 +390,9 @@ class pipeline(client):
           prev.args = clone.args
           prev.kwds = clone.kwds
 
-          @clone.then
-          def _(_):
-            ctx.ctx.head = promise.promise()(None)
+          return clone.then(lambda _: client.mail.mail(ctx, sender))
 
-            return client.mail.mail(ctx, sender)
-
-          return clone
-
-        return result
+        return ctx.ctx.head
 
       return client.mail.mail(ctx, sender)
 
@@ -384,7 +404,7 @@ class pipeline(client):
         prev.then(ctx.ctx.head.then(promise.promise()))
 
         @ctx.ctx.head.then
-        def result(clone):
+        def _(clone):
           try:
             prev.traceback = clone.traceback
 
@@ -394,15 +414,9 @@ class pipeline(client):
           prev.args = clone.args
           prev.kwds = clone.kwds
 
-          @clone.then
-          def _(_):
-            ctx.ctx.head = promise.promise()(None)
+          return clone.then(lambda _: client.mail.rcpt(ctx, recipient))
 
-            return client.mail.rcpt(ctx, recipient)
-
-          return clone
-
-        return result
+        return ctx.ctx.head
 
       return client.mail.rcpt(ctx, recipient)
 
@@ -414,7 +428,7 @@ class pipeline(client):
         prev.then(ctx.ctx.head.then(promise.promise()))
 
         @ctx.ctx.head.then
-        def result(clone):
+        def _(clone):
           try:
             prev.traceback = clone.traceback
 
@@ -424,15 +438,9 @@ class pipeline(client):
           prev.args = clone.args
           prev.kwds = clone.kwds
 
-          @clone.then
-          def _(_):
-            ctx.ctx.head = promise.promise()(None)
+          return clone.then(lambda _: client.mail.data(ctx, content))
 
-            return client.mail.data(ctx, content)
-
-          return clone
-
-        return result
+        return ctx.ctx.head
 
       return client.mail.data(ctx, content)
 
@@ -444,7 +452,7 @@ class pipeline(client):
       prev.then(ctx.head.then(promise.promise()))
 
       @ctx.head.then
-      def result(clone):
+      def _(clone):
         try:
           prev.traceback = clone.traceback
 
@@ -454,15 +462,9 @@ class pipeline(client):
         prev.args = clone.args
         prev.kwds = clone.kwds
 
-        @clone.then
-        def _(_):
-          ctx.head = promise.promise()
+        return clone.then(lambda _: client.rset(ctx))
 
-          return client.rset(ctx)
-
-        return clone
-
-      return result
+      return ctx.head
 
     return client.rset(ctx)
 
@@ -474,7 +476,7 @@ class pipeline(client):
       prev.then(ctx.head.then(promise.promise()))
 
       @ctx.head.then
-      def result(clone):
+      def _(clone):
         try:
           prev.traceback = clone.traceback
 
@@ -484,15 +486,9 @@ class pipeline(client):
         prev.args = clone.args
         prev.kwds = clone.kwds
 
-        @clone.then
-        def _(_):
-          ctx.head = promise.promise()
+        return clone.then(lambda _: client.quit(ctx))
 
-          return client.quit(ctx)
-
-        return clone
-
-      return result
+      return ctx.head
 
     return client.quit(ctx)
 

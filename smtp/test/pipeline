@@ -33,6 +33,8 @@ def data():
     write = promise.sequence()
 
   client = type.__call__(smtp.pipeline, transport)
+  client.pipeline = True
+
   mail = type.__call__(client.mail)
   mail.mail('alice@example.com')
 
@@ -50,6 +52,35 @@ def data():
       pass
 
   client.reply().then(untwisted.compose(untwisted.partial(equal, '256 Expect\r\n'), str))
+
+@test
+def dataNoPipeline():
+  expect(1)
+
+  class transport:
+    class protocol:
+      dataReceived = promise.sequence()
+
+    write = promise.sequence()
+
+  client = type.__call__(smtp.pipeline, transport)
+  mail = type.__call__(client.mail)
+  mail.mail('alice@example.com')
+
+  transport.protocol.dataReceived('456 Not expect\r\n234 Expect\r\n')
+
+  reply = mail.data('Content')
+
+  # Suppress traceback
+
+  @reply.then
+  class _:
+
+    @staticmethod
+    def throw(type, value, traceback):
+      pass
+
+  client.reply().then(untwisted.compose(untwisted.partial(equal, '234 Expect\r\n'), str))
 
 @test
 def ehloNotHead():
