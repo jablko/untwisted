@@ -109,7 +109,6 @@ class client:
     prev.then(ctx.head.then(promise.promise()))
 
     @ctx.head.then
-    @promise.continuate
     def _(clone):
       try:
         prev.traceback = clone.traceback
@@ -120,25 +119,30 @@ class client:
       prev.args = clone.args
       prev.kwds = clone.kwds
 
-      while True:
+      def callback(read):
         try:
-          replyLine = rfc5321.replyLine.match(ctx.read, '( replyCode, textstring )')
-
-          break
+          replyLine = rfc5321.replyLine.match(read, '( replyCode, textstring )')
 
         except ValueError:
-          ctx.read += yield ctx.transport.protocol.dataReceived.shift()
+          asdf.callback.insert(0, callback)
 
-      ctx.read = ctx.read[len(replyLine):]
+          return ctx.transport.protocol.dataReceived.shift().then(read.__add__)
 
-      yield clone
+        ctx.read = read[len(replyLine):]
 
-      result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
-      if int(result) not in expect:
-        raise result
+        @clone.then
+        def _(_):
+          result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
+          if int(result) not in expect:
+            raise result
 
-      #return ...
-      raise StopIteration(result)
+          return result
+
+        return clone
+
+      asdf = promise.promise().then(callback)
+
+      return asdf(ctx.read)
 
     return ctx.head
 
@@ -509,21 +513,23 @@ class server:
   #greeting = lambda ctx: ctx.transport.write(str(reply(220, '{} Service ready'.format(domain))))
   greeting = lambda ctx: ctx.transport.write(str(reply(220, '{0} Service ready'.format(domain))))
 
-  @promise.continuate
   def command(ctx):
-    while True:
+    def callback(read):
       try:
-        result, ctx.read = ctx.read.split('\r\n', 1)
-
-        break
+        result, ctx.read = read.split('\r\n', 1)
 
       except ValueError:
-        ctx.read += yield ctx.transport.protocol.dataReceived.shift()
+        asdf.callback.insert(0, callback)
 
-    result = command(result)
+        return ctx.transport.protocol.dataReceived.shift().then(read.__add__)
 
-    #return ...
-    raise StopIteration(result)
+      result = command(result)
+
+      return result
+
+    asdf = promise.promise().then(callback)
+
+    return asdf(ctx.read)
 
   @promise.continuate
   def start(ctx, command, state):
