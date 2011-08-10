@@ -271,31 +271,6 @@ class client:
 class pipeline(client):
   pipeline = False
 
-  def reply(ctx, expect=range(200, 300)):
-    if ctx.head.trigger and not hasattr(ctx.head, 'args'):
-      def callback(read):
-        try:
-          replyLine = rfc5321.replyLine.match(read, '( replyCode, textstring )')
-
-        except ValueError:
-          asdf.callback.insert(0, callback)
-
-          return ctx.transport.protocol.dataReceived.shift().then(read.__add__)
-
-        ctx.read = read[len(replyLine):]
-
-        result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
-        if int(result) not in expect:
-          raise result
-
-        return result
-
-      asdf = promise.promise().then(callback)
-
-      return asdf(ctx.read)
-
-    return client.reply(ctx, expect)
-
   def ehlo(ctx):
     if not ctx.pipeline:
       prev = ctx.head
@@ -316,15 +291,32 @@ class pipeline(client):
 
         @clone.then
         def _(_):
-          result = client.ehlo(ctx)
+          ctx.transport.write(str(command('EHLO', domain)))
 
-          @result.then
-          def _(result):
+          expect = range(200, 300)
+
+          def callback(read):
+            try:
+              replyLine = rfc5321.replyLine.match(read, '( replyCode, textstring )')
+
+            except ValueError:
+              asdf.callback.insert(0, callback)
+
+              return ctx.transport.protocol.dataReceived.shift().then(read.__add__)
+
+            ctx.read = read[len(replyLine):]
+
+            result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
+            if int(result) not in expect:
+              raise result
+
             ctx.pipeline = 'PIPELINING' in result.text[1:]
 
             return result
 
-          return result
+          asdf = promise.promise().then(callback)
+
+          return asdf(ctx.read)
 
         return clone
 
@@ -391,7 +383,35 @@ class pipeline(client):
           prev.args = clone.args
           prev.kwds = clone.kwds
 
-          return clone.then(lambda _: client.mail.mail(ctx, sender))
+          @clone.then
+          def _(_):
+            #ctx.ctx.transport.write(str(command('MAIL FROM:<{}>'.format(sender))))
+            ctx.ctx.transport.write(str(command('MAIL FROM:<{0}>'.format(sender))))
+
+            expect = range(200, 300)
+
+            def callback(read):
+              try:
+                replyLine = rfc5321.replyLine.match(read, '( replyCode, textstring )')
+
+              except ValueError:
+                asdf.callback.insert(0, callback)
+
+                return ctx.ctx.transport.protocol.dataReceived.shift().then(read.__add__)
+
+              ctx.ctx.read = read[len(replyLine):]
+
+              result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
+              if int(result) not in expect:
+                raise result
+
+              return result
+
+            asdf = promise.promise().then(callback)
+
+            return asdf(ctx.ctx.read)
+
+          return clone
 
         return ctx.ctx.head
 
@@ -415,7 +435,35 @@ class pipeline(client):
           prev.args = clone.args
           prev.kwds = clone.kwds
 
-          return clone.then(lambda _: client.mail.rcpt(ctx, recipient))
+          @clone.then
+          def _(_):
+            #ctx.ctx.transport.write(str(command('RCPT TO:<{}>'.format(recipient))))
+            ctx.ctx.transport.write(str(command('RCPT TO:<{0}>'.format(recipient))))
+
+            expect = range(200, 300)
+
+            def callback(read):
+              try:
+                replyLine = rfc5321.replyLine.match(read, '( replyCode, textstring )')
+
+              except ValueError:
+                asdf.callback.insert(0, callback)
+
+                return ctx.ctx.transport.protocol.dataReceived.shift().then(read.__add__)
+
+              ctx.ctx.read = read[len(replyLine):]
+
+              result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
+              if int(result) not in expect:
+                raise result
+
+              return result
+
+            asdf = promise.promise().then(callback)
+
+            return asdf(ctx.ctx.read)
+
+          return clone
 
         return ctx.ctx.head
 
@@ -423,6 +471,13 @@ class pipeline(client):
 
     def data(ctx, content):
       if not ctx.ctx.pipeline:
+        content = re.sub('(^|\r\n)\.', '\\1..', content)
+
+        if '\r\n' != content[-2:]:
+          content += '\r\n'
+
+        content += '.\r\n'
+
         prev = ctx.ctx.head
         ctx.ctx.head = promise.promise()
 
@@ -439,7 +494,36 @@ class pipeline(client):
           prev.args = clone.args
           prev.kwds = clone.kwds
 
-          return clone.then(lambda _: client.mail.data(ctx, content))
+          @clone.then
+          def _(_):
+            ctx.ctx.transport.write(str(command('DATA')))
+
+            expect = range(300, 400)
+
+            def callback(read):
+              try:
+                replyLine = rfc5321.replyLine.match(read, '( replyCode, textstring )')
+
+              except ValueError:
+                asdf.callback.insert(0, callback)
+
+                return ctx.ctx.transport.protocol.dataReceived.shift().then(read.__add__)
+
+              ctx.ctx.read = read[len(replyLine):]
+
+              result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
+              if int(result) not in expect:
+                raise result
+
+              ctx.ctx.transport.write(content)
+
+              return promise.promise()(ctx.ctx.reply())
+
+            asdf = promise.promise().then(callback)
+
+            return asdf(ctx.ctx.read)
+
+          return clone
 
         return ctx.ctx.head
 
@@ -463,7 +547,34 @@ class pipeline(client):
         prev.args = clone.args
         prev.kwds = clone.kwds
 
-        return clone.then(lambda _: client.rset(ctx))
+        @clone.then
+        def _(_):
+          ctx.transport.write(str(command('RSET')))
+
+          expect = range(200, 300)
+
+          def callback(read):
+            try:
+              replyLine = rfc5321.replyLine.match(read, '( replyCode, textstring )')
+
+            except ValueError:
+              asdf.callback.insert(0, callback)
+
+              return ctx.transport.protocol.dataReceived.shift().then(read.__add__)
+
+            ctx.read = read[len(replyLine):]
+
+            result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
+            if int(result) not in expect:
+              raise result
+
+            return result
+
+          asdf = promise.promise().then(callback)
+
+          return asdf(ctx.read)
+
+        return clone
 
       return ctx.head
 
@@ -487,7 +598,34 @@ class pipeline(client):
         prev.args = clone.args
         prev.kwds = clone.kwds
 
-        return clone.then(lambda _: client.quit(ctx))
+        @clone.then
+        def _(_):
+          ctx.transport.write(str(command('QUIT')))
+
+          expect = range(200, 300)
+
+          def callback(read):
+            try:
+              replyLine = rfc5321.replyLine.match(read, '( replyCode, textstring )')
+
+            except ValueError:
+              asdf.callback.insert(0, callback)
+
+              return ctx.transport.protocol.dataReceived.shift().then(read.__add__)
+
+            ctx.read = read[len(replyLine):]
+
+            result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
+            if int(result) not in expect:
+              raise result
+
+            return result
+
+          asdf = promise.promise().then(callback)
+
+          return asdf(ctx.read)
+
+        return clone
 
       return ctx.head
 
