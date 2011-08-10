@@ -1,0 +1,95 @@
+#!/usr/bin/env python
+
+import untwisted
+from testify import *
+from untwisted import promise, smtp
+
+expect(18)
+
+class server(smtp.server):
+
+  @untwisted.each
+  def mail():
+    ctx = yield
+
+    class sample(smtp.server.mail):
+      sender = staticmethod(untwisted.each(lambda: equal('alice@example.com', str((yield)))))
+      recipient = staticmethod(untwisted.each(lambda: equal('bob@example.com', str((yield)))))
+      content = staticmethod(untwisted.each(lambda: equal('Expect', (yield))))
+
+    ctx = yield sample.__get__(ctx)()
+
+    class sample(smtp.server.mail):
+      sender = staticmethod(untwisted.each(lambda: equal('carol@example.com', str((yield)))))
+      recipient = staticmethod(untwisted.each(lambda: equal('dave@example.com', str((yield)))))
+      content = staticmethod(untwisted.each(lambda: equal('Tcepxe', (yield))))
+
+    ctx = yield sample.__get__(ctx)()
+
+    # QUIT
+    yield smtp.server.mail.__get__(ctx)()
+
+class transport:
+  loseConnection = staticmethod(untwisted.partial(ok, True))
+
+  class protocol:
+    dataReceived = promise.sequence()
+
+  write = promise.sequence()
+
+smtp.domain = 'example.com'
+
+server(transport)
+
+promise.nowThen(transport.write.shift(),
+  untwisted.partial(equal, '220 example.com Service ready\r\n'))
+
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('EHLO example.com\r\n'))[0],
+  untwisted.partial(equal, '250-example.com Requested mail action okay, completed\r\n250 PIPELINING\r\n'))
+
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('MAIL FROM:<alice@example.com>\r\n'))[0],
+  untwisted.partial(equal, '250 Requested mail action okay, completed\r\n'))
+
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('RCPT TO:<bob@example.com>\r\n'))[0],
+  untwisted.partial(equal, '250 Requested mail action okay, completed\r\n'))
+
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('DATA\r\n'))[0],
+  untwisted.partial(equal, '354 Start mail input; end with <CRLF>.<CRLF>\r\n'))
+
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('Expect\r\n.\r\n'))[0],
+  untwisted.partial(equal, '250 Requested mail action okay, completed\r\n'))
+
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('MAIL FROM:<carol@example.com>\r\n'))[0],
+  untwisted.partial(equal, '250 Requested mail action okay, completed\r\n'))
+
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('RCPT TO:<dave@example.com>\r\n'))[0],
+  untwisted.partial(equal, '250 Requested mail action okay, completed\r\n'))
+
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('DATA\r\n'))[0],
+  untwisted.partial(equal, '354 Start mail input; end with <CRLF>.<CRLF>\r\n'))
+
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('Tcepxe\r\n.\r\n'))[0],
+  untwisted.partial(equal, '250 Requested mail action okay, completed\r\n'))
+
+promise.nowThen((promise.nowThen(transport.write.shift(),
+      untwisted.partial(ok, False)),
+    transport.protocol.dataReceived('QUIT\r\n'))[0],
+  untwisted.partial(equal, '221 Service closing transmission channel\r\n'))

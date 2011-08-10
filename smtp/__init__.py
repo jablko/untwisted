@@ -851,12 +851,14 @@ class server:
         except reply as e:
           ctx.ctx.transport.write(str(e))
 
-          if int(e) in range(200, 300):
-            #return ...
-            raise StopIteration(ctx.ctx.mail())
+          # Receipt of the end of mail data indication requires the server to
+          # process the stored mail transaction information.  This processing
+          # consumes the information in the reverse-path buffer, the
+          # forward-path buffer, and the mail data buffer, and on the
+          # completion of this command these buffers are cleared
 
           #return ...
-          raise StopIteration(state((yield ctx.ctx.command()), state))
+          raise StopIteration(ctx.ctx.mail())
 
       #return ...
       raise StopIteration(ctx.afterSender(command, state))
