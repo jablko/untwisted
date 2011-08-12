@@ -104,11 +104,11 @@ class client:
   # with unrecognized reply codes by interpreting the first digit only
   def reply(ctx, expect=range(200, 300)):
     prev = ctx.head
-    ctx.head = promise.promise()
+    ctx.head = result = promise.promise()
 
-    prev.then(ctx.head.then(promise.promise()))
+    prev.then(result.then(promise.promise()))
 
-    @ctx.head.then
+    @result.then
     def _(clone):
       try:
         prev.traceback = clone.traceback
@@ -144,7 +144,7 @@ class client:
 
       return asdf(ctx.read)
 
-    return ctx.head
+    return result
 
   def ehlo(ctx):
     ctx.transport.write(str(command('EHLO', domain)))
@@ -274,12 +274,12 @@ class pipeline(client):
   def ehlo(ctx):
     if not ctx.pipeline:
       prev = ctx.head
-      ctx.head = promise.promise()
+      ctx.head = result = promise.promise()
 
-      prev.then(ctx.head.then(promise.promise()))
+      prev.then(result.then(promise.promise()))
 
-      @ctx.head.then
-      def result(clone):
+      @result.then
+      def _(clone):
         try:
           prev.traceback = clone.traceback
 
@@ -368,11 +368,11 @@ class pipeline(client):
     def mail(ctx, sender):
       if not ctx.ctx.pipeline:
         prev = ctx.ctx.head
-        ctx.ctx.head = promise.promise()
+        ctx.ctx.head = result = promise.promise()
 
-        prev.then(ctx.ctx.head.then(promise.promise()))
+        prev.then(result.then(promise.promise()))
 
-        @ctx.ctx.head.then
+        @result.then
         def _(clone):
           try:
             prev.traceback = clone.traceback
@@ -413,18 +413,18 @@ class pipeline(client):
 
           return clone
 
-        return ctx.ctx.head
+        return result
 
       return client.mail.mail(ctx, sender)
 
     def rcpt(ctx, recipient):
       if not ctx.ctx.pipeline:
         prev = ctx.ctx.head
-        ctx.ctx.head = promise.promise()
+        ctx.ctx.head = result = promise.promise()
 
-        prev.then(ctx.ctx.head.then(promise.promise()))
+        prev.then(result.then(promise.promise()))
 
-        @ctx.ctx.head.then
+        @result.then
         def _(clone):
           try:
             prev.traceback = clone.traceback
@@ -465,7 +465,7 @@ class pipeline(client):
 
           return clone
 
-        return ctx.ctx.head
+        return result
 
       return client.mail.rcpt(ctx, recipient)
 
@@ -479,11 +479,11 @@ class pipeline(client):
         content += '.\r\n'
 
         prev = ctx.ctx.head
-        ctx.ctx.head = promise.promise()
+        ctx.ctx.head = result = promise.promise()
 
-        prev.then(ctx.ctx.head.then(promise.promise()))
+        prev.then(result.then(promise.promise()))
 
-        @ctx.ctx.head.then
+        @result.then
         def _(clone):
           try:
             prev.traceback = clone.traceback
@@ -525,18 +525,18 @@ class pipeline(client):
 
           return clone
 
-        return ctx.ctx.head
+        return result
 
       return client.mail.data(ctx, content)
 
   def rset(ctx):
     if not ctx.pipeline:
       prev = ctx.head
-      ctx.head = promise.promise()
+      ctx.head = result = promise.promise()
 
-      prev.then(ctx.head.then(promise.promise()))
+      prev.then(result.then(promise.promise()))
 
-      @ctx.head.then
+      @result.then
       def _(clone):
         try:
           prev.traceback = clone.traceback
@@ -576,18 +576,18 @@ class pipeline(client):
 
         return clone
 
-      return ctx.head
+      return result
 
     return client.rset(ctx)
 
   def quit(ctx):
     if not ctx.pipeline:
       prev = ctx.head
-      ctx.head = promise.promise()
+      ctx.head = result = promise.promise()
 
-      prev.then(ctx.head.then(promise.promise()))
+      prev.then(result.then(promise.promise()))
 
-      @ctx.head.then
+      @result.then
       def _(clone):
         try:
           prev.traceback = clone.traceback
@@ -627,7 +627,7 @@ class pipeline(client):
 
         return clone
 
-      return ctx.head
+      return result
 
     return client.quit(ctx)
 

@@ -83,6 +83,23 @@ def dataNoPipeline():
   client.reply().then(untwisted.compose(untwisted.partial(equal, '234 Expect\r\n'), str))
 
 @test
+def dataPromise():
+  expect(1)
+
+  class transport:
+    class protocol:
+      dataReceived = promise.sequence()
+
+    write = promise.sequence()
+
+  client = type.__call__(smtp.pipeline, transport)
+  mail = type.__call__(client.mail)
+
+  transport.protocol.dataReceived('345 Ignore\r\n234 Expect\r\n')
+
+  mail.data('Content').then(untwisted.partial(promise.promise.then, callback=untwisted.compose(untwisted.partial(equal, '234 Expect\r\n'), str)))
+
+@test
 def ehloNotHead():
   expect(1)
 
