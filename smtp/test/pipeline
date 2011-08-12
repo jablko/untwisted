@@ -38,7 +38,7 @@ def data():
   mail = type.__call__(client.mail)
   mail.mail('alice@example.com')
 
-  transport.protocol.dataReceived('456 Not expect\r\n234 Ignore\r\n256 Expect\r\n')
+  transport.protocol.dataReceived('456 Not expect\r\n345 Ignore\r\n234 Expect\r\n')
 
   reply = mail.data('Content')
 
@@ -51,7 +51,7 @@ def data():
     def throw(type, value, traceback):
       pass
 
-  client.reply().then(untwisted.compose(untwisted.partial(equal, '256 Expect\r\n'), str))
+  client.reply().then(untwisted.compose(untwisted.partial(equal, '234 Expect\r\n'), str))
 
 @test
 def dataNoPipeline():
