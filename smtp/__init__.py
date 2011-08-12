@@ -682,7 +682,8 @@ class server:
 
       # Servers MUST NOT return the extended EHLO-style response to a HELO
       # command
-      ctx.transport.write(str(reply(250)))
+      #ctx.transport.write(str(reply(250, '{} Requested mail action okay, completed'.format(domain))))
+      ctx.transport.write(str(reply(250, '{0} Requested mail action okay, completed'.format(domain))))
 
       #return ...
       raise StopIteration(ctx.mail())
