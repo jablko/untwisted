@@ -17,7 +17,7 @@ def quit():
   promise.nowThen((promise.nowThen(transport.write.shift(),
         untwisted.partial(ok, False)),
       server.start(smtp.command('QUIT'), None))[0],
-    untwisted.partial(equal, '221 Service closing transmission channel\r\n'))
+    untwisted.partial(equal, '221 2.5.0 Service closing transmission channel\r\n'))
 
 @test
 def command():

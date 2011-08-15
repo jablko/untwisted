@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+
+from testify import *
+from untwisted import smtp
+
+sample = smtp.enhance(123, '1.2.3', 'First', 'Second', 'Third')
+
+equal(123, int(sample))
+equal('123-1.2.3 First\r\n123-1.2.3 Second\r\n123 1.2.3 Third\r\n', str(sample))
+
+sample = smtp.enhance(123, '1.2.3')
+
+equal(123, int(sample))
+equal('123 1.2.3\r\n', str(sample))

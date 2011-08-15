@@ -47,17 +47,17 @@ promise.nowThen(transport.write.shift(),
 promise.nowThen((promise.nowThen(transport.write.shift(),
       untwisted.partial(ok, False)),
     transport.protocol.dataReceived('EHLO example.com\r\n'))[0],
-  untwisted.partial(equal, '250-example.com Requested mail action okay, completed\r\n250 PIPELINING\r\n'))
+  untwisted.partial(equal, '250-example.com Success\r\n250-ENHANCEDSTATUSCODES\r\n250 PIPELINING\r\n'))
 
 promise.nowThen((promise.nowThen(transport.write.shift(),
       untwisted.partial(ok, False)),
     transport.protocol.dataReceived('MAIL FROM:<alice@example.com>\r\n'))[0],
-  untwisted.partial(equal, '250 Requested mail action okay, completed\r\n'))
+  untwisted.partial(equal, '250 2.1.0 Success\r\n'))
 
 promise.nowThen((promise.nowThen(transport.write.shift(),
       untwisted.partial(ok, False)),
     transport.protocol.dataReceived('RCPT TO:<bob@example.com>\r\n'))[0],
-  untwisted.partial(equal, '250 Requested mail action okay, completed\r\n'))
+  untwisted.partial(equal, '250 2.1.5 Destination address valid\r\n'))
 
 promise.nowThen((promise.nowThen(transport.write.shift(),
       untwisted.partial(ok, False)),
@@ -67,17 +67,17 @@ promise.nowThen((promise.nowThen(transport.write.shift(),
 promise.nowThen((promise.nowThen(transport.write.shift(),
       untwisted.partial(ok, False)),
     transport.protocol.dataReceived('Expect\r\n.\r\n'))[0],
-  untwisted.partial(equal, '250 Requested mail action okay, completed\r\n'))
+  untwisted.partial(equal, '250 2.6.0 Success\r\n'))
 
 promise.nowThen((promise.nowThen(transport.write.shift(),
       untwisted.partial(ok, False)),
     transport.protocol.dataReceived('MAIL FROM:<carol@example.com>\r\n'))[0],
-  untwisted.partial(equal, '250 Requested mail action okay, completed\r\n'))
+  untwisted.partial(equal, '250 2.1.0 Success\r\n'))
 
 promise.nowThen((promise.nowThen(transport.write.shift(),
       untwisted.partial(ok, False)),
     transport.protocol.dataReceived('RCPT TO:<dave@example.com>\r\n'))[0],
-  untwisted.partial(equal, '250 Requested mail action okay, completed\r\n'))
+  untwisted.partial(equal, '250 2.1.5 Destination address valid\r\n'))
 
 promise.nowThen((promise.nowThen(transport.write.shift(),
       untwisted.partial(ok, False)),
@@ -87,9 +87,9 @@ promise.nowThen((promise.nowThen(transport.write.shift(),
 promise.nowThen((promise.nowThen(transport.write.shift(),
       untwisted.partial(ok, False)),
     transport.protocol.dataReceived('Tcepxe\r\n.\r\n'))[0],
-  untwisted.partial(equal, '250 Requested mail action okay, completed\r\n'))
+  untwisted.partial(equal, '250 2.6.0 Success\r\n'))
 
 promise.nowThen((promise.nowThen(transport.write.shift(),
       untwisted.partial(ok, False)),
     transport.protocol.dataReceived('QUIT\r\n'))[0],
-  untwisted.partial(equal, '221 Service closing transmission channel\r\n'))
+  untwisted.partial(equal, '221 2.5.0 Service closing transmission channel\r\n'))

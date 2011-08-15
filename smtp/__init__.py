@@ -34,14 +34,7 @@ class reply:
     ctx.code = code
 
     try:
-      ctx.text = args or {
-        221: ('Service closing transmission channel',),
-        250: ('Requested mail action okay, completed',),
-        354: ('Start mail input; end with <CRLF>.<CRLF>',),
-        500: ('Syntax error, command unrecognized',),
-        502: ('Command not implemented',),
-        503: ('Bad sequence of commands',),
-        555: ('MAIL FROM/RCPT TO parameters not recognized or not implemented',)}[code]
+      ctx.text = args or { 354: ('Start mail input; end with <CRLF>.<CRLF>',) }[code]
 
     except KeyError:
       ctx.text = ()
@@ -61,6 +54,29 @@ class reply:
       result = ''.join(str(ctx.code) + '-' + text + '\r\n' for text in ctx.text[:-1]) + result
 
     return result + '\r\n'
+
+class enhance(reply):
+  def __init__(ctx, basic, enhance, *args):
+    try:
+      text = args or {
+        (221, '2.5.0'): ('Service closing transmission channel',),
+        (502, '5.5.1'): ('Command not implemented',),
+        (503, '5.5.1'): ('Bad sequence of commands',),
+        (500, '5.5.2'): ('Syntax error, command unrecognized',),
+        (555, '5.5.4'): ('MAIL FROM/RCPT TO parameters not recognized or not implemented',) }[basic, enhance]
+
+    except KeyError:
+      try:
+        text = {
+          '2.1.0': ('Success',),
+          '2.1.5': ('Destination address valid',),
+          '2.5.0': ('Success',),
+          '2.6.0': ('Success',) }[enhance]
+
+      except KeyError:
+        return reply.__init__(ctx, basic, enhance)
+
+    reply.__init__(ctx, basic, *map((enhance + ' ').__add__, text))
 
 class client:
   class __metaclass__(type):
@@ -672,8 +688,8 @@ class server:
   @promise.continuate
   def start(ctx, command, state):
     if 'EHLO' == command.verb:
-      #ctx.transport.write(str(reply(250, '{} Requested mail action okay, completed'.format(domain), 'PIPELINING')))
-      ctx.transport.write(str(reply(250, '{0} Requested mail action okay, completed'.format(domain), 'PIPELINING')))
+      #ctx.transport.write(str(reply(250, '{} Success'.format(domain), 'ENHANCEDSTATUSCODES', 'PIPELINING')))
+      ctx.transport.write(str(reply(250, '{0} Success'.format(domain), 'ENHANCEDSTATUSCODES', 'PIPELINING')))
 
       #return ...
       raise StopIteration(ctx.mail())
@@ -682,38 +698,38 @@ class server:
 
       # Servers MUST NOT return the extended EHLO-style response to a HELO
       # command
-      #ctx.transport.write(str(reply(250, '{} Requested mail action okay, completed'.format(domain))))
-      ctx.transport.write(str(reply(250, '{0} Requested mail action okay, completed'.format(domain))))
+      #ctx.transport.write(str(reply(250, '{} Success'.format(domain))))
+      ctx.transport.write(str(reply(250, '{0} Success'.format(domain))))
 
       #return ...
       raise StopIteration(ctx.mail())
 
     if command.verb in ('MAIL', 'RCPT', 'DATA'):
-      ctx.transport.write(str(reply(503)))
+      ctx.transport.write(str(enhance(503, '5.5.1')))
 
       #return ...
       raise StopIteration(state((yield ctx.command()), state))
 
     if command.verb in ('RSET', 'NOOP'):
-      ctx.transport.write(str(reply(250)))
+      ctx.transport.write(str(enhance(250, '2.5.0')))
 
       #return ...
       raise StopIteration(state((yield ctx.command()), state))
 
     if command.verb in ('VRFY', 'EXPN', 'HELP'):
-      ctx.transport.write(str(reply(502)))
+      ctx.transport.write(str(enhance(502, '5.5.1')))
 
       #return ...
       raise StopIteration(state((yield ctx.command()), state))
 
     if 'QUIT' == command.verb:
-      ctx.transport.write(str(reply(221)))
+      ctx.transport.write(str(enhance(221, '2.5.0')))
 
       #return ...
       raise StopIteration(ctx.transport.loseConnection())
 
     # TODO Log?
-    ctx.transport.write(str(reply(500)))
+    ctx.transport.write(str(enhance(500, '5.5.2')))
 
     state((yield ctx.command()), state)
 
@@ -746,12 +762,12 @@ class server:
 
           # TODO Log
           except NotImplementedError:
-            raise reply(502)
+            raise enhance(502, '5.5.1')
 
           except ValueError:
-            raise reply(555)
+            raise enhance(555, '5.5.4')
 
-          raise reply(250)
+          raise enhance(250, '2.1.0')
 
         except reply as e:
           ctx.ctx.transport.write(str(e))
@@ -764,7 +780,7 @@ class server:
           raise StopIteration(state((yield ctx.ctx.command()), state))
 
       if 'RSET' == command.verb:
-        ctx.ctx.transport.write(str(reply(250)))
+        ctx.ctx.transport.write(str(enhance(250, '2.5.0')))
 
         #return ...
         raise StopIteration(ctx.ctx.mail())
@@ -787,12 +803,12 @@ class server:
 
           # TODO Log
           except NotImplementedError:
-            raise reply(502)
+            raise enhance(502, '5.5.1')
 
           except ValueError:
-            raise reply(555)
+            raise enhance(555, '5.5.4')
 
-          raise reply(250)
+          raise enhance(250, '2.1.5')
 
         except reply as e:
           ctx.ctx.transport.write(str(e))
@@ -805,7 +821,7 @@ class server:
           raise StopIteration(state((yield ctx.ctx.command()), state))
 
       if 'RSET' == command.verb:
-        ctx.ctx.transport.write(str(reply(250)))
+        ctx.ctx.transport.write(str(enhance(250, '2.5.0')))
 
         #return ...
         raise StopIteration(ctx.ctx.mail())
@@ -845,9 +861,9 @@ class server:
 
           # TODO Log
           except NotImplementedError:
-            raise reply(502)
+            raise enhance(502, '5.5.1')
 
-          raise reply(250)
+          raise enhance(250, '2.6.0')
 
         except reply as e:
           ctx.ctx.transport.write(str(e))
