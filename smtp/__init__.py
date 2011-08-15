@@ -44,7 +44,7 @@ class reply:
         555: ('MAIL FROM/RCPT TO parameters not recognized or not implemented',)}[code]
 
     except KeyError:
-      pass
+      ctx.text = ()
 
   __int__ = lambda ctx: ctx.code
 
@@ -54,7 +54,7 @@ class reply:
     try:
       result += ' ' + ctx.text[-1]
 
-    except AttributeError:
+    except IndexError:
       pass
 
     else:
