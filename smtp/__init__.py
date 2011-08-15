@@ -114,11 +114,7 @@ class client:
 
   head = promise.promise()(None)
 
-  # Since some servers may generate other replies under special circumstances,
-  # and to allow for future extension, SMTP clients SHOULD, when possible,
-  # interpret only the first digit of the reply and MUST be prepared to deal
-  # with unrecognized reply codes by interpreting the first digit only
-  def reply(ctx, expect=range(200, 300)):
+  def cascade(ctx, asdf):
     prev = ctx.head
     ctx.head = result = promise.promise()
 
@@ -135,6 +131,16 @@ class client:
       prev.args = clone.args
       prev.kwds = clone.kwds
 
+      return asdf(clone)
+
+    return result
+
+  # Since some servers may generate other replies under special circumstances,
+  # and to allow for future extension, SMTP clients SHOULD, when possible,
+  # interpret only the first digit of the reply and MUST be prepared to deal
+  # with unrecognized reply codes by interpreting the first digit only
+  def reply(ctx, expect=range(200, 300)):
+    def callback(clone):
       def callback(read):
         try:
           replyLine = rfc5321.replyLine.match(read, '( replyCode, textstring )')
@@ -160,7 +166,7 @@ class client:
 
       return asdf(ctx.read)
 
-    return result
+    return ctx.cascade(callback)
 
   def ehlo(ctx):
     ctx.transport.write(str(command('EHLO', domain)))
@@ -289,21 +295,7 @@ class pipeline(client):
 
   def ehlo(ctx):
     if not ctx.pipeline:
-      prev = ctx.head
-      ctx.head = result = promise.promise()
-
-      prev.then(result.then(promise.promise()))
-
-      @result.then
-      def _(clone):
-        try:
-          prev.traceback = clone.traceback
-
-        except AttributeError:
-          pass
-
-        prev.args = clone.args
-        prev.kwds = clone.kwds
+      def callback(clone):
 
         @clone.then
         def _(_):
@@ -336,7 +328,7 @@ class pipeline(client):
 
         return clone
 
-      return result
+      return ctx.cascade(callback)
 
     result = client.ehlo(ctx)
 
@@ -383,21 +375,7 @@ class pipeline(client):
 
     def mail(ctx, sender):
       if not ctx.ctx.pipeline:
-        prev = ctx.ctx.head
-        ctx.ctx.head = result = promise.promise()
-
-        prev.then(result.then(promise.promise()))
-
-        @result.then
-        def _(clone):
-          try:
-            prev.traceback = clone.traceback
-
-          except AttributeError:
-            pass
-
-          prev.args = clone.args
-          prev.kwds = clone.kwds
+        def callback(clone):
 
           @clone.then
           def _(_):
@@ -429,27 +407,13 @@ class pipeline(client):
 
           return clone
 
-        return result
+        return ctx.ctx.cascade(callback)
 
       return client.mail.mail(ctx, sender)
 
     def rcpt(ctx, recipient):
       if not ctx.ctx.pipeline:
-        prev = ctx.ctx.head
-        ctx.ctx.head = result = promise.promise()
-
-        prev.then(result.then(promise.promise()))
-
-        @result.then
-        def _(clone):
-          try:
-            prev.traceback = clone.traceback
-
-          except AttributeError:
-            pass
-
-          prev.args = clone.args
-          prev.kwds = clone.kwds
+        def callback(clone):
 
           @clone.then
           def _(_):
@@ -481,7 +445,7 @@ class pipeline(client):
 
           return clone
 
-        return result
+        return ctx.ctx.cascade(callback)
 
       return client.mail.rcpt(ctx, recipient)
 
@@ -494,21 +458,7 @@ class pipeline(client):
 
         content += '.\r\n'
 
-        prev = ctx.ctx.head
-        ctx.ctx.head = result = promise.promise()
-
-        prev.then(result.then(promise.promise()))
-
-        @result.then
-        def _(clone):
-          try:
-            prev.traceback = clone.traceback
-
-          except AttributeError:
-            pass
-
-          prev.args = clone.args
-          prev.kwds = clone.kwds
+        def callback(clone):
 
           @clone.then
           def _(_):
@@ -541,27 +491,13 @@ class pipeline(client):
 
           return clone
 
-        return result
+        return ctx.ctx.cascade(callback)
 
       return client.mail.data(ctx, content)
 
   def rset(ctx):
     if not ctx.pipeline:
-      prev = ctx.head
-      ctx.head = result = promise.promise()
-
-      prev.then(result.then(promise.promise()))
-
-      @result.then
-      def _(clone):
-        try:
-          prev.traceback = clone.traceback
-
-        except AttributeError:
-          pass
-
-        prev.args = clone.args
-        prev.kwds = clone.kwds
+      def callback(clone):
 
         @clone.then
         def _(_):
@@ -592,27 +528,13 @@ class pipeline(client):
 
         return clone
 
-      return result
+      return ctx.cascade(callback)
 
     return client.rset(ctx)
 
   def quit(ctx):
     if not ctx.pipeline:
-      prev = ctx.head
-      ctx.head = result = promise.promise()
-
-      prev.then(result.then(promise.promise()))
-
-      @result.then
-      def _(clone):
-        try:
-          prev.traceback = clone.traceback
-
-        except AttributeError:
-          pass
-
-        prev.args = clone.args
-        prev.kwds = clone.kwds
+      def callback(clone):
 
         @clone.then
         def _(_):
@@ -643,7 +565,7 @@ class pipeline(client):
 
         return clone
 
-      return result
+      return ctx.cascade(callback)
 
     return client.quit(ctx)
 
