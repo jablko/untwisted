@@ -115,21 +115,21 @@ class client:
   head = promise.promise()(None)
 
   def cascade(ctx, asdf):
-    prev = ctx.head
+    parent = ctx.head
     ctx.head = result = promise.promise()
 
-    prev.then(result.then(promise.promise()))
+    parent.then(result.then(promise.promise()))
 
     @result.then
     def _(clone):
       try:
-        prev.traceback = clone.traceback
+        parent.traceback = clone.traceback
 
       except AttributeError:
         pass
 
-      prev.args = clone.args
-      prev.kwds = clone.kwds
+      parent.args = clone.args
+      parent.kwds = clone.kwds
 
       return asdf(clone)
 
