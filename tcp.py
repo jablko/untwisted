@@ -1,4 +1,4 @@
-import untwisted
+import socket, untwisted
 from twisted.internet import protocol, reactor, tcp
 from untwisted import promise
 
@@ -60,6 +60,13 @@ class listen:
           def _(*args, **kwds):
             __call__(*args, **kwds)
 
-    tcp.Port(port, factory, interface=interface).startListening()
+    try:
+      tcp.Port(port, factory, interface=interface).startListening()
+
+    # tcp.Connector() calls socket.getservbyname() but tcp.Port() doesn't : (
+    except TypeError:
+      port = socket.getservbyname(port)
+
+      tcp.Port(port, factory, interface=interface).startListening()
 
     ctx.__call__ = transport.shift
