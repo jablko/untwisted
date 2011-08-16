@@ -16,6 +16,8 @@ class connect:
         makeConnection = transport
 
         def __init__(ctx):
+          ctx.connectionLost = promise.promise()
+
           ctx.dataReceived = promise.sequence()
 
           # .dataReceived() must return falsy: SelectReactor._doReadOrWrite()
@@ -46,6 +48,8 @@ class listen:
         makeConnection = transport
 
         def __init__(ctx):
+          ctx.connectionLost = promise.promise()
+
           ctx.dataReceived = promise.sequence()
 
           # .dataReceived() must return falsy: SelectReactor._doReadOrWrite()
