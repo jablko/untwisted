@@ -7,7 +7,7 @@ CRLF = qwer('\r\n')
 
 DIGIT = qwer('\d')
 DQUOTE = qwer('"')
-HEXDIG = qwer('[0-9ABCDEF]')
+HEXDIG = qwer('[\dABCDEF]')
 
 # Visible (printing) characters
 VCHAR = qwer('[!-~]')

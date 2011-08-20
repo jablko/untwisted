@@ -73,7 +73,7 @@ rcpt = qwer('RCPT TO:(?:<Postmaster@', rule('domain'), '>|<Postmaster>|', rule('
 # HT, SP, printable US-ASCII
 textstring = qwer('[\t -~]+')
 
-replyCode = qwer('[2-5][0-5][0-9]')
+replyCode = qwer('[2-5][0-5]\d')
 
 replyLine = qwer('(?:', rule('replyCode'), '-(?:', rule('textstring'), ')?', rule('rfc5234.CRLF'), ')*', rule('replyCode'), '(?: ', rule('textstring'), ')?', rule('rfc5234.CRLF'))
 
