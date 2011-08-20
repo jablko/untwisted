@@ -63,7 +63,7 @@ esmtpValue = qwer('[!-<>-~]+')
 esmtpParam = qwer(rule('esmtpKeyword'), '(?:=', rule('esmtpValue'), ')?')
 mailParameters = qwer(rule('esmtpParam'), '(?: ', rule('esmtpParam'), ')*')
 
-mail = qwer('MAIL FROM:', rule('reversePath'), '(?:', rule('mailParameters'), ')?', rule('rfc5234.CRLF'))
+mail = qwer('MAIL FROM:', rule('reversePath'), '(?: ', rule('mailParameters'), ')?', rule('rfc5234.CRLF'))
 
 forwardPath = rule('path')
 rcptParameters = qwer(rule('esmtpParam'), '(?: ', rule('esmtpParam'), ')*')

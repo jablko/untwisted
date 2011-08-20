@@ -5,6 +5,24 @@ from testify import *
 from untwisted import promise, smtp
 
 @test
+def mail():
+  expect(1)
+
+  class transport:
+    class protocol:
+      dataReceived = promise.sequence()
+
+    write = promise.sequence()
+
+  server = type.__call__(smtp.server, transport)
+  mail = type.__call__(server.mail)
+
+  promise.nowThen((promise.nowThen(transport.write.shift(),
+        untwisted.partial(ok, False)),
+      mail.start(smtp.command('MAIL FROM:<alice@example.com> KEYWORD'), None))[0],
+    untwisted.partial(equal, '502 5.5.1 Command not implemented\r\n'))
+
+@test
 def quit():
   expect(2)
 
