@@ -8,15 +8,15 @@ class Exception(exceptions.Exception):
   pass
 
 @test
-@promise.continuate
-def continuate():
+@promise.resume
+def resume():
   expect(1)
 
   equal('Expect', (yield promise.promise()('Expect')))
 
 @test
-@promise.continuate
-def continuateNonPromise():
+@promise.resume
+def resumeNonPromise():
   expect(1)
 
   equal('Expect', (yield 'Expect'))
@@ -26,7 +26,7 @@ def propagateException():
   expect(1)
 
   @untwisted.call
-  @promise.continuate
+  @promise.resume
   def sample():
     raise Exception('Raise')
 
@@ -46,7 +46,7 @@ def stopIteration():
   expect(2)
 
   @untwisted.call
-  @promise.continuate
+  @promise.resume
   def sample():
     True or (yield)
 
@@ -60,7 +60,7 @@ def stopIterationArgs():
   expect(2)
 
   @untwisted.call
-  @promise.continuate
+  @promise.resume
   def sample():
     raise promise.StopIteration('First', 'Second', 'Third', First='Tsrif', Second='Dnoces', Third='Driht') or (yield)
 
@@ -74,7 +74,7 @@ def stopIterationPromise():
   expect(2)
 
   @untwisted.call
-  @promise.continuate
+  @promise.resume
   def sample():
     raise promise.StopIteration(promise.promise()('First'), promise.promise()('Second'), promise.promise()('Third'), First='Tsrif', Second='Dnoces', Third='Driht') or (yield)
 

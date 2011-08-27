@@ -63,8 +63,8 @@ def propagatePromise():
   sample.then(untwisted.partial(equal, sys.getrecursionlimit()))
 
 @test
-@promise.continuate
-def continuate():
+@promise.resume
+def resume():
   expect(1)
 
   count = 0

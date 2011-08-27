@@ -81,7 +81,7 @@ class enhance(reply):
 class client:
   class __metaclass__(type):
 
-    @promise.continuate
+    @promise.resume
     def __call__(ctx, transport):
       ctx = type.__call__(ctx, transport)
 
@@ -182,7 +182,7 @@ class client:
     class __metaclass__(type):
       __get__ = untwisted.ctxual
 
-      @promise.continuate
+      @promise.resume
       def __call__(ctx):
         ctx = type.__call__(ctx)
 
@@ -338,7 +338,7 @@ class pipeline(client):
   class mail(client.mail):
     class __metaclass__(client.mail.__metaclass__):
 
-      @promise.continuate
+      @promise.resume
       def __call__(ctx):
         ctx = type.__call__(ctx)
 
@@ -542,7 +542,7 @@ class pipeline(client):
 class server:
   class __metaclass__(type):
 
-    @promise.continuate
+    @promise.resume
     def __call__(ctx, transport):
       ctx = type.__call__(ctx, transport)
 
@@ -577,7 +577,7 @@ class server:
 
     return asdf(ctx.read)
 
-  @promise.continuate
+  @promise.resume
   def start(ctx, command, state):
     if 'EHLO' == command.verb:
       #ctx.transport.write(str(reply(250, '{} Success'.format(domain), 'ENHANCEDSTATUSCODES', 'PIPELINING')))
@@ -629,7 +629,7 @@ class server:
     class __metaclass__(type):
       __get__ = untwisted.ctxual
 
-      @promise.continuate
+      @promise.resume
       def __call__(ctx):
         ctx = type.__call__(ctx)
 
@@ -639,7 +639,7 @@ class server:
     def sender(ctx, sender):
       raise NotImplementedError
 
-    @promise.continuate
+    @promise.resume
     def start(ctx, command, state):
 
       # MAIL (or SEND, SOML, or SAML) MUST NOT be sent if a mail transaction is
@@ -683,7 +683,7 @@ class server:
     def recipient(ctx, recipient):
       raise NotImplementedError
 
-    @promise.continuate
+    @promise.resume
     def afterSender(ctx, command, state):
 
       # Once started, a mail transaction consists of a transaction beginning
@@ -724,7 +724,7 @@ class server:
     def content(ctx, content):
       raise NotImplementedError
 
-    @promise.continuate
+    @promise.resume
     def afterRecipient(ctx, command, state):
       if 'DATA' == command.verb:
         ctx.ctx.transport.write(str(reply(354)))

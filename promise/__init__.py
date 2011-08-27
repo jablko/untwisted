@@ -217,13 +217,13 @@ class StopIteration(exceptions.StopIteration):
 #
 # Join is like the following, except,
 #
-#  * this is infinitely recursive because @continuate depends on join()
+#  * this is infinitely recursive because @resume depends on join()
 #
 #  * this isn't a generator function!  "yield" yields extra values from the
 #    list comprehension - it doesn't form a generator function.  Bracketing the
 #    list comprehension with "[]" solves this, however
 #
-# @continuate
+# @resume
 # def join(*args, **kwds):
 #   #return ...
 #   raise StopIteration(*((yield itm) for itm in args), **kwds)
@@ -259,13 +259,12 @@ def join(*args, **kwds):
 
   return ctx(head)
 
-# If continuate is a class, then result (aka .__call__()) is either a method
-# or a class, and neither a method nor a class behaves like a function when
-# it's an attribute of another object.  The first argument of a method is
-# always a continuate instance and the first argument of a class is result
-# (aka .__call__()) instance.  untwisted.ctxual() is a workaround, but a
-# function is simpler
-def continuate(cbl):
+# If resume is a class, then result (aka .__call__()) is either a method or a
+# class, and neither a method nor a class behaves like a function when it's an
+# attribute of another object.  The first argument of a method is always a
+# resume instance and the first argument of a class is result (aka .__call__())
+# instance.  untwisted.ctxual() is a workaround, but a function is simpler
+def resume(cbl):
 
   # If cbl is a function and result is a class then it doesn't behave like cbl
   # when it's an attribute of another object
