@@ -33,7 +33,7 @@ resolvConf = open('/etc/resolv.conf').read()
 
 pos = 0
 while pos < len(resolvConf):
-  match = re.compile('^nameserver\s+(\S+)', re.M).search(resolvConf, pos)
+  match = re.compile('^nameserver\s+([^\s#]+)', re.M).search(resolvConf, pos)
   if not match:
     break
 
