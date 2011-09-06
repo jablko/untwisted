@@ -20,6 +20,10 @@ class connect:
 
         # tcp.Connector calls socket.getservbyname() but .connect() doesn't : (
         except TypeError:
+
+          # Fix RuntimeError: already connected
+          transport._connectedAddr = None
+
           transport.connect(host, socket.getservbyname(port))
 
     @untwisted.partial(setattr, ctx, '__call__')
