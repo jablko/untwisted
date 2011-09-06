@@ -1,5 +1,5 @@
 import re, untwisted
-from untwisted import promise, tcp
+from untwisted import promise, udp
 
 # TYPE fields are used in resource records.  Note that these types are a subset
 # of QTYPEs
@@ -78,7 +78,7 @@ while pos < len(resolvConf):
 
 @promise.resume
 def lookup(qname, qtype=A, qclass=IN):
-  transport = yield tcp.connect(server[0], 'domain')()
+  transport = yield udp.connect(server[0], 'domain')()
 
   #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
   # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
@@ -114,19 +114,15 @@ def lookup(qname, qtype=A, qclass=IN):
     chr(qtype >> 8), chr(qtype & 0xff),
     chr(qclass >> 8), chr(qclass & 0xff)))
 
-  message = header + question
-
-  # The message is prefixed with a two byte length field which gives the
-  # message length, excluding the two byte length field
-  transport.write(chr(len(message) >> 8) + chr(len(message) & 0xff) + message)
+  transport.write(header + question)
 
   read = ''
-  while 2 + 12 > len(read):
-    read += yield transport.protocol.dataReceived.shift()
+  while 12 > len(read):
+    read += yield transport.protocol.datagramReceived.shift()
 
-  read = read[2 + 12:]
+  read = read[12:]
   while not len(read):
-    read += yield transport.protocol.dataReceived.shift()
+    read += yield transport.protocol.datagramReceived.shift()
 
   while True:
     length = ord(read[0])
@@ -135,7 +131,7 @@ def lookup(qname, qtype=A, qclass=IN):
     # replaced with a pointer to a prior occurance of the same name
     if 0xbf < length:
       while 2 > len(read):
-        read += transport.protocol.dataReceived.shift()
+        read += transport.protocol.datagramReceived.shift()
 
       read = read[2:]
 
@@ -147,12 +143,12 @@ def lookup(qname, qtype=A, qclass=IN):
       break
 
     while length > len(read):
-      read += yield transport.protocol.dataReceived.shift()
+      read += yield transport.protocol.datagramReceived.shift()
 
     read = read[length:]
 
   while 4 > len(read):
-    read += yield transport.protocol.dataReceived.shift()
+    read += yield transport.protocol.datagramReceived.shift()
 
   #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
   # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
@@ -176,7 +172,7 @@ def lookup(qname, qtype=A, qclass=IN):
 
   read = read[4:]
   while not len(read):
-    read += yield transport.protocol.dataReceived.shift()
+    read += yield transport.protocol.datagramReceived.shift()
 
   while True:
     length = ord(read[0])
@@ -185,7 +181,7 @@ def lookup(qname, qtype=A, qclass=IN):
     # replaced with a pointer to a prior occurance of the same name
     if 0xbf < length:
       while 2 > len(read):
-        read += transport.protocol.dataReceived.shift()
+        read += transport.protocol.datagramReceived.shift()
 
       read = read[2:]
 
@@ -197,19 +193,19 @@ def lookup(qname, qtype=A, qclass=IN):
       break
 
     while length > len(read):
-      read += yield transport.protocol.dataReceived.shift()
+      read += yield transport.protocol.datagramReceived.shift()
 
     read = read[length:]
 
   while 10 > len(read):
-    read += yield transport.protocol.dataReceived.shift()
+    read += yield transport.protocol.datagramReceived.shift()
 
   type = (ord(read[0]) << 8) + ord(read[1])
   rdlength = (ord(read[8]) << 8) + ord(read[9])
 
   read = read[10:]
   while rdlength > len(read):
-    read += transport.protocol.dataReceived.shift()
+    read += transport.protocol.datagramReceived.shift()
 
   #return ...
   raise StopIteration(rdata[type](read))
