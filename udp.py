@@ -31,7 +31,10 @@ class connect:
 
       # Avoid socket.bind()
       port = udp.Port(None, protocol)
+
       port.socket = port.createInternetSocket()
+      port.fileno = port.socket.fileno
+
       port._connectToProtocol()
 
       return promise.promise()(port)
