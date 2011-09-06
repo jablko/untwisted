@@ -14,6 +14,10 @@ class connect:
     class protocol:
       datagramReceived = promise.sequence()
 
+      # Avoid AttributeError: protocol instance has no attribute 'doStop'
+      def doStop(ctx):
+        pass
+
       def makeConnection(ctx, transport):
         try:
           transport.connect(host, port)
