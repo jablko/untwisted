@@ -116,13 +116,9 @@ def lookup(qname, qtype=A, qclass=IN):
 
   transport.write(header + question)
 
-  recv = ''
-  while 12 > len(recv):
-    recv += yield transport.recv()
+  recv = yield transport.recv()
 
   recv = recv[12:]
-  while not len(recv):
-    recv += yield transport.recv()
 
   while True:
     length = ord(recv[0])
@@ -130,9 +126,6 @@ def lookup(qname, qtype=A, qclass=IN):
     # An entire domain name or a list of labels at the end of a domain name is
     # replaced with a pointer to a prior occurance of the same name
     if 0xbf < length:
-      while 2 > len(recv):
-        recv += transport.recv()
-
       recv = recv[2:]
 
       break
@@ -142,13 +135,9 @@ def lookup(qname, qtype=A, qclass=IN):
     if not length:
       break
 
-    while length > len(recv):
-      recv += yield transport.recv()
-
     recv = recv[length:]
 
-  while 4 > len(recv):
-    recv += yield transport.recv()
+  recv = recv[4:]
 
   #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
   # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
@@ -170,19 +159,12 @@ def lookup(qname, qtype=A, qclass=IN):
   # /                                               /
   # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
-  recv = recv[4:]
-  while not len(recv):
-    recv += yield transport.recv()
-
   while True:
     length = ord(recv[0])
 
     # An entire domain name or a list of labels at the end of a domain name is
     # replaced with a pointer to a prior occurance of the same name
     if 0xbf < length:
-      while 2 > len(recv):
-        recv += transport.recv()
-
       recv = recv[2:]
 
       break
@@ -192,20 +174,12 @@ def lookup(qname, qtype=A, qclass=IN):
     if not length:
       break
 
-    while length > len(recv):
-      recv += yield transport.recv()
-
     recv = recv[length:]
-
-  while 10 > len(recv):
-    recv += yield transport.recv()
 
   type = (ord(recv[0]) << 8) + ord(recv[1])
   rdlength = (ord(recv[8]) << 8) + ord(recv[9])
 
   recv = recv[10:]
-  while rdlength > len(recv):
-    recv += transport.recv()
 
   #return ...
   raise StopIteration(rdata[type](recv))
