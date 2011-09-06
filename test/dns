@@ -18,7 +18,7 @@ def lookup():
   tcp.connect = lambda host, port: lambda: transport
 
   try:
-    dns.lookup('example.com').then(untwisted.partial(equal, '1.2.3.4'))
+    dns.lookup('example.com').then(lambda actual: equal('1.2.3.4', actual.address))
 
   finally:
     tcp.connect = connect
@@ -41,7 +41,7 @@ def compress():
   tcp.connect = lambda host, port: lambda: transport
 
   try:
-    dns.lookup('example.com').then(untwisted.partial(equal, '1.2.3.4'))
+    dns.lookup('example.com').then(lambda actual: equal('1.2.3.4', actual.address))
 
   finally:
     tcp.connect = connect
@@ -49,3 +49,30 @@ def compress():
   transport.write.shift().then(untwisted.partial(equal, '\0\x1d\0\0\1\0\0\1\0\0\0\0\0\0\7example\3com\0\0\1\0\1'))
 
   transport.protocol.dataReceived('\0\x2d\0\0\x81\x80\0\1\0\1\0\0\0\0\7example\3com\0\0\1\0\1\xc0\x0c\0\1\0\1\0\0\0\0\0\4\1\2\3\4')
+
+@test
+def srv():
+  expect(3)
+
+  class transport:
+    class protocol:
+      dataReceived = promise.sequence()
+
+    write = promise.sequence()
+
+  def callback(actual):
+    equal(0xabcd, actual.port)
+    equal('target.example.com.', actual.target)
+
+  connect = tcp.connect
+  tcp.connect = lambda host, port: lambda: transport
+
+  try:
+    dns.lookup('_service._proto.example.com', dns.SRV).then(callback)
+
+  finally:
+    tcp.connect = connect
+
+  transport.write.shift().then(untwisted.partial(equal, '\0\x2d\0\0\1\0\0\1\0\0\0\0\0\0\x08_service\6_proto\7example\3com\0\0\x21\0\1'))
+
+  transport.protocol.dataReceived('\0\x70\0\0\x81\x80\0\1\0\1\0\0\0\0\x08_service\6_proto\7example\3com\0\0\x21\0\1\x08_service\6_proto\7example\3com\0\0\x21\0\1\0\0\0\0\0\x1a\0\0\0\0\xab\xcd\6target\7example\3com\0')

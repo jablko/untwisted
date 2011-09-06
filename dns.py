@@ -20,12 +20,47 @@ MINFO = 14
 MX = 15
 TXT = 16
 
+# Here is the format of the SRV RR, whose DNS type code is 33
+SRV = 33
+
 # CLASS fields appear in resource records.  The following CLASS mnemonics and
 # values are defined
 IN = 1
 CS = 2
 CH = 3
 HS = 4
+
+#   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+# |                    ADDRESS                    |
+# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+class a:
+  def __init__(ctx, read):
+    ctx.address = '.'.join(map(untwisted.compose(str, ord), read))
+
+class srv:
+  def __init__(ctx, read):
+    ctx.port = (ord(read[4]) << 8) + ord(read[5])
+
+    read = read[6:]
+
+    ctx.target = ''
+    while True:
+      length = ord(read[0])
+
+      read = read[1:]
+
+      if not length:
+        break
+
+      ctx.target += read[:length] + '.'
+
+      read = read[length:]
+
+rdata = {
+  A: a,
+  SRV: srv }
 
 server = []
 
@@ -169,11 +204,12 @@ def lookup(qname, qtype=A, qclass=IN):
   while 10 > len(read):
     read += yield transport.protocol.dataReceived.shift()
 
+  type = (ord(read[0]) << 8) + ord(read[1])
   rdlength = (ord(read[8]) << 8) + ord(read[9])
 
   read = read[10:]
-  while 4 > len(read):
+  while rdlength > len(read):
     read += transport.protocol.dataReceived.shift()
 
   #return ...
-  raise StopIteration('.'.join(map(untwisted.compose(str, ord), read)))
+  raise StopIteration(rdata[type](read))
