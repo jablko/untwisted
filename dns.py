@@ -36,27 +36,27 @@ HS = 4
 # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
 class a:
-  def __init__(ctx, read):
-    ctx.address = '.'.join(map(untwisted.compose(str, ord), read))
+  def __init__(ctx, recv):
+    ctx.address = '.'.join(map(untwisted.compose(str, ord), recv))
 
 class srv:
-  def __init__(ctx, read):
-    ctx.port = (ord(read[4]) << 8) + ord(read[5])
+  def __init__(ctx, recv):
+    ctx.port = (ord(recv[4]) << 8) + ord(recv[5])
 
-    read = read[6:]
+    recv = recv[6:]
 
     ctx.target = ''
     while True:
-      length = ord(read[0])
+      length = ord(recv[0])
 
-      read = read[1:]
+      recv = recv[1:]
 
       if not length:
         break
 
-      ctx.target += read[:length] + '.'
+      ctx.target += recv[:length] + '.'
 
-      read = read[length:]
+      recv = recv[length:]
 
 rdata = {
   A: a,
@@ -116,39 +116,39 @@ def lookup(qname, qtype=A, qclass=IN):
 
   transport.write(header + question)
 
-  read = ''
-  while 12 > len(read):
-    read += yield transport.recv()
+  recv = ''
+  while 12 > len(recv):
+    recv += yield transport.recv()
 
-  read = read[12:]
-  while not len(read):
-    read += yield transport.recv()
+  recv = recv[12:]
+  while not len(recv):
+    recv += yield transport.recv()
 
   while True:
-    length = ord(read[0])
+    length = ord(recv[0])
 
     # An entire domain name or a list of labels at the end of a domain name is
     # replaced with a pointer to a prior occurance of the same name
     if 0xbf < length:
-      while 2 > len(read):
-        read += transport.recv()
+      while 2 > len(recv):
+        recv += transport.recv()
 
-      read = read[2:]
+      recv = recv[2:]
 
       break
 
-    read = read[1:]
+    recv = recv[1:]
 
     if not length:
       break
 
-    while length > len(read):
-      read += yield transport.recv()
+    while length > len(recv):
+      recv += yield transport.recv()
 
-    read = read[length:]
+    recv = recv[length:]
 
-  while 4 > len(read):
-    read += yield transport.recv()
+  while 4 > len(recv):
+    recv += yield transport.recv()
 
   #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
   # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
@@ -170,42 +170,42 @@ def lookup(qname, qtype=A, qclass=IN):
   # /                                               /
   # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
-  read = read[4:]
-  while not len(read):
-    read += yield transport.recv()
+  recv = recv[4:]
+  while not len(recv):
+    recv += yield transport.recv()
 
   while True:
-    length = ord(read[0])
+    length = ord(recv[0])
 
     # An entire domain name or a list of labels at the end of a domain name is
     # replaced with a pointer to a prior occurance of the same name
     if 0xbf < length:
-      while 2 > len(read):
-        read += transport.recv()
+      while 2 > len(recv):
+        recv += transport.recv()
 
-      read = read[2:]
+      recv = recv[2:]
 
       break
 
-    read = read[1:]
+    recv = recv[1:]
 
     if not length:
       break
 
-    while length > len(read):
-      read += yield transport.recv()
+    while length > len(recv):
+      recv += yield transport.recv()
 
-    read = read[length:]
+    recv = recv[length:]
 
-  while 10 > len(read):
-    read += yield transport.recv()
+  while 10 > len(recv):
+    recv += yield transport.recv()
 
-  type = (ord(read[0]) << 8) + ord(read[1])
-  rdlength = (ord(read[8]) << 8) + ord(read[9])
+  type = (ord(recv[0]) << 8) + ord(recv[1])
+  rdlength = (ord(recv[8]) << 8) + ord(recv[9])
 
-  read = read[10:]
-  while rdlength > len(read):
-    read += transport.recv()
+  recv = recv[10:]
+  while rdlength > len(recv):
+    recv += transport.recv()
 
   #return ...
-  raise StopIteration(rdata[type](read))
+  raise StopIteration(rdata[type](recv))

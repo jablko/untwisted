@@ -107,7 +107,7 @@ class client:
       #return ...
       raise StopIteration(ctx.quit())
 
-  read = ''
+  recv = ''
 
   def __init__(ctx, transport):
     ctx.transport = transport
@@ -141,16 +141,16 @@ class client:
   # with unrecognized reply codes by interpreting the first digit only
   def reply(ctx, expect=range(200, 300)):
     def callback(clone):
-      def callback(read):
+      def callback(recv):
         try:
-          replyLine = rfc5321.replyLine.match(read, '( replyCode, textstring )')
+          replyLine = rfc5321.replyLine.match(recv, '( replyCode, textstring )')
 
         except ValueError:
           asdf.callback.insert(0, callback)
 
-          return ctx.transport.protocol.dataReceived.shift().then(read.__add__)
+          return ctx.transport.protocol.dataReceived.shift().then(recv.__add__)
 
-        ctx.read = read[len(replyLine):]
+        ctx.recv = recv[len(replyLine):]
 
         @clone.then
         def _(_):
@@ -164,7 +164,7 @@ class client:
 
       asdf = promise.promise().then(callback)
 
-      return asdf(ctx.read)
+      return asdf(ctx.recv)
 
     return ctx.cascade(callback)
 
@@ -300,16 +300,16 @@ class pipeline(client):
 
         expect = range(200, 300)
 
-        def callback(read):
+        def callback(recv):
           try:
-            replyLine = rfc5321.replyLine.match(read, '( replyCode, textstring )')
+            replyLine = rfc5321.replyLine.match(recv, '( replyCode, textstring )')
 
           except ValueError:
             asdf.callback.insert(0, callback)
 
-            return ctx.transport.protocol.dataReceived.shift().then(read.__add__)
+            return ctx.transport.protocol.dataReceived.shift().then(recv.__add__)
 
-          ctx.read = read[len(replyLine):]
+          ctx.recv = recv[len(replyLine):]
 
           result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
           if int(result) not in expect:
@@ -321,7 +321,7 @@ class pipeline(client):
 
         asdf = promise.promise().then(callback)
 
-        return asdf(ctx.read)
+        return asdf(ctx.recv)
 
       return ctx.cascade(untwisted.partial(promise.promise.then, callback=callback))
 
@@ -376,16 +376,16 @@ class pipeline(client):
 
           expect = range(200, 300)
 
-          def callback(read):
+          def callback(recv):
             try:
-              replyLine = rfc5321.replyLine.match(read, '( replyCode, textstring )')
+              replyLine = rfc5321.replyLine.match(recv, '( replyCode, textstring )')
 
             except ValueError:
               asdf.callback.insert(0, callback)
 
-              return ctx.ctx.transport.protocol.dataReceived.shift().then(read.__add__)
+              return ctx.ctx.transport.protocol.dataReceived.shift().then(recv.__add__)
 
-            ctx.ctx.read = read[len(replyLine):]
+            ctx.ctx.recv = recv[len(replyLine):]
 
             result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
             if int(result) not in expect:
@@ -395,7 +395,7 @@ class pipeline(client):
 
           asdf = promise.promise().then(callback)
 
-          return asdf(ctx.ctx.read)
+          return asdf(ctx.ctx.recv)
 
         return ctx.ctx.cascade(untwisted.partial(promise.promise.then, callback=callback))
 
@@ -409,16 +409,16 @@ class pipeline(client):
 
           expect = range(200, 300)
 
-          def callback(read):
+          def callback(recv):
             try:
-              replyLine = rfc5321.replyLine.match(read, '( replyCode, textstring )')
+              replyLine = rfc5321.replyLine.match(recv, '( replyCode, textstring )')
 
             except ValueError:
               asdf.callback.insert(0, callback)
 
-              return ctx.ctx.transport.protocol.dataReceived.shift().then(read.__add__)
+              return ctx.ctx.transport.protocol.dataReceived.shift().then(recv.__add__)
 
-            ctx.ctx.read = read[len(replyLine):]
+            ctx.ctx.recv = recv[len(replyLine):]
 
             result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
             if int(result) not in expect:
@@ -428,7 +428,7 @@ class pipeline(client):
 
           asdf = promise.promise().then(callback)
 
-          return asdf(ctx.ctx.read)
+          return asdf(ctx.ctx.recv)
 
         return ctx.ctx.cascade(untwisted.partial(promise.promise.then, callback=callback))
 
@@ -448,16 +448,16 @@ class pipeline(client):
 
           expect = range(300, 400)
 
-          def callback(read):
+          def callback(recv):
             try:
-              replyLine = rfc5321.replyLine.match(read, '( replyCode, textstring )')
+              replyLine = rfc5321.replyLine.match(recv, '( replyCode, textstring )')
 
             except ValueError:
               asdf.callback.insert(0, callback)
 
-              return ctx.ctx.transport.protocol.dataReceived.shift().then(read.__add__)
+              return ctx.ctx.transport.protocol.dataReceived.shift().then(recv.__add__)
 
-            ctx.ctx.read = read[len(replyLine):]
+            ctx.ctx.recv = recv[len(replyLine):]
 
             result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
             if int(result) not in expect:
@@ -469,7 +469,7 @@ class pipeline(client):
 
           asdf = promise.promise().then(callback)
 
-          return asdf(ctx.ctx.read)
+          return asdf(ctx.ctx.recv)
 
         return ctx.ctx.cascade(untwisted.partial(promise.promise.then, callback=callback))
 
@@ -482,16 +482,16 @@ class pipeline(client):
 
         expect = range(200, 300)
 
-        def callback(read):
+        def callback(recv):
           try:
-            replyLine = rfc5321.replyLine.match(read, '( replyCode, textstring )')
+            replyLine = rfc5321.replyLine.match(recv, '( replyCode, textstring )')
 
           except ValueError:
             asdf.callback.insert(0, callback)
 
-            return ctx.transport.protocol.dataReceived.shift().then(read.__add__)
+            return ctx.transport.protocol.dataReceived.shift().then(recv.__add__)
 
-          ctx.read = read[len(replyLine):]
+          ctx.recv = recv[len(replyLine):]
 
           result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
           if int(result) not in expect:
@@ -501,7 +501,7 @@ class pipeline(client):
 
         asdf = promise.promise().then(callback)
 
-        return asdf(ctx.read)
+        return asdf(ctx.recv)
 
       return ctx.cascade(untwisted.partial(promise.promise.then, callback=callback))
 
@@ -514,16 +514,16 @@ class pipeline(client):
 
         expect = range(200, 300)
 
-        def callback(read):
+        def callback(recv):
           try:
-            replyLine = rfc5321.replyLine.match(read, '( replyCode, textstring )')
+            replyLine = rfc5321.replyLine.match(recv, '( replyCode, textstring )')
 
           except ValueError:
             asdf.callback.insert(0, callback)
 
-            return ctx.transport.protocol.dataReceived.shift().then(read.__add__)
+            return ctx.transport.protocol.dataReceived.shift().then(recv.__add__)
 
-          ctx.read = read[len(replyLine):]
+          ctx.recv = recv[len(replyLine):]
 
           result = reply(int(replyLine.replyCode), *map(str, replyLine.textstring))
           if int(result) not in expect:
@@ -533,7 +533,7 @@ class pipeline(client):
 
         asdf = promise.promise().then(callback)
 
-        return asdf(ctx.read)
+        return asdf(ctx.recv)
 
       return ctx.cascade(untwisted.partial(promise.promise.then, callback=callback))
 
@@ -551,7 +551,7 @@ class server:
       #return ...
       raise StopIteration(ctx.start((yield ctx.command()), ctx.start))
 
-  read = ''
+  recv = ''
 
   def __init__(ctx, transport):
     ctx.transport = transport
@@ -560,14 +560,14 @@ class server:
   greeting = lambda ctx: ctx.transport.write(str(reply(220, '{0} Service ready'.format(domain))))
 
   def command(ctx):
-    def callback(read):
+    def callback(recv):
       try:
-        result, ctx.read = read.split('\r\n', 1)
+        result, ctx.recv = recv.split('\r\n', 1)
 
       except ValueError:
         asdf.callback.insert(0, callback)
 
-        return ctx.transport.protocol.dataReceived.shift().then(read.__add__)
+        return ctx.transport.protocol.dataReceived.shift().then(recv.__add__)
 
       result = command(result)
 
@@ -575,7 +575,7 @@ class server:
 
     asdf = promise.promise().then(callback)
 
-    return asdf(ctx.read)
+    return asdf(ctx.recv)
 
   @promise.resume
   def start(ctx, command, state):
@@ -731,12 +731,12 @@ class server:
 
         while True:
           try:
-            content, ctx.ctx.read = ctx.ctx.read.split('\r\n.\r\n', 1)
+            content, ctx.ctx.recv = ctx.ctx.recv.split('\r\n.\r\n', 1)
 
             break
 
           except ValueError:
-            ctx.ctx.read += yield ctx.ctx.transport.protocol.dataReceived.shift()
+            ctx.ctx.recv += yield ctx.ctx.transport.protocol.dataReceived.shift()
 
         # When a line of mail text is received by the SMTP server, it checks
         # the line.  If the line is composed of a single period, it is treated
