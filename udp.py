@@ -1,4 +1,4 @@
-import untwisted
+import socket, untwisted
 from twisted.internet import udp
 from untwisted import promise
 
@@ -15,7 +15,12 @@ class connect:
       datagramReceived = promise.sequence()
 
       def makeConnection(ctx, transport):
-        transport.connect(host, port)
+        try:
+          transport.connect(host, port)
+
+        # tcp.Connector calls socket.getservbyname() but .connect() doesn't : (
+        except TypeError:
+          transport.connect(host, socket.getservbyname(port))
 
     @untwisted.partial(setattr, ctx, '__call__')
     def _():
