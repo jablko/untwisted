@@ -118,11 +118,11 @@ def lookup(qname, qtype=A, qclass=IN):
 
   read = ''
   while 12 > len(read):
-    read += yield transport.protocol.datagramReceived.shift()
+    read += yield transport.recv()
 
   read = read[12:]
   while not len(read):
-    read += yield transport.protocol.datagramReceived.shift()
+    read += yield transport.recv()
 
   while True:
     length = ord(read[0])
@@ -131,7 +131,7 @@ def lookup(qname, qtype=A, qclass=IN):
     # replaced with a pointer to a prior occurance of the same name
     if 0xbf < length:
       while 2 > len(read):
-        read += transport.protocol.datagramReceived.shift()
+        read += transport.recv()
 
       read = read[2:]
 
@@ -143,12 +143,12 @@ def lookup(qname, qtype=A, qclass=IN):
       break
 
     while length > len(read):
-      read += yield transport.protocol.datagramReceived.shift()
+      read += yield transport.recv()
 
     read = read[length:]
 
   while 4 > len(read):
-    read += yield transport.protocol.datagramReceived.shift()
+    read += yield transport.recv()
 
   #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
   # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
@@ -172,7 +172,7 @@ def lookup(qname, qtype=A, qclass=IN):
 
   read = read[4:]
   while not len(read):
-    read += yield transport.protocol.datagramReceived.shift()
+    read += yield transport.recv()
 
   while True:
     length = ord(read[0])
@@ -181,7 +181,7 @@ def lookup(qname, qtype=A, qclass=IN):
     # replaced with a pointer to a prior occurance of the same name
     if 0xbf < length:
       while 2 > len(read):
-        read += transport.protocol.datagramReceived.shift()
+        read += transport.recv()
 
       read = read[2:]
 
@@ -193,19 +193,19 @@ def lookup(qname, qtype=A, qclass=IN):
       break
 
     while length > len(read):
-      read += yield transport.protocol.datagramReceived.shift()
+      read += yield transport.recv()
 
     read = read[length:]
 
   while 10 > len(read):
-    read += yield transport.protocol.datagramReceived.shift()
+    read += yield transport.recv()
 
   type = (ord(read[0]) << 8) + ord(read[1])
   rdlength = (ord(read[8]) << 8) + ord(read[9])
 
   read = read[10:]
   while rdlength > len(read):
-    read += transport.protocol.datagramReceived.shift()
+    read += transport.recv()
 
   #return ...
   raise StopIteration(rdata[type](read))

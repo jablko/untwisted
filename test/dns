@@ -9,9 +9,7 @@ def lookup():
   expect(2)
 
   class transport:
-    class protocol:
-      datagramReceived = promise.sequence()
-
+    recv = promise.sequence().shift
     write = promise.sequence()
 
   connect = udp.connect
@@ -25,16 +23,14 @@ def lookup():
 
   transport.write.shift().then(untwisted.partial(equal, '\0\0\1\0\0\1\0\0\0\0\0\0\7example\3com\0\0\1\0\1'))
 
-  transport.protocol.datagramReceived('\0\0\x81\x80\0\1\0\1\0\0\0\0\7example\3com\0\0\1\0\1\7example\3com\0\0\1\0\1\0\0\0\0\0\4\1\2\3\4')
+  transport.recv.__self__('\0\0\x81\x80\0\1\0\1\0\0\0\0\7example\3com\0\0\1\0\1\7example\3com\0\0\1\0\1\0\0\0\0\0\4\1\2\3\4')
 
 @test
 def compress():
   expect(2)
 
   class transport:
-    class protocol:
-      datagramReceived = promise.sequence()
-
+    recv = promise.sequence().shift
     write = promise.sequence()
 
   connect = udp.connect
@@ -48,16 +44,14 @@ def compress():
 
   transport.write.shift().then(untwisted.partial(equal, '\0\0\1\0\0\1\0\0\0\0\0\0\7example\3com\0\0\1\0\1'))
 
-  transport.protocol.datagramReceived('\0\0\x81\x80\0\1\0\1\0\0\0\0\7example\3com\0\0\1\0\1\xc0\x0c\0\1\0\1\0\0\0\0\0\4\1\2\3\4')
+  transport.recv.__self__('\0\0\x81\x80\0\1\0\1\0\0\0\0\7example\3com\0\0\1\0\1\xc0\x0c\0\1\0\1\0\0\0\0\0\4\1\2\3\4')
 
 @test
 def srv():
   expect(3)
 
   class transport:
-    class protocol:
-      datagramReceived = promise.sequence()
-
+    recv = promise.sequence().shift
     write = promise.sequence()
 
   def callback(actual):
@@ -75,4 +69,4 @@ def srv():
 
   transport.write.shift().then(untwisted.partial(equal, '\0\0\1\0\0\1\0\0\0\0\0\0\x08_service\6_proto\7example\3com\0\0\x21\0\1'))
 
-  transport.protocol.datagramReceived('\0\0\x81\x80\0\1\0\1\0\0\0\0\x08_service\6_proto\7example\3com\0\0\x21\0\1\x08_service\6_proto\7example\3com\0\0\x21\0\1\0\0\0\0\0\x1a\0\0\0\0\xab\xcd\6target\7example\3com\0')
+  transport.recv.__self__('\0\0\x81\x80\0\1\0\1\0\0\0\0\x08_service\6_proto\7example\3com\0\0\x21\0\1\x08_service\6_proto\7example\3com\0\0\x21\0\1\0\0\0\0\0\x1a\0\0\0\0\xab\xcd\6target\7example\3com\0')

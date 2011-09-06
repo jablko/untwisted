@@ -26,6 +26,8 @@ class connect:
 
           transport.connect(host, socket.getservbyname(port))
 
+        transport.recv = untwisted.compose(untwisted.partial(promise.promise.then, callback=lambda asdf, _: asdf), ctx.datagramReceived.shift)
+
     @untwisted.partial(setattr, ctx, '__call__')
     def _():
 
