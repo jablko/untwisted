@@ -132,8 +132,8 @@ while pos < len(resolvConf):
   pos = match.end()
 
 @promise.resume
-def lookup(qname, qtype=A, qclass=IN):
-  transport = yield udp.connect(server[0], 'domain')()
+def lookup(qname, qtype=A, qclass=IN, server=server[0]):
+  transport = yield udp.connect(server, 'domain')()
 
   # QR: 0, Opcode: 0, AA: 0, TC: 0, RD: 1, RA: 0, Z: 0, RCODE: 0
   header = '\0\0\1\0\0\1\0\0\0\0\0\0'
