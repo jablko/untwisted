@@ -16,7 +16,7 @@ def lookup():
   udp.connect = lambda host, port: lambda: transport
 
   try:
-    dns.lookup('example.com').then(lambda actual: equal('1.2.3.4', actual.address))
+    dns.lookup('example.com').then(lambda actual: equal('1.2.3.4', actual.answer.address))
 
   finally:
     udp.connect = connect
@@ -37,7 +37,7 @@ def compress():
   udp.connect = lambda host, port: lambda: transport
 
   try:
-    dns.lookup('example.com').then(lambda actual: equal('1.2.3.4', actual.address))
+    dns.lookup('example.com').then(lambda actual: equal('1.2.3.4', actual.answer.address))
 
   finally:
     udp.connect = connect
@@ -45,6 +45,34 @@ def compress():
   transport.write.shift().then(untwisted.partial(equal, '\0\0\1\0\0\1\0\0\0\0\0\0\7example\3com\0\0\1\0\1'))
 
   transport.recv.__self__('\0\0\x81\x80\0\1\0\1\0\0\0\0\7example\3com\0\0\1\0\1\xc0\x0c\0\1\0\1\0\0\0\0\0\4\1\2\3\4')
+
+@test
+def many():
+  expect(4)
+
+  class transport:
+    recv = promise.sequence().shift
+    write = promise.sequence()
+
+  def callback(actual):
+    a, b, c = actual.answer
+
+    equal('1.1.1.1', a.address)
+    equal('2.2.2.2', b.address)
+    equal('3.3.3.3', c.address)
+
+  connect = udp.connect
+  udp.connect = lambda host, port: lambda: transport
+
+  try:
+    dns.lookup('example.com').then(callback)
+
+  finally:
+    udp.connect = connect
+
+  transport.write.shift().then(untwisted.partial(equal, '\0\0\1\0\0\1\0\0\0\0\0\0\7example\3com\0\0\1\0\1'))
+
+  transport.recv.__self__('\0\0\x81\x80\0\1\0\3\0\0\0\0\7example\3com\0\0\1\0\1\7example\3com\0\0\1\0\1\0\0\0\0\0\4\1\1\1\1\7example\3com\0\0\1\0\1\0\0\0\0\0\4\2\2\2\2\7example\3com\0\0\1\0\1\0\0\0\0\0\4\3\3\3\3')
 
 @test
 def srv():
@@ -55,8 +83,8 @@ def srv():
     write = promise.sequence()
 
   def callback(actual):
-    equal(0xabcd, actual.port)
-    equal('target.example.com.', actual.target)
+    equal(0xabcd, actual.answer.port)
+    equal('target.example.com.', actual.answer.target)
 
   connect = udp.connect
   udp.connect = lambda host, port: lambda: transport

@@ -32,35 +32,90 @@ HS = 4
 
 #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
 # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-# |                    ADDRESS                    |
+# |                      ID                       |
+# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+# |QR|   Opcode  |AA|TC|RD|RA|   Z    |   RCODE   |
+# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+# |                    QDCOUNT                    |
+# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+# |                    ANCOUNT                    |
+# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+# |                    NSCOUNT                    |
+# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+# |                    ARCOUNT                    |
 # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
-class a:
-  def __init__(ctx, recv):
-    ctx.address = '.'.join(map(untwisted.compose(str, ord), recv))
+class header:
+  pass
 
-class srv:
-  def __init__(ctx, recv):
-    ctx.port = (ord(recv[4]) << 8) + ord(recv[5])
+#   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+# /                                               /
+# /                     QNAME                     /
+# /                                               /
+# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+# |                     QTYPE                     |
+# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+# |                     QCLASS                    |
+# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
-    recv = recv[6:]
+class question:
+  pass
 
-    ctx.target = ''
-    while True:
-      length = ord(recv[0])
+#   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+# /                                               /
+# /                     NAME                      /
+# /                                               /
+# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+# |                     TYPE                      |
+# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+# |                     CLASS                     |
+# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+# |                      TTL                      |
+# |                                               |
+# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+# |                   RDLENGTH                    |
+# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+# /                                               /
+# /                     RDATA                     /
+# /                                               /
+# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
-      recv = recv[1:]
+class rr:
+  pass
 
-      if not length:
-        break
+class oneMany:
+  def __init__(ctx):
+    ctx.asdf = []
 
-      ctx.target += recv[:length] + '.'
+    ctx.append = ctx.asdf.append
+    ctx.__iter__ = ctx.asdf.__iter__
 
-      recv = recv[length:]
+  def __getattr__(ctx, name):
+    asdf, = ctx.asdf
 
-rdata = {
-  A: a,
-  SRV: srv }
+    return getattr(asdf, name)
+
+# +---------------------+
+# |       Header        |
+# +---------------------+
+# |      Question       | Question for the name server
+# +---------------------+
+# |       Answer        | RRs answering question
+# +---------------------+
+# |      Authority      | RRs pointing toward an authority
+# +---------------------+
+# |     Additional      | RRs holding additional information
+# +---------------------+
+
+class message:
+  def __init__(ctx):
+    ctx.header = header()
+    ctx.question = oneMany()
+    ctx.answer = oneMany()
+    ctx.authority = oneMany()
+    ctx.additional = oneMany()
 
 server = []
 
@@ -80,34 +135,8 @@ while pos < len(resolvConf):
 def lookup(qname, qtype=A, qclass=IN):
   transport = yield udp.connect(server[0], 'domain')()
 
-  #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-  # |                      ID                       |
-  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-  # |QR|   Opcode  |AA|TC|RD|RA|   Z    |   RCODE   |
-  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-  # |                    QDCOUNT                    |
-  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-  # |                    ANCOUNT                    |
-  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-  # |                    NSCOUNT                    |
-  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-  # |                    ARCOUNT                    |
-  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-
   # QR: 0, Opcode: 0, AA: 0, TC: 0, RD: 1, RA: 0, Z: 0, RCODE: 0
   header = '\0\0\1\0\0\1\0\0\0\0\0\0'
-
-  #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-  # /                                               /
-  # /                     QNAME                     /
-  # /                                               /
-  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-  # |                     QTYPE                     |
-  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-  # |                     QCLASS                    |
-  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
   question = ''.join((
     ''.join(chr(len(label)) + label for label in qname.split('.')), '\0',
@@ -118,68 +147,90 @@ def lookup(qname, qtype=A, qclass=IN):
 
   recv = yield transport.recv()
 
+  response = message()
+
+  response.header.qdcount = (ord(recv[4]) << 8) + ord(recv[5])
+  response.header.ancount = (ord(recv[6]) << 8) + ord(recv[7])
+  response.header.nscount = (ord(recv[8]) << 8) + ord(recv[9])
+  response.header.arcount = (ord(recv[10]) << 8) + ord(recv[11])
+
   recv = recv[12:]
 
-  while True:
-    length = ord(recv[0])
+  for _ in range(response.header.qdcount):
+    while True:
+      length = ord(recv[0])
 
-    # An entire domain name or a list of labels at the end of a domain name is
-    # replaced with a pointer to a prior occurance of the same name
-    if 0xbf < length:
-      recv = recv[2:]
+      # An entire domain name or a list of labels at the end of a domain name
+      # is replaced with a pointer to a prior occurance of the same name
+      if 0xbf < length:
+        recv = recv[2:]
 
-      break
+        break
 
-    recv = recv[1:]
+      recv = recv[1:]
 
-    if not length:
-      break
+      if not length:
+        break
 
-    recv = recv[length:]
+      recv = recv[length:]
 
-  recv = recv[4:]
+    recv = recv[4:]
 
-  #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-  # /                                               /
-  # /                     NAME                      /
-  # /                                               /
-  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-  # |                     TYPE                      |
-  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-  # |                     CLASS                     |
-  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-  # |                      TTL                      |
-  # |                                               |
-  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-  # |                   RDLENGTH                    |
-  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-  # /                                               /
-  # /                     RDATA                     /
-  # /                                               /
-  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+  for _ in range(response.header.ancount):
+    itm = rr()
 
-  while True:
-    length = ord(recv[0])
+    while True:
+      length = ord(recv[0])
 
-    # An entire domain name or a list of labels at the end of a domain name is
-    # replaced with a pointer to a prior occurance of the same name
-    if 0xbf < length:
-      recv = recv[2:]
+      # An entire domain name or a list of labels at the end of a domain name
+      # is replaced with a pointer to a prior occurance of the same name
+      if 0xbf < length:
+        recv = recv[2:]
 
-      break
+        break
 
-    recv = recv[1:]
+      recv = recv[1:]
 
-    if not length:
-      break
+      if not length:
+        break
 
-    recv = recv[length:]
+      recv = recv[length:]
 
-  type = (ord(recv[0]) << 8) + ord(recv[1])
-  rdlength = (ord(recv[8]) << 8) + ord(recv[9])
+    itm.type = (ord(recv[0]) << 8) + ord(recv[1])
+    itm.rdlength = (ord(recv[8]) << 8) + ord(recv[9])
 
-  recv = recv[10:]
+    recv = recv[10:]
+
+    if A == itm.type:
+
+      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # |                    ADDRESS                    |
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+      itm.address = '.'.join(map(untwisted.compose(str, ord), recv[:4]))
+
+      recv = recv[4:]
+
+    elif SRV == itm.type:
+      itm.port = (ord(recv[4]) << 8) + ord(recv[5])
+
+      recv = recv[6:]
+
+      itm.target = ''
+      while True:
+        length = ord(recv[0])
+
+        recv = recv[1:]
+
+        if not length:
+          break
+
+        itm.target += recv[:length] + '.'
+
+        recv = recv[length:]
+
+    response.answer.append(itm)
 
   #return ...
-  raise StopIteration(rdata[type](recv))
+  raise StopIteration(response)
