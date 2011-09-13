@@ -28,7 +28,7 @@ class connect:
           # Fix RuntimeError: already connected
           transport._connectedAddr = None
 
-          transport.connect(host, socket.getservbyname(port))
+          transport.connect(host, socket.getservbyname(port, 'udp'))
 
         transport.recv = untwisted.compose(untwisted.partial(promise.promise.then, callback=lambda asdf, _: asdf), ctx.datagramReceived.shift)
 
