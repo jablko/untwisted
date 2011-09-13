@@ -75,6 +75,27 @@ def many():
   transport.recv.__self__('\0\0\x81\x80\0\1\0\3\0\0\0\0\7example\3com\0\0\1\0\1\7example\3com\0\0\1\0\1\0\0\0\0\0\4\1\1\1\1\7example\3com\0\0\1\0\1\0\0\0\0\0\4\2\2\2\2\7example\3com\0\0\1\0\1\0\0\0\0\0\4\3\3\3\3')
 
 @test
+def ns():
+  expect(2)
+
+  class transport:
+    recv = promise.sequence().shift
+    write = promise.sequence()
+
+  connect = udp.connect
+  udp.connect = lambda host, port: lambda: transport
+
+  try:
+    dns.lookup('example.com', dns.NS).then(lambda actual: equal('expect.example.com.', actual.answer.nsdname))
+
+  finally:
+    udp.connect = connect
+
+  transport.write.shift().then(untwisted.partial(equal, '\0\0\1\0\0\1\0\0\0\0\0\0\7example\3com\0\0\2\0\1'))
+
+  transport.recv.__self__('\0\0\x81\x80\0\1\0\1\0\0\0\0\7example\3com\0\0\2\0\1\7example\3com\0\0\2\0\1\0\0\0\0\0\x14\6expect\7example\3com\0')
+
+@test
 def srv():
   expect(3)
 
@@ -84,7 +105,7 @@ def srv():
 
   def callback(actual):
     equal(0xabcd, actual.answer.port)
-    equal('target.example.com.', actual.answer.target)
+    equal('expect.example.com.', actual.answer.target)
 
   connect = udp.connect
   udp.connect = lambda host, port: lambda: transport
@@ -97,7 +118,7 @@ def srv():
 
   transport.write.shift().then(untwisted.partial(equal, '\0\0\1\0\0\1\0\0\0\0\0\0\x08_service\6_proto\7example\3com\0\0\x21\0\1'))
 
-  transport.recv.__self__('\0\0\x81\x80\0\1\0\1\0\0\0\0\x08_service\6_proto\7example\3com\0\0\x21\0\1\x08_service\6_proto\7example\3com\0\0\x21\0\1\0\0\0\0\0\x1a\0\0\0\0\xab\xcd\6target\7example\3com\0')
+  transport.recv.__self__('\0\0\x81\x80\0\1\0\1\0\0\0\0\x08_service\6_proto\7example\3com\0\0\x21\0\1\x08_service\6_proto\7example\3com\0\0\x21\0\1\0\0\0\0\0\x1a\0\0\0\0\xab\xcd\6expect\7example\3com\0')
 
 @test
 def server():

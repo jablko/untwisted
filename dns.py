@@ -212,6 +212,28 @@ def lookup(qname, qtype=A, qclass=IN, server=server[0]):
 
       recv = recv[4:]
 
+    elif NS == itm.type:
+
+      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # /                                               /
+      # /                    NSDNAME                    /
+      # /                                               /
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+      itm.nsdname = ''
+      while True:
+        length = ord(recv[0])
+
+        recv = recv[1:]
+
+        if not length:
+          break
+
+        itm.nsdname += recv[:length] + '.'
+
+        recv = recv[length:]
+
     elif SRV == itm.type:
       itm.port = (ord(recv[4]) << 8) + ord(recv[5])
 
