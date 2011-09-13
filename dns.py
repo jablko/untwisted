@@ -149,10 +149,10 @@ def lookup(qname, qtype=A, qclass=IN, server=server[0]):
 
   response = message()
 
-  response.header.qdcount = (ord(recv[4]) << 8) + ord(recv[5])
-  response.header.ancount = (ord(recv[6]) << 8) + ord(recv[7])
-  response.header.nscount = (ord(recv[8]) << 8) + ord(recv[9])
-  response.header.arcount = (ord(recv[10]) << 8) + ord(recv[11])
+  response.header.qdcount = ord(recv[4]) << 8 | ord(recv[5])
+  response.header.ancount = ord(recv[6]) << 8 | ord(recv[7])
+  response.header.nscount = ord(recv[8]) << 8 | ord(recv[9])
+  response.header.arcount = ord(recv[10]) << 8 | ord(recv[11])
 
   offset = 12
 
@@ -164,7 +164,7 @@ def lookup(qname, qtype=A, qclass=IN, server=server[0]):
       # An entire domain name or a list of labels at the end of a domain name
       # is replaced with a pointer to a prior occurance of the same name
       if 0xbf < length:
-        _, prior = domainName(((length & 0x3f) << 8) + ord(recv[offset + 1]))
+        _, prior = domainName((length & 0x3f) << 8 | ord(recv[offset + 1]))
 
         offset += 2
 
@@ -189,8 +189,8 @@ def lookup(qname, qtype=A, qclass=IN, server=server[0]):
 
     offset, _ = domainName(offset)
 
-    itm.type = (ord(recv[offset]) << 8) + ord(recv[offset + 1])
-    itm.rdlength = (ord(recv[offset + 8]) << 8) + ord(recv[offset + 9])
+    itm.type = ord(recv[offset]) << 8 | ord(recv[offset + 1])
+    itm.rdlength = ord(recv[offset + 8]) << 8 | ord(recv[offset + 9])
 
     offset += 10
 
@@ -217,7 +217,7 @@ def lookup(qname, qtype=A, qclass=IN, server=server[0]):
       offset, itm.nsdname = domainName(offset)
 
     elif SRV == itm.type:
-      itm.port = (ord(recv[offset + 4]) << 8) + ord(recv[offset + 5])
+      itm.port = ord(recv[offset + 4]) << 8 | ord(recv[offset + 5])
 
       offset += 6
 
