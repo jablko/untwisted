@@ -142,6 +142,25 @@ def srv():
   transport.recv.__self__('\0\0\x81\x80\0\1\0\1\0\0\0\0\x08_service\6_proto\7example\3com\0\0\x21\0\1\x08_service\6_proto\7example\3com\0\0\x21\0\1\0\0\0\0\0\x1a\0\0\0\0\xab\xcd\6expect\7example\3com\0')
 
 @test
+def absolute():
+  expect(1)
+
+  class transport:
+    recv = promise.sequence().shift
+    write = promise.sequence()
+
+  connect = udp.connect
+  udp.connect = lambda host, port: lambda: transport
+
+  try:
+    dns.lookup('example.com.')
+
+  finally:
+    udp.connect = connect
+
+  transport.write.shift().then(untwisted.partial(equal, '\0\0\1\0\0\1\0\0\0\0\0\0\7example\3com\0\0\1\0\1'))
+
+@test
 def server():
   expect(2)
 

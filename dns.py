@@ -65,7 +65,12 @@ class question:
     ctx.qtype = qtype
     ctx.qclass = qclass
 
-  __str__ = lambda ctx: ''.join(chr(len(label)) + label for label in ctx.qname.split('.')) + '\0' + chr(ctx.qtype >> 8) + chr(ctx.qtype & 0xff) + chr(ctx.qclass >> 8) + chr(ctx.qclass & 0xff)
+  def __str__(ctx):
+    result = ''.join(chr(len(label)) + label for label in ctx.qname.split('.'))
+    if not ctx.qname.endswith('.'):
+      result += '\0'
+
+    return result + chr(ctx.qtype >> 8) + chr(ctx.qtype & 0xff) + chr(ctx.qclass >> 8) + chr(ctx.qclass & 0xff)
 
 #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
 # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
