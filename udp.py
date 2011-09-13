@@ -1,5 +1,8 @@
 import socket, untwisted
 from twisted.internet import udp
+
+# Avoid ImportError: cannot import name dns
+import dns
 from untwisted import promise
 
 # A connected UDP socket is slightly different from a standard one - it can
@@ -9,6 +12,7 @@ from untwisted import promise
 # http://twistedmatrix.com/documents/current/core/howto/udp.html#auto2
 class connect:
   def __init__(ctx, host, port):
+    transport = promise.sequence()
 
     @untwisted.call
     class protocol:
@@ -18,19 +22,31 @@ class connect:
       def doStop(ctx):
         pass
 
-      def makeConnection(ctx, transport):
+      @promise.resume
+      def makeConnection(ctx, nstTransport):
+        nstHost = host
+
         try:
-          transport.connect(host, port)
+          try:
+            nstTransport.connect(host, port)
+
+          except ValueError:
+            nstHost = (yield dns.lookup(host)).answer[0].address
+
+            nstTransport.connect(nstHost, port)
 
         # tcp.Connector calls socket.getservbyname() but .connect() doesn't : (
         except TypeError:
+          nstPort = socket.getservbyname(port, 'udp')
 
           # Fix RuntimeError: already connected
-          transport._connectedAddr = None
+          nstTransport._connectedAddr = None
 
-          transport.connect(host, socket.getservbyname(port, 'udp'))
+          nstTransport.connect(nstHost, nstPort)
 
-        transport.recv = untwisted.compose(untwisted.partial(promise.promise.then, callback=lambda asdf, _: asdf), ctx.datagramReceived.shift)
+        nstTransport.recv = untwisted.compose(untwisted.partial(promise.promise.then, callback=lambda asdf, _: asdf), ctx.datagramReceived.shift)
+
+        transport(nstTransport)
 
     @untwisted.partial(setattr, ctx, '__call__')
     def _():
@@ -43,4 +59,4 @@ class connect:
 
       port._connectToProtocol()
 
-      return promise.promise()(port)
+      return transport.shift()

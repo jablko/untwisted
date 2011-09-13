@@ -65,6 +65,8 @@ class listen:
 
     # tcp.Connector calls socket.getservbyname() but tcp.Port doesn't : (
     except TypeError:
-      tcp.Port(socket.getservbyname(port, 'tcp'), factory, interface=interface).startListening()
+      port = socket.getservbyname(port, 'tcp')
+
+      tcp.Port(port, factory, interface=interface).startListening()
 
     ctx.__call__ = transport.shift

@@ -100,6 +100,7 @@ class oneMany:
     ctx.asdf = []
 
     ctx.append = ctx.asdf.append
+    ctx.__getitem__ = ctx.asdf.__getitem__
     ctx.__iter__ = ctx.asdf.__iter__
     ctx.__len__ = ctx.asdf.__len__
 
