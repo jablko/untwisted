@@ -175,6 +175,18 @@ def lookup(qname, qtype=A, qclass=IN, server=server[0]):
 
   response = message()
 
+  response.header.id = ord(recv[0]) << 8 | ord(recv[1])
+
+  response.header.qr = ord(recv[2]) >> 7
+  response.header.opcode = ord(recv[2]) >> 3 & 0xf
+  response.header.aa = ord(recv[2]) >> 2 & 1
+  response.header.tc = ord(recv[2]) >> 1 & 1
+  response.header.rd = ord(recv[2]) & 1
+
+  response.header.ra = ord(recv[3]) >> 7
+  response.header.z = ord(recv[3]) >> 4 & 7
+  response.header.rcode = ord(recv[3]) & 0xf
+
   response.header.qdcount = ord(recv[4]) << 8 | ord(recv[5])
   response.header.ancount = ord(recv[6]) << 8 | ord(recv[7])
   response.header.nscount = ord(recv[8]) << 8 | ord(recv[9])

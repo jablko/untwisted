@@ -75,6 +75,40 @@ def many():
   transport.recv.__self__('\0\0\x81\x80\0\1\0\3\0\0\0\0\7example\3com\0\0\1\0\1\7example\3com\0\0\1\0\1\0\0\0\0\0\4\1\1\1\1\7example\3com\0\0\1\0\1\0\0\0\0\0\4\2\2\2\2\7example\3com\0\0\1\0\1\0\0\0\0\0\4\3\3\3\3')
 
 @test
+def header():
+  expect(10)
+
+  class transport:
+    recv = promise.sequence().shift
+    write = promise.sequence()
+
+  def callback(actual):
+    equal(0xabcd, actual.header.id)
+
+    ok(actual.header.qr)
+    equal(0xf, actual.header.opcode)
+    ok(actual.header.aa)
+    ok(actual.header.tc)
+    ok(actual.header.rd)
+
+    ok(actual.header.ra)
+    equal(7, actual.header.z)
+    equal(0xf, actual.header.rcode)
+
+  connect = udp.connect
+  udp.connect = lambda host, port: lambda: transport
+
+  try:
+    dns.lookup('example.com').then(callback)
+
+  finally:
+    udp.connect = connect
+
+  transport.write.shift().then(untwisted.partial(equal, '\0\0\1\0\0\1\0\0\0\0\0\0\7example\3com\0\0\1\0\1'))
+
+  transport.recv.__self__('\xab\xcd\xff\xff\0\0\0\0\0\0\0\0')
+
+@test
 def ns():
   expect(2)
 
