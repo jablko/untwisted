@@ -96,6 +96,27 @@ def ns():
   transport.recv.__self__('\0\0\x81\x80\0\1\0\1\0\0\0\0\7example\3com\0\0\2\0\1\7example\3com\0\0\2\0\1\0\0\0\0\0\x14\6expect\7example\3com\0')
 
 @test
+def nsCompress():
+  expect(2)
+
+  class transport:
+    recv = promise.sequence().shift
+    write = promise.sequence()
+
+  connect = udp.connect
+  udp.connect = lambda host, port: lambda: transport
+
+  try:
+    dns.lookup('example.com', dns.NS).then(lambda actual: equal('expect.example.com.', actual.answer.nsdname))
+
+  finally:
+    udp.connect = connect
+
+  transport.write.shift().then(untwisted.partial(equal, '\0\0\1\0\0\1\0\0\0\0\0\0\7example\3com\0\0\2\0\1'))
+
+  transport.recv.__self__('\0\0\x81\x80\0\1\0\1\0\0\0\0\7example\3com\0\0\2\0\1\xc0\x0c\0\2\0\1\0\0\0\0\0\x09\6expect\xc0\x0c')
+
+@test
 def srv():
   expect(3)
 

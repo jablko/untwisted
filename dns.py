@@ -154,52 +154,45 @@ def lookup(qname, qtype=A, qclass=IN, server=server[0]):
   response.header.nscount = (ord(recv[8]) << 8) + ord(recv[9])
   response.header.arcount = (ord(recv[10]) << 8) + ord(recv[11])
 
-  recv = recv[12:]
+  offset = 12
 
-  for _ in range(response.header.qdcount):
+  def domainName(offset):
+    result = ''
     while True:
-      length = ord(recv[0])
+      length = ord(recv[offset])
 
       # An entire domain name or a list of labels at the end of a domain name
       # is replaced with a pointer to a prior occurance of the same name
       if 0xbf < length:
-        recv = recv[2:]
+        _, prior = domainName(((length & 0x3f) << 8) + ord(recv[offset + 1]))
 
-        break
+        offset += 2
 
-      recv = recv[1:]
+        return offset, result + prior
+
+      offset += 1
 
       if not length:
-        break
+        return offset, result
 
-      recv = recv[length:]
+      result += recv[offset:offset + length] + '.'
 
-    recv = recv[4:]
+      offset += length
+
+  for _ in range(response.header.qdcount):
+    offset, _ = domainName(offset)
+
+    offset += 4
 
   for _ in range(response.header.ancount):
     itm = rr()
 
-    while True:
-      length = ord(recv[0])
+    offset, _ = domainName(offset)
 
-      # An entire domain name or a list of labels at the end of a domain name
-      # is replaced with a pointer to a prior occurance of the same name
-      if 0xbf < length:
-        recv = recv[2:]
+    itm.type = (ord(recv[offset]) << 8) + ord(recv[offset + 1])
+    itm.rdlength = (ord(recv[offset + 8]) << 8) + ord(recv[offset + 9])
 
-        break
-
-      recv = recv[1:]
-
-      if not length:
-        break
-
-      recv = recv[length:]
-
-    itm.type = (ord(recv[0]) << 8) + ord(recv[1])
-    itm.rdlength = (ord(recv[8]) << 8) + ord(recv[9])
-
-    recv = recv[10:]
+    offset += 10
 
     if A == itm.type:
 
@@ -208,9 +201,9 @@ def lookup(qname, qtype=A, qclass=IN, server=server[0]):
       # |                    ADDRESS                    |
       # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
-      itm.address = '.'.join(map(untwisted.compose(str, ord), recv[:4]))
+      itm.address = '.'.join(map(untwisted.compose(str, ord), recv[offset:offset + 4]))
 
-      recv = recv[4:]
+      offset += 4
 
     elif NS == itm.type:
 
@@ -221,36 +214,14 @@ def lookup(qname, qtype=A, qclass=IN, server=server[0]):
       # /                                               /
       # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
-      itm.nsdname = ''
-      while True:
-        length = ord(recv[0])
-
-        recv = recv[1:]
-
-        if not length:
-          break
-
-        itm.nsdname += recv[:length] + '.'
-
-        recv = recv[length:]
+      offset, itm.nsdname = domainName(offset)
 
     elif SRV == itm.type:
-      itm.port = (ord(recv[4]) << 8) + ord(recv[5])
+      itm.port = (ord(recv[offset + 4]) << 8) + ord(recv[offset + 5])
 
-      recv = recv[6:]
+      offset += 6
 
-      itm.target = ''
-      while True:
-        length = ord(recv[0])
-
-        recv = recv[1:]
-
-        if not length:
-          break
-
-        itm.target += recv[:length] + '.'
-
-        recv = recv[length:]
+      offset, itm.target = domainName(offset)
 
     response.answer.append(itm)
 
