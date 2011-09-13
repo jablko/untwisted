@@ -255,6 +255,8 @@ def lookup(qname, qtype=A, qclass=IN, server=server[0]):
       offset, itm.nsdname = domainName(offset)
 
     elif SRV == itm.type:
+      itm.priority = ord(recv[offset]) << 8 | ord(recv[offset + 1])
+      itm.weight = ord(recv[offset + 2]) << 8 | ord(recv[offset + 3])
       itm.port = ord(recv[offset + 4]) << 8 | ord(recv[offset + 5])
 
       offset += 6

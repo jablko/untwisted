@@ -152,14 +152,16 @@ def nsCompress():
 
 @test
 def srv():
-  expect(3)
+  expect(5)
 
   class transport:
     recv = promise.sequence().shift
     write = promise.sequence()
 
   def callback(actual):
-    equal(0xabcd, actual.answer.port)
+    equal(0xaaaa, actual.answer.priority)
+    equal(0xbbbb, actual.answer.weight)
+    equal(0xcccc, actual.answer.port)
     equal('expect.example.com.', actual.answer.target)
 
   connect = udp.connect
@@ -173,7 +175,7 @@ def srv():
 
   transport.write.shift().then(untwisted.partial(equal, '\0\0\1\0\0\1\0\0\0\0\0\0\x08_service\6_proto\7example\3com\0\0\x21\0\1'))
 
-  transport.recv.__self__('\0\0\x81\x80\0\1\0\1\0\0\0\0\x08_service\6_proto\7example\3com\0\0\x21\0\1\x08_service\6_proto\7example\3com\0\0\x21\0\1\0\0\0\0\0\x1a\0\0\0\0\xab\xcd\6expect\7example\3com\0')
+  transport.recv.__self__('\0\0\x81\x80\0\1\0\1\0\0\0\0\x08_service\6_proto\7example\3com\0\0\x21\0\1\x08_service\6_proto\7example\3com\0\0\x21\0\1\0\0\0\0\0\x1a\xaa\xaa\xbb\xbb\xcc\xcc\6expect\7example\3com\0')
 
 @test
 def absolute():
