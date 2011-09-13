@@ -46,7 +46,7 @@ HS = 4
 # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
 class header:
-  pass
+  __str__ = lambda ctx: chr(ctx.id >> 8) + chr(ctx.id & 0xff) + chr(ctx.qr << 7 | ctx.opcode << 3 | ctx.aa << 2 | ctx.tc << 1 | ctx.rd) + chr(ctx.ra << 7 | ctx.z << 4 | ctx.rcode) + chr(ctx.qdcount >> 8) + chr(ctx.qdcount & 0xff) + chr(ctx.ancount >> 8) + chr(ctx.ancount & 0xff) + chr(ctx.nscount >> 8) + chr(ctx.nscount & 0xff) + chr(ctx.arcount >> 8) + chr(ctx.arcount & 0xff)
 
 #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
 # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
@@ -60,7 +60,12 @@ class header:
 # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
 class question:
-  pass
+  def __init__(ctx, qname, qtype, qclass):
+    ctx.qname = qname
+    ctx.qtype = qtype
+    ctx.qclass = qclass
+
+  __str__ = lambda ctx: ''.join(chr(len(label)) + label for label in ctx.qname.split('.')) + '\0' + chr(ctx.qtype >> 8) + chr(ctx.qtype & 0xff) + chr(ctx.qclass >> 8) + chr(ctx.qclass & 0xff)
 
 #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
 # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
@@ -91,6 +96,7 @@ class oneMany:
 
     ctx.append = ctx.asdf.append
     ctx.__iter__ = ctx.asdf.__iter__
+    ctx.__len__ = ctx.asdf.__len__
 
   def __getattr__(ctx, name):
     asdf, = ctx.asdf
@@ -117,6 +123,8 @@ class message:
     ctx.authority = oneMany()
     ctx.additional = oneMany()
 
+  __str__ = lambda ctx: str(ctx.header) + ''.join(map(str, ctx.question)) + ''.join(map(str, ctx.answer)) + ''.join(map(str, ctx.authority)) + ''.join(map(str, ctx.additional))
+
 server = []
 
 resolvConf = open('/etc/resolv.conf').read()
@@ -135,15 +143,28 @@ while pos < len(resolvConf):
 def lookup(qname, qtype=A, qclass=IN, server=server[0]):
   transport = yield udp.connect(server, 'domain')()
 
-  # QR: 0, Opcode: 0, AA: 0, TC: 0, RD: 1, RA: 0, Z: 0, RCODE: 0
-  header = '\0\0\1\0\0\1\0\0\0\0\0\0'
+  query = message()
 
-  question = ''.join((
-    ''.join(chr(len(label)) + label for label in qname.split('.')), '\0',
-    chr(qtype >> 8), chr(qtype & 0xff),
-    chr(qclass >> 8), chr(qclass & 0xff)))
+  query.header.id = 0
 
-  transport.write(header + question)
+  query.header.qr = 0
+  query.header.opcode = 0
+  query.header.aa = 0
+  query.header.tc = 0
+  query.header.rd = 1
+
+  query.header.ra = 0
+  query.header.z = 0
+  query.header.rcode = 0
+
+  query.header.qdcount = 1
+  query.header.ancount = 0
+  query.header.nscount = 0
+  query.header.arcount = 0
+
+  query.question.append(question(qname, qtype, qclass))
+
+  transport.write(str(query))
 
   recv = yield transport.recv()
 
