@@ -254,6 +254,23 @@ def lookup(qname, qtype=A, qclass=IN, server=server[0]):
 
       offset, itm.nsdname = domainName(offset)
 
+    elif MX == itm.type:
+
+      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # |                  PREFERENCE                   |
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # /                                               /
+      # /                   EXCHANGE                    /
+      # /                                               /
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+      itm.preference = ord(recv[offset]) << 8 | ord(recv[offset + 1])
+
+      offset += 2
+
+      offset, itm.exchange = name(offset)
+
     elif SRV == itm.type:
       itm.priority = ord(recv[offset]) << 8 | ord(recv[offset + 1])
       itm.weight = ord(recv[offset + 2]) << 8 | ord(recv[offset + 3])
