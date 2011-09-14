@@ -60,10 +60,17 @@ class header:
 # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
 class question:
-  def __init__(ctx, qname, qtype, qclass):
-    ctx.qname = qname
-    ctx.qtype = qtype
-    ctx.qclass = qclass
+  def __init__(ctx, *args):
+    if args:
+      try:
+        ctx.qname, ctx.qtype, ctx.qclass = args
+
+      except ValueError:
+        try:
+          ctx.qname, ctx.qtype = args
+
+        except ValueError:
+          ctx.qname, = args
 
   def __str__(ctx):
     result = ''.join(chr(len(label)) + label for label in ctx.qname.split('.'))
@@ -202,9 +209,15 @@ class lookup:
       ctx.offset = 12
 
       for _ in range(response.header.qdcount):
-        ctx.domainName(ctx.offset)
+        itm = question()
+
+        itm.qname = ctx.domainName(ctx.offset)
+        itm.qtype = ord(ctx.recv[ctx.offset]) << 8 | ord(ctx.recv[ctx.offset + 1])
+        itm.qclass = ord(ctx.recv[ctx.offset + 2]) << 8 | ord(ctx.recv[ctx.offset + 3])
 
         ctx.offset += 4
+
+        response.question.append(itm)
 
       for _ in range(response.header.ancount):
         itm = rr()
