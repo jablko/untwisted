@@ -175,6 +175,27 @@ def nsCompress():
   transport.recv.__self__('\0\0\x81\x80\0\1\0\1\0\0\0\0\7example\3com\0\0\2\0\1\xc0\x0c\0\2\0\1\0\0\0\0\0\x09\6expect\xc0\x0c')
 
 @test
+def ptr():
+  expect(2)
+
+  class transport:
+    recv = promise.sequence().shift
+    write = promise.sequence()
+
+  connect = udp.connect
+  udp.connect = lambda host, port: lambda: transport
+
+  try:
+    dns.lookup('4.3.2.1.in-addr.arpa', dns.PTR).then(lambda actual: equal('expect.example.com.', actual.answer.ptrdname))
+
+  finally:
+    udp.connect = connect
+
+  transport.write.shift().then(untwisted.partial(equal, '\0\0\1\0\0\1\0\0\0\0\0\0\1\x34\1\x33\1\x32\1\x31\7in-addr\4arpa\0\0\x0c\0\1'))
+
+  transport.recv.__self__('\0\0\x81\x80\0\1\0\1\0\0\0\0\1\x34\1\x33\1\x32\1\x31\7in-addr\4arpa\0\0\x0c\0\1\1\x34\1\x33\1\x32\1\x31\7in-addr\4arpa\0\0\x0c\0\1\0\0\0\0\0\x14\6expect\7example\3com\0')
+
+@test
 def mx():
   expect(3)
 

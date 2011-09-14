@@ -255,6 +255,17 @@ def lookup(qname, qtype=A, qclass=IN, server=server[0]):
 
       offset, itm.nsdname = domainName(offset)
 
+    elif PTR == itm.type:
+
+      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # /                                               /
+      # /                   PTRDNAME                    /
+      # /                                               /
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+      offset, itm.ptrdname = name(offset)
+
     elif MX == itm.type:
 
       #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
