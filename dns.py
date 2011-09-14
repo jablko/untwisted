@@ -239,228 +239,16 @@ class lookup:
       ctx.offset = 12
 
       for _ in range(response.header.qdcount):
-        itm = question()
-
-        itm.qname = ctx.domainName(ctx.offset)
-        itm.qtype = ord(ctx.recv[ctx.offset]) << 8 | ord(ctx.recv[ctx.offset + 1])
-        itm.qclass = ord(ctx.recv[ctx.offset + 2]) << 8 | ord(ctx.recv[ctx.offset + 3])
-
-        ctx.offset += 4
-
-        response.question.append(itm)
+        response.question.append(ctx.question(ctx.offset))
 
       for _ in range(response.header.ancount):
-        itm = rr()
+        response.answer.append(ctx.rr(ctx.offset))
 
-        itm.name = ctx.domainName(ctx.offset)
-        itm.type = ord(ctx.recv[ctx.offset]) << 8 | ord(ctx.recv[ctx.offset + 1])
-        itm['class'] = ord(ctx.recv[ctx.offset + 2]) << 8 | ord(ctx.recv[ctx.offset + 3])
-        itm.ttl = reduce(lambda result, itm: result << 8 | itm, map(ord, ctx.recv[ctx.offset + 4:ctx.offset + 8]))
-        itm.rdlength = ord(ctx.recv[ctx.offset + 8]) << 8 | ord(ctx.recv[ctx.offset + 9])
+      for _ in range(response.header.nscount):
+        response.authority.append(ctx.rr(ctx.offset))
 
-        ctx.offset += 10
-
-        if A == itm.type:
-
-          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # |                    ADDRESS                    |
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-
-          itm.address = '.'.join(map(untwisted.compose(str, ord), ctx.recv[ctx.offset:ctx.offset + 4]))
-
-          ctx.offset += 4
-
-        elif NS == itm.type:
-
-          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # /                                               /
-          # /                    NSDNAME                    /
-          # /                                               /
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-
-          itm.nsdname = ctx.domainName(ctx.offset)
-
-        elif itm.type in (MD, MF, MB):
-
-          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # /                                               /
-          # /                    MADNAME                    /
-          # /                                               /
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-
-          itm.madname = ctx.domainName(ctx.offset)
-
-        elif CNAME == itm.type:
-
-          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # /                                               /
-          # /                     CNAME                     /
-          # /                                               /
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-
-          itm.cname = ctx.domainName(ctx.offset)
-
-        elif SOA == itm.type:
-
-          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # /                                               /
-          # /                     MNAME                     /
-          # /                                               /
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # /                                               /
-          # /                     RNAME                     /
-          # /                                               /
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # |                    SERIAL                     |
-          # |                                               |
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # |                    REFRESH                    |
-          # |                                               |
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # |                     RETRY                     |
-          # |                                               |
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # |                    EXPIRE                     |
-          # |                                               |
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # |                    MINIMUM                    |
-          # |                                               |
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-
-          itm.mname = ctx.domainName(ctx.offset)
-          itm.rname = ctx.domainName(ctx.offset)
-          itm.serial = reduce(lambda result, itm: result << 8 | itm, map(ord, ctx.recv[ctx.offset:ctx.offset + 4]))
-          itm.refresh = reduce(lambda result, itm: result << 8 | itm, map(ord, ctx.recv[ctx.offset + 4:ctx.offset + 8]))
-          itm.retry = reduce(lambda result, itm: result << 8 | itm, map(ord, ctx.recv[ctx.offset + 8:ctx.offset + 12]))
-          itm.expire = reduce(lambda result, itm: result << 8 | itm, map(ord, ctx.recv[ctx.offset + 12:ctx.offset + 16]))
-          itm.minimum = reduce(lambda result, itm: result << 8 | itm, map(ord, ctx.recv[ctx.offset + 16:ctx.offset + 20]))
-
-          ctx.offset += 20
-
-        elif MG == itm.type:
-
-          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # /                                               /
-          # /                    MGMNAME                    /
-          # /                                               /
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-
-          itm.mgmname = ctx.domainName(ctx.offset)
-
-        elif MR == itm.type:
-
-          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # /                                               /
-          # /                    NEWNAME                    /
-          # /                                               /
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-
-          itm.newname = ctx.domainName(ctx.offset)
-
-        elif PTR == itm.type:
-
-          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # /                                               /
-          # /                   PTRDNAME                    /
-          # /                                               /
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-
-          itm.ptrdname = ctx.domainName(ctx.offset)
-
-        elif HINFO == itm.type:
-
-          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # /                      CPU                      /
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # /                      OS                       /
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-
-          length = ord(ctx.recv[ctx.offset])
-
-          ctx.offset += 1
-
-          itm.cpu = ctx.recv[ctx.offset:ctx.offset + length]
-
-          ctx.offset += length
-
-          length = ord(ctx.recv[ctx.offset])
-
-          ctx.offset += 1
-
-          itm.os = ctx.recv[ctx.offset:ctx.offset + length]
-
-          ctx.offset += length
-
-        elif MINFO == itm.type:
-
-          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # /                                               /
-          # /                    RMAILBX                    /
-          # /                                               /
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # /                                               /
-          # /                    EMAILBX                    /
-          # /                                               /
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-
-          itm.rmailbx = ctx.domainName(ctx.offset)
-          itm.emailbx = ctx.domainName(ctx.offset)
-
-        elif MX == itm.type:
-
-          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # |                  PREFERENCE                   |
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # /                                               /
-          # /                   EXCHANGE                    /
-          # /                                               /
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-
-          itm.preference = ord(ctx.recv[ctx.offset]) << 8 | ord(ctx.recv[ctx.offset + 1])
-
-          ctx.offset += 2
-
-          itm.exchange = ctx.domainName(ctx.offset)
-
-        elif TXT == itm.type:
-
-          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-          # /                   TXT-DATA                    /
-          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-
-          length = ord(ctx.recv[ctx.offset])
-
-          ctx.offset += 1
-
-          itm.txtData = ctx.recv[ctx.offset:ctx.offset + length]
-
-          ctx.offset += length
-
-        elif SRV == itm.type:
-          itm.priority = ord(ctx.recv[ctx.offset]) << 8 | ord(ctx.recv[ctx.offset + 1])
-          itm.weight = ord(ctx.recv[ctx.offset + 2]) << 8 | ord(ctx.recv[ctx.offset + 3])
-          itm.port = ord(ctx.recv[ctx.offset + 4]) << 8 | ord(ctx.recv[ctx.offset + 5])
-
-          ctx.offset += 6
-
-          itm.target = ctx.domainName(ctx.offset)
-
-        else:
-          ctx.offset += itm.rdlength
-
-        response.answer.append(itm)
+      for _ in range(response.header.arcount):
+        response.additional.append(ctx.rr(ctx.offset))
 
       if response.header.rcode:
         raise response
@@ -492,3 +280,252 @@ class lookup:
       result += ctx.recv[offset:offset + length] + '.'
 
       offset += length
+
+  def question(ctx, offset):
+    result = question()
+
+    result.qname = ctx.domainName(offset)
+    result.qtype = ord(ctx.recv[ctx.offset]) << 8 | ord(ctx.recv[ctx.offset + 1])
+    result.qclass = ord(ctx.recv[ctx.offset + 2]) << 8 | ord(ctx.recv[ctx.offset + 3])
+
+    ctx.offset += 4
+
+    return result
+
+  def rr(ctx, offset):
+    result = rr()
+
+    result.name = ctx.domainName(offset)
+    result.type = ord(ctx.recv[ctx.offset]) << 8 | ord(ctx.recv[ctx.offset + 1])
+    result['class'] = ord(ctx.recv[ctx.offset + 2]) << 8 | ord(ctx.recv[ctx.offset + 3])
+    result.ttl = reduce(lambda result, itm: result << 8 | itm, map(ord, ctx.recv[ctx.offset + 4:ctx.offset + 8]))
+    result.rdlength = ord(ctx.recv[ctx.offset + 8]) << 8 | ord(ctx.recv[ctx.offset + 9])
+
+    ctx.offset += 10
+
+    if A == result.type:
+
+      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # |                    ADDRESS                    |
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+      result.address = '.'.join(map(untwisted.compose(str, ord), ctx.recv[ctx.offset:ctx.offset + 4]))
+
+      ctx.offset += 4
+
+      return result
+
+    if NS == result.type:
+
+      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # /                                               /
+      # /                    NSDNAME                    /
+      # /                                               /
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+      result.nsdname = ctx.domainName(ctx.offset)
+
+      return result
+
+    if result.type in (MD, MF, MB):
+
+      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # /                                               /
+      # /                    MADNAME                    /
+      # /                                               /
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+      result.madname = ctx.domainName(ctx.offset)
+
+      return result
+
+    if CNAME == result.type:
+
+      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # /                                               /
+      # /                     CNAME                     /
+      # /                                               /
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+      result.cname = ctx.domainName(ctx.offset)
+
+      return result
+
+    if SOA == result.type:
+
+      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # /                                               /
+      # /                     MNAME                     /
+      # /                                               /
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # /                                               /
+      # /                     RNAME                     /
+      # /                                               /
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # |                    SERIAL                     |
+      # |                                               |
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # |                    REFRESH                    |
+      # |                                               |
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # |                     RETRY                     |
+      # |                                               |
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # |                    EXPIRE                     |
+      # |                                               |
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # |                    MINIMUM                    |
+      # |                                               |
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+      result.mname = ctx.domainName(ctx.offset)
+      result.rname = ctx.domainName(ctx.offset)
+      result.serial = reduce(lambda result, itm: result << 8 | itm, map(ord, ctx.recv[ctx.offset:ctx.offset + 4]))
+      result.refresh = reduce(lambda result, itm: result << 8 | itm, map(ord, ctx.recv[ctx.offset + 4:ctx.offset + 8]))
+      result.retry = reduce(lambda result, itm: result << 8 | itm, map(ord, ctx.recv[ctx.offset + 8:ctx.offset + 12]))
+      result.expire = reduce(lambda result, itm: result << 8 | itm, map(ord, ctx.recv[ctx.offset + 12:ctx.offset + 16]))
+      result.minimum = reduce(lambda result, itm: result << 8 | itm, map(ord, ctx.recv[ctx.offset + 16:ctx.offset + 20]))
+
+      ctx.offset += 20
+
+      return result
+
+    if MG == result.type:
+
+      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # /                                               /
+      # /                    MGMNAME                    /
+      # /                                               /
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+      result.mgmname = ctx.domainName(ctx.offset)
+
+      return result
+
+    if MR == result.type:
+
+      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # /                                               /
+      # /                    NEWNAME                    /
+      # /                                               /
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+      result.newname = ctx.domainName(ctx.offset)
+
+      return result
+
+    if PTR == result.type:
+
+      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # /                                               /
+      # /                   PTRDNAME                    /
+      # /                                               /
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+      result.ptrdname = ctx.domainName(ctx.offset)
+
+      return result
+
+    if HINFO == result.type:
+
+      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # /                      CPU                      /
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # /                      OS                       /
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+      length = ord(ctx.recv[ctx.offset])
+
+      ctx.offset += 1
+
+      result.cpu = ctx.recv[ctx.offset:ctx.offset + length]
+
+      ctx.offset += length
+
+      length = ord(ctx.recv[ctx.offset])
+
+      ctx.offset += 1
+
+      result.os = ctx.recv[ctx.offset:ctx.offset + length]
+
+      ctx.offset += length
+
+      return result
+
+    if MINFO == result.type:
+
+      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # /                                               /
+      # /                    RMAILBX                    /
+      # /                                               /
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # /                                               /
+      # /                    EMAILBX                    /
+      # /                                               /
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+      result.rmailbx = ctx.domainName(ctx.offset)
+      result.emailbx = ctx.domainName(ctx.offset)
+
+      return result
+
+    if MX == result.type:
+
+      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # |                  PREFERENCE                   |
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # /                                               /
+      # /                   EXCHANGE                    /
+      # /                                               /
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+      result.preference = ord(ctx.recv[ctx.offset]) << 8 | ord(ctx.recv[ctx.offset + 1])
+
+      ctx.offset += 2
+
+      result.exchange = ctx.domainName(ctx.offset)
+
+      return result
+
+    if TXT == result.type:
+
+      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+      # /                   TXT-DATA                    /
+      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+      length = ord(ctx.recv[ctx.offset])
+
+      ctx.offset += 1
+
+      result.txtData = ctx.recv[ctx.offset:ctx.offset + length]
+
+      ctx.offset += length
+
+      return result
+
+    if SRV == result.type:
+      result.priority = ord(ctx.recv[ctx.offset]) << 8 | ord(ctx.recv[ctx.offset + 1])
+      result.weight = ord(ctx.recv[ctx.offset + 2]) << 8 | ord(ctx.recv[ctx.offset + 3])
+      result.port = ord(ctx.recv[ctx.offset + 4]) << 8 | ord(ctx.recv[ctx.offset + 5])
+
+      ctx.offset += 6
+
+      result.target = ctx.domainName(ctx.offset)
+
+      return result
+
+    ctx.offset += result.rdlength
+
+    return result
