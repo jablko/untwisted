@@ -13,8 +13,6 @@ class connect:
 
       # Extend protocol.Protocol for .connectionLost()
       class protocol(protocol.Protocol):
-        makeConnection = transport
-
         def __init__(ctx):
           ctx.connectionLost = promise.promise()
 
@@ -27,6 +25,16 @@ class connect:
           @untwisted.partial(setattr, ctx.dataReceived, '__call__')
           def _(*args, **kwds):
             __call__(*args, **kwds)
+
+        def makeConnection(ctx, nstTransport):
+
+          @untwisted.partial(setattr, nstTransport, 'close')
+          def _():
+            nstTransport.loseConnection()
+
+            return ctx.connectionLost
+
+          transport(nstTransport)
 
     @untwisted.partial(setattr, ctx, '__call__')
     def _():
@@ -45,8 +53,6 @@ class listen:
 
       # Extend protocol.Protocol for .connectionLost()
       class protocol(protocol.Protocol):
-        makeConnection = transport
-
         def __init__(ctx):
           ctx.connectionLost = promise.promise()
 
@@ -59,6 +65,16 @@ class listen:
           @untwisted.partial(setattr, ctx.dataReceived, '__call__')
           def _(*args, **kwds):
             __call__(*args, **kwds)
+
+        def makeConnection(ctx, nstTransport):
+
+          @untwisted.partial(setattr, nstTransport, 'close')
+          def _():
+            nstTransport.loseConnection()
+
+            return ctx.connectionLost
+
+          transport(nstTransport)
 
     try:
       tcp.Port(port, factory, interface=interface).startListening()

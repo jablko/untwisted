@@ -618,7 +618,7 @@ class server:
       ctx.transport.write(str(enhance(221, '2.5.0')))
 
       #return ...
-      raise StopIteration(ctx.transport.loseConnection())
+      raise StopIteration(ctx.transport.close())
 
     # TODO Log?
     ctx.transport.write(str(enhance(500, '5.5.2')))

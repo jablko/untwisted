@@ -36,7 +36,7 @@ class server(smtp.server):
     yield smtp.server.mail.__get__(ctx)()
 
 class transport:
-  loseConnection = staticmethod(untwisted.partial(ok, True))
+  close = staticmethod(untwisted.partial(ok, True))
 
   class protocol:
     dataReceived = promise.sequence()

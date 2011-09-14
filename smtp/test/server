@@ -27,7 +27,7 @@ def quit():
   expect(2)
 
   class transport:
-    loseConnection = staticmethod(untwisted.partial(ok, True))
+    close = staticmethod(untwisted.partial(ok, True))
     write = promise.sequence()
 
   server = type.__call__(smtp.server, transport)
