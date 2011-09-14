@@ -275,6 +275,27 @@ def mx():
   transport.recv.__self__('\0\0\x81\x80\0\1\0\1\0\0\0\0\7example\3com\0\0\x0f\0\1\7example\3com\0\0\x0f\0\1\0\0\0\0\0\x16\xab\xcd\6expect\7example\3com\0')
 
 @test
+def txt():
+  expect(2)
+
+  class transport:
+    recv = promise.sequence().shift
+    write = promise.sequence()
+
+  connect = udp.connect
+  udp.connect = lambda host, port: lambda: transport
+
+  try:
+    dns.lookup('example.com', dns.TXT).then(lambda actual: equal('expect', actual.answer.txtData))
+
+  finally:
+    udp.connect = connect
+
+  transport.write.shift().then(untwisted.partial(equal, '\0\0\1\0\0\1\0\0\0\0\0\0\7example\3com\0\0\x10\0\1'))
+
+  transport.recv.__self__('\0\0\x81\x80\0\1\0\1\0\0\0\0\7example\3com\0\0\x10\0\1\7example\3com\0\0\x10\0\1\0\0\0\0\0\7\6expect')
+
+@test
 def srv():
   expect(5)
 
