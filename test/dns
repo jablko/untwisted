@@ -93,7 +93,31 @@ def header():
 
     ok(actual.header.ra)
     equal(7, actual.header.z)
-    equal(0xf, actual.header.rcode)
+    equal(0, actual.header.rcode)
+
+  connect = udp.connect
+  udp.connect = lambda host, port: lambda: transport
+
+  try:
+    dns.lookup('example.com').then(callback)
+
+  finally:
+    udp.connect = connect
+
+  transport.write.shift().then(untwisted.partial(equal, '\0\0\1\0\0\1\0\0\0\0\0\0\7example\3com\0\0\1\0\1'))
+
+  transport.recv.__self__('\xab\xcd\xff\xf0\0\0\0\0\0\0\0\0')
+
+@test
+def rcode():
+  expect(2)
+
+  class transport:
+    recv = promise.sequence().shift
+    write = promise.sequence()
+
+  class callback:
+    throw = staticmethod(ok)
 
   connect = udp.connect
   udp.connect = lambda host, port: lambda: transport

@@ -283,5 +283,8 @@ def lookup(qname, qtype=A, qclass=IN, server=server[0]):
 
     response.answer.append(itm)
 
+  if response.header.rcode:
+    raise response
+
   #return ...
   raise StopIteration(response)
