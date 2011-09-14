@@ -46,6 +46,12 @@ HS = 4
 # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
 class header:
+  __metaclass__ = type
+
+  __delitem__ = object.__delattr__
+  __getitem__ = object.__getattribute__
+  __setitem__ = object.__setattr__
+
   __str__ = lambda ctx: chr(ctx.id >> 8) + chr(ctx.id & 0xff) + chr(ctx.qr << 7 | ctx.opcode << 3 | ctx.aa << 2 | ctx.tc << 1 | ctx.rd) + chr(ctx.ra << 7 | ctx.z << 4 | ctx.rcode) + chr(ctx.qdcount >> 8) + chr(ctx.qdcount & 0xff) + chr(ctx.ancount >> 8) + chr(ctx.ancount & 0xff) + chr(ctx.nscount >> 8) + chr(ctx.nscount & 0xff) + chr(ctx.arcount >> 8) + chr(ctx.arcount & 0xff)
 
 #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
@@ -60,6 +66,8 @@ class header:
 # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
 class question:
+  __metaclass__ = type
+
   def __init__(ctx, *args):
     if args:
       try:
@@ -71,6 +79,10 @@ class question:
 
         except ValueError:
           ctx.qname, = args
+
+  __delitem__ = object.__delattr__
+  __getitem__ = object.__getattribute__
+  __setitem__ = object.__setattr__
 
   def __str__(ctx):
     result = ''.join(chr(len(label)) + label for label in ctx.qname.split('.'))
@@ -100,21 +112,33 @@ class question:
 # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
 class rr:
-  pass
+  __metaclass__ = type
+
+  __delitem__ = object.__delattr__
+  __getitem__ = object.__getattribute__
+  __setitem__ = object.__setattr__
 
 class oneMany:
   def __init__(ctx):
     ctx.asdf = []
 
-    ctx.append = ctx.asdf.append
-    ctx.__getitem__ = ctx.asdf.__getitem__
-    ctx.__iter__ = ctx.asdf.__iter__
-    ctx.__len__ = ctx.asdf.__len__
-
   def __getattr__(ctx, name):
-    asdf, = ctx.asdf
+    try:
+      return getattr(ctx.asdf, name)
 
-    return getattr(asdf, name)
+    except AttributeError:
+      asdf, = ctx.asdf
+
+      return getattr(asdf, name)
+
+  def __getitem__(ctx, name):
+    try:
+      return ctx.asdf[name]
+
+    except TypeError:
+      asdf, = ctx.asdf
+
+      return asdf[name]
 
 # +---------------------+
 # |       Header        |
@@ -129,12 +153,18 @@ class oneMany:
 # +---------------------+
 
 class message:
+  __metaclass__ = type
+
   def __init__(ctx):
     ctx.header = header()
     ctx.question = oneMany()
     ctx.answer = oneMany()
     ctx.authority = oneMany()
     ctx.additional = oneMany()
+
+  __delitem__ = object.__delattr__
+  __getitem__ = object.__getattribute__
+  __setitem__ = object.__setattr__
 
   __str__ = lambda ctx: str(ctx.header) + ''.join(map(str, ctx.question)) + ''.join(map(str, ctx.answer)) + ''.join(map(str, ctx.authority)) + ''.join(map(str, ctx.additional))
 
@@ -222,9 +252,10 @@ class lookup:
       for _ in range(response.header.ancount):
         itm = rr()
 
-        ctx.domainName(ctx.offset)
-
+        itm.name = ctx.domainName(ctx.offset)
         itm.type = ord(ctx.recv[ctx.offset]) << 8 | ord(ctx.recv[ctx.offset + 1])
+        itm['class'] = ord(ctx.recv[ctx.offset + 2]) << 8 | ord(ctx.recv[ctx.offset + 3])
+        itm.ttl = ord(ctx.recv[ctx.offset + 4]) << 24 | ord(ctx.recv[ctx.offset + 5]) << 16 | ord(ctx.recv[ctx.offset + 6]) << 8 | ord(ctx.recv[ctx.offset + 7])
         itm.rdlength = ord(ctx.recv[ctx.offset + 8]) << 8 | ord(ctx.recv[ctx.offset + 9])
 
         ctx.offset += 10

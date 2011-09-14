@@ -159,6 +159,34 @@ def question():
   transport.recv.__self__('\0\0\x81\x80\0\1\0\1\0\0\0\0\7example\3com\0\0\1\0\1\7example\3com\0\0\1\0\1\0\0\0\0\0\4\1\2\3\4')
 
 @test
+def answer():
+  expect(6)
+
+  class transport:
+    recv = promise.sequence().shift
+    write = promise.sequence()
+
+  def callback(actual):
+    equal('example.com.', actual.answer.name)
+    equal(dns.A, actual.answer.type)
+    equal(dns.IN, actual.answer['class'])
+    equal(0x12345678, actual.answer.ttl)
+    equal(4, actual.answer.rdlength)
+
+  connect = udp.connect
+  udp.connect = lambda host, port: lambda: transport
+
+  try:
+    dns.lookup('example.com').then(callback)
+
+  finally:
+    udp.connect = connect
+
+  transport.write.shift().then(untwisted.partial(equal, '\0\0\1\0\0\1\0\0\0\0\0\0\7example\3com\0\0\1\0\1'))
+
+  transport.recv.__self__('\0\0\x81\x80\0\1\0\1\0\0\0\0\7example\3com\0\0\1\0\1\7example\3com\0\0\1\0\1\x12\x34\x56\x78\0\4\1\2\3\4')
+
+@test
 def ns():
   expect(2)
 
