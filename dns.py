@@ -145,157 +145,165 @@ while pos < len(resolvConf):
 
   pos = match.end()
 
-@promise.resume
-def lookup(qname, qtype=A, qclass=IN, server=server[0]):
-  transport = yield udp.connect(server, 'domain')()
+# Workaround PEP 3104 with class
+class lookup:
+  class __metaclass__(type):
 
-  query = message()
+    @promise.resume
+    def __call__(ctx, qname, qtype=A, qclass=IN, server=server[0]):
+      ctx = type.__call__(ctx)
 
-  query.header.id = 0
+      transport = yield udp.connect(server, 'domain')()
 
-  query.header.qr = 0
-  query.header.opcode = 0
-  query.header.aa = 0
-  query.header.tc = 0
-  query.header.rd = 1
+      query = message()
 
-  query.header.ra = 0
-  query.header.z = 0
-  query.header.rcode = 0
+      query.header.id = 0
 
-  query.header.qdcount = 1
-  query.header.ancount = 0
-  query.header.nscount = 0
-  query.header.arcount = 0
+      query.header.qr = 0
+      query.header.opcode = 0
+      query.header.aa = 0
+      query.header.tc = 0
+      query.header.rd = 1
 
-  query.question.append(question(qname, qtype, qclass))
+      query.header.ra = 0
+      query.header.z = 0
+      query.header.rcode = 0
 
-  transport.write(str(query))
+      query.header.qdcount = 1
+      query.header.ancount = 0
+      query.header.nscount = 0
+      query.header.arcount = 0
 
-  recv = yield transport.recv()
+      query.question.append(question(qname, qtype, qclass))
 
-  response = message()
+      transport.write(str(query))
 
-  response.header.id = ord(recv[0]) << 8 | ord(recv[1])
+      ctx.recv = yield transport.recv()
 
-  response.header.qr = ord(recv[2]) >> 7
-  response.header.opcode = ord(recv[2]) >> 3 & 0xf
-  response.header.aa = ord(recv[2]) >> 2 & 1
-  response.header.tc = ord(recv[2]) >> 1 & 1
-  response.header.rd = ord(recv[2]) & 1
+      response = message()
 
-  response.header.ra = ord(recv[3]) >> 7
-  response.header.z = ord(recv[3]) >> 4 & 7
-  response.header.rcode = ord(recv[3]) & 0xf
+      response.header.id = ord(ctx.recv[0]) << 8 | ord(ctx.recv[1])
 
-  response.header.qdcount = ord(recv[4]) << 8 | ord(recv[5])
-  response.header.ancount = ord(recv[6]) << 8 | ord(recv[7])
-  response.header.nscount = ord(recv[8]) << 8 | ord(recv[9])
-  response.header.arcount = ord(recv[10]) << 8 | ord(recv[11])
+      response.header.qr = ord(ctx.recv[2]) >> 7
+      response.header.opcode = ord(ctx.recv[2]) >> 3 & 0xf
+      response.header.aa = ord(ctx.recv[2]) >> 2 & 1
+      response.header.tc = ord(ctx.recv[2]) >> 1 & 1
+      response.header.rd = ord(ctx.recv[2]) & 1
 
-  offset = 12
+      response.header.ra = ord(ctx.recv[3]) >> 7
+      response.header.z = ord(ctx.recv[3]) >> 4 & 7
+      response.header.rcode = ord(ctx.recv[3]) & 0xf
 
-  def domainName(offset):
+      response.header.qdcount = ord(ctx.recv[4]) << 8 | ord(ctx.recv[5])
+      response.header.ancount = ord(ctx.recv[6]) << 8 | ord(ctx.recv[7])
+      response.header.nscount = ord(ctx.recv[8]) << 8 | ord(ctx.recv[9])
+      response.header.arcount = ord(ctx.recv[10]) << 8 | ord(ctx.recv[11])
+
+      ctx.offset = 12
+
+      for _ in range(response.header.qdcount):
+        ctx.domainName(ctx.offset)
+
+        ctx.offset += 4
+
+      for _ in range(response.header.ancount):
+        itm = rr()
+
+        ctx.domainName(ctx.offset)
+
+        itm.type = ord(ctx.recv[ctx.offset]) << 8 | ord(ctx.recv[ctx.offset + 1])
+        itm.rdlength = ord(ctx.recv[ctx.offset + 8]) << 8 | ord(ctx.recv[ctx.offset + 9])
+
+        ctx.offset += 10
+
+        if A == itm.type:
+
+          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # |                    ADDRESS                    |
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+          itm.address = '.'.join(map(untwisted.compose(str, ord), ctx.recv[ctx.offset:ctx.offset + 4]))
+
+          ctx.offset += 4
+
+        elif NS == itm.type:
+
+          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # /                                               /
+          # /                    NSDNAME                    /
+          # /                                               /
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+          itm.nsdname = ctx.domainName(ctx.offset)
+
+        elif PTR == itm.type:
+
+          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # /                                               /
+          # /                   PTRDNAME                    /
+          # /                                               /
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+          itm.ptrdname = ctx.domainName(ctx.offset)
+
+        elif MX == itm.type:
+
+          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # |                  PREFERENCE                   |
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # /                                               /
+          # /                   EXCHANGE                    /
+          # /                                               /
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+          itm.preference = ord(ctx.recv[ctx.offset]) << 8 | ord(ctx.recv[ctx.offset + 1])
+
+          ctx.offset += 2
+
+          itm.exchange = ctx.domainName(ctx.offset)
+
+        elif SRV == itm.type:
+          itm.priority = ord(ctx.recv[ctx.offset]) << 8 | ord(ctx.recv[ctx.offset + 1])
+          itm.weight = ord(ctx.recv[ctx.offset + 2]) << 8 | ord(ctx.recv[ctx.offset + 3])
+          itm.port = ord(ctx.recv[ctx.offset + 4]) << 8 | ord(ctx.recv[ctx.offset + 5])
+
+          ctx.offset += 6
+
+          itm.target = ctx.domainName(ctx.offset)
+
+        response.answer.append(itm)
+
+      if response.header.rcode:
+        raise response
+
+      #return ...
+      raise StopIteration(response)
+
+  def domainName(ctx, offset):
     result = ''
     while True:
-      length = ord(recv[offset])
+      length = ord(ctx.recv[offset])
 
       # An entire domain name or a list of labels at the end of a domain name
       # is replaced with a pointer to a prior occurance of the same name
       if 0xbf < length:
-        _, prior = domainName((length & 0x3f) << 8 | ord(recv[offset + 1]))
+        try:
+          return result + ctx.domainName((length & 0x3f) << 8 | ord(ctx.recv[offset + 1]))
 
-        offset += 2
-
-        return offset, result + prior
+        finally:
+          ctx.offset = offset + 2
 
       offset += 1
 
       if not length:
-        return offset, result
+        ctx.offset = offset
 
-      result += recv[offset:offset + length] + '.'
+        return result
+
+      result += ctx.recv[offset:offset + length] + '.'
 
       offset += length
-
-  for _ in range(response.header.qdcount):
-    offset, _ = domainName(offset)
-
-    offset += 4
-
-  for _ in range(response.header.ancount):
-    itm = rr()
-
-    offset, _ = domainName(offset)
-
-    itm.type = ord(recv[offset]) << 8 | ord(recv[offset + 1])
-    itm.rdlength = ord(recv[offset + 8]) << 8 | ord(recv[offset + 9])
-
-    offset += 10
-
-    if A == itm.type:
-
-      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-      # |                    ADDRESS                    |
-      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-
-      itm.address = '.'.join(map(untwisted.compose(str, ord), recv[offset:offset + 4]))
-
-      offset += 4
-
-    elif NS == itm.type:
-
-      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-      # /                                               /
-      # /                    NSDNAME                    /
-      # /                                               /
-      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-
-      offset, itm.nsdname = domainName(offset)
-
-    elif PTR == itm.type:
-
-      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-      # /                                               /
-      # /                   PTRDNAME                    /
-      # /                                               /
-      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-
-      offset, itm.ptrdname = name(offset)
-
-    elif MX == itm.type:
-
-      #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-      # |                  PREFERENCE                   |
-      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-      # /                                               /
-      # /                   EXCHANGE                    /
-      # /                                               /
-      # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-
-      itm.preference = ord(recv[offset]) << 8 | ord(recv[offset + 1])
-
-      offset += 2
-
-      offset, itm.exchange = name(offset)
-
-    elif SRV == itm.type:
-      itm.priority = ord(recv[offset]) << 8 | ord(recv[offset + 1])
-      itm.weight = ord(recv[offset + 2]) << 8 | ord(recv[offset + 3])
-      itm.port = ord(recv[offset + 4]) << 8 | ord(recv[offset + 5])
-
-      offset += 6
-
-      offset, itm.target = domainName(offset)
-
-    response.answer.append(itm)
-
-  if response.header.rcode:
-    raise response
-
-  #return ...
-  raise StopIteration(response)
