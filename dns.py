@@ -255,7 +255,7 @@ class lookup:
         itm.name = ctx.domainName(ctx.offset)
         itm.type = ord(ctx.recv[ctx.offset]) << 8 | ord(ctx.recv[ctx.offset + 1])
         itm['class'] = ord(ctx.recv[ctx.offset + 2]) << 8 | ord(ctx.recv[ctx.offset + 3])
-        itm.ttl = ord(ctx.recv[ctx.offset + 4]) << 24 | ord(ctx.recv[ctx.offset + 5]) << 16 | ord(ctx.recv[ctx.offset + 6]) << 8 | ord(ctx.recv[ctx.offset + 7])
+        itm.ttl = reduce(lambda result, itm: result << 8 | itm, map(ord, ctx.recv[ctx.offset + 4:ctx.offset + 8]))
         itm.rdlength = ord(ctx.recv[ctx.offset + 8]) << 8 | ord(ctx.recv[ctx.offset + 9])
 
         ctx.offset += 10
@@ -282,6 +282,88 @@ class lookup:
 
           itm.nsdname = ctx.domainName(ctx.offset)
 
+        elif itm.type in (MD, MF, MB):
+
+          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # /                                               /
+          # /                    MADNAME                    /
+          # /                                               /
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+          itm.madname = ctx.domainName(ctx.offset)
+
+        elif CNAME == itm.type:
+
+          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # /                                               /
+          # /                     CNAME                     /
+          # /                                               /
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+          itm.cname = ctx.domainName(ctx.offset)
+
+        elif SOA == itm.type:
+
+          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # /                                               /
+          # /                     MNAME                     /
+          # /                                               /
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # /                                               /
+          # /                     RNAME                     /
+          # /                                               /
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # |                    SERIAL                     |
+          # |                                               |
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # |                    REFRESH                    |
+          # |                                               |
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # |                     RETRY                     |
+          # |                                               |
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # |                    EXPIRE                     |
+          # |                                               |
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # |                    MINIMUM                    |
+          # |                                               |
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+          itm.mname = ctx.domainName(ctx.offset)
+          itm.rname = ctx.domainName(ctx.offset)
+          itm.serial = reduce(lambda result, itm: result << 8 | itm, map(ord, ctx.recv[ctx.offset:ctx.offset + 4]))
+          itm.refresh = reduce(lambda result, itm: result << 8 | itm, map(ord, ctx.recv[ctx.offset + 4:ctx.offset + 8]))
+          itm.retry = reduce(lambda result, itm: result << 8 | itm, map(ord, ctx.recv[ctx.offset + 8:ctx.offset + 12]))
+          itm.expire = reduce(lambda result, itm: result << 8 | itm, map(ord, ctx.recv[ctx.offset + 12:ctx.offset + 16]))
+          itm.minimum = reduce(lambda result, itm: result << 8 | itm, map(ord, ctx.recv[ctx.offset + 16:ctx.offset + 20]))
+
+          ctx.offset += 20
+
+        elif MG == itm.type:
+
+          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # /                                               /
+          # /                    MGMNAME                    /
+          # /                                               /
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+          itm.mgmname = ctx.domainName(ctx.offset)
+
+        elif MR == itm.type:
+
+          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # /                                               /
+          # /                    NEWNAME                    /
+          # /                                               /
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+          itm.newname = ctx.domainName(ctx.offset)
+
         elif PTR == itm.type:
 
           #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
@@ -292,6 +374,47 @@ class lookup:
           # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
           itm.ptrdname = ctx.domainName(ctx.offset)
+
+        elif HINFO == itm.type:
+
+          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # /                      CPU                      /
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # /                      OS                       /
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+          length = ord(ctx.recv[ctx.offset])
+
+          ctx.offset += 1
+
+          itm.cpu = ctx.recv[ctx.offset:ctx.offset + length]
+
+          ctx.offset += length
+
+          length = ord(ctx.recv[ctx.offset])
+
+          ctx.offset += 1
+
+          itm.os = ctx.recv[ctx.offset:ctx.offset + length]
+
+          ctx.offset += length
+
+        elif MINFO == itm.type:
+
+          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # /                                               /
+          # /                    RMAILBX                    /
+          # /                                               /
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # /                                               /
+          # /                    EMAILBX                    /
+          # /                                               /
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+          itm.rmailbx = ctx.domainName(ctx.offset)
+          itm.emailbx = ctx.domainName(ctx.offset)
 
         elif MX == itm.type:
 
@@ -310,6 +433,21 @@ class lookup:
 
           itm.exchange = ctx.domainName(ctx.offset)
 
+        elif TXT == itm.type:
+
+          #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+          # /                   TXT-DATA                    /
+          # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+          length = ord(ctx.recv[ctx.offset])
+
+          ctx.offset += 1
+
+          itm.txtData = ctx.recv[ctx.offset:ctx.offset + length]
+
+          ctx.offset += length
+
         elif SRV == itm.type:
           itm.priority = ord(ctx.recv[ctx.offset]) << 8 | ord(ctx.recv[ctx.offset + 1])
           itm.weight = ord(ctx.recv[ctx.offset + 2]) << 8 | ord(ctx.recv[ctx.offset + 3])
@@ -318,6 +456,9 @@ class lookup:
           ctx.offset += 6
 
           itm.target = ctx.domainName(ctx.offset)
+
+        else:
+          ctx.offset += itm.rdlength
 
         response.answer.append(itm)
 
