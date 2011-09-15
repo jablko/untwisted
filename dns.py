@@ -32,30 +32,6 @@ HS = 4
 
 #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
 # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-# |                      ID                       |
-# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-# |QR|   Opcode  |AA|TC|RD|RA|   Z    |   RCODE   |
-# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-# |                    QDCOUNT                    |
-# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-# |                    ANCOUNT                    |
-# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-# |                    NSCOUNT                    |
-# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-# |                    ARCOUNT                    |
-# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-
-class header:
-  __metaclass__ = type
-
-  __delitem__ = object.__delattr__
-  __getitem__ = object.__getattribute__
-  __setitem__ = object.__setattr__
-
-  __str__ = lambda ctx: ctx.id + chr(ctx.qr << 7 | ctx.opcode << 3 | ctx.aa << 2 | ctx.tc << 1 | ctx.rd) + chr(ctx.ra << 7 | ctx.z << 4 | ctx.rcode) + chr(ctx.qdcount >> 8) + chr(ctx.qdcount & 0xff) + chr(ctx.ancount >> 8) + chr(ctx.ancount & 0xff) + chr(ctx.nscount >> 8) + chr(ctx.nscount & 0xff) + chr(ctx.arcount >> 8) + chr(ctx.arcount & 0xff)
-
-#   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-# +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 # /                                               /
 # /                     QNAME                     /
 # /                                               /
@@ -156,7 +132,6 @@ class message:
   __metaclass__ = type
 
   def __init__(ctx):
-    ctx.header = header()
     ctx.question = oneMany()
     ctx.answer = oneMany()
     ctx.authority = oneMany()
@@ -166,7 +141,28 @@ class message:
   __getitem__ = object.__getattribute__
   __setitem__ = object.__setattr__
 
-  __str__ = lambda ctx: str(ctx.header) + ''.join(map(str, ctx.question)) + ''.join(map(str, ctx.answer)) + ''.join(map(str, ctx.authority)) + ''.join(map(str, ctx.additional))
+  #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+  # |                      ID                       |
+  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+  # |QR|   Opcode  |AA|TC|RD|RA|   Z    |   RCODE   |
+  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+  # |                    QDCOUNT                    |
+  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+  # |                    ANCOUNT                    |
+  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+  # |                    NSCOUNT                    |
+  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+  # |                    ARCOUNT                    |
+  # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+
+  def __str__(ctx):
+    qdcount = len(ctx.question)
+    ancount = len(ctx.answer)
+    nscount = len(ctx.authority)
+    arcount = len(ctx.additional)
+
+    return ctx.id + chr(ctx.qr << 7 | ctx.opcode << 3 | ctx.aa << 2 | ctx.tc << 1 | ctx.rd) + chr(ctx.ra << 7 | ctx.z << 4 | ctx.rcode) + chr(qdcount >> 8) + chr(qdcount & 0xff) + chr(ancount >> 8) + chr(ancount & 0xff) + chr(nscount >> 8) + chr(nscount & 0xff) + chr(arcount >> 8) + chr(arcount & 0xff) + ''.join(map(str, ctx.question)) + ''.join(map(str, ctx.answer)) + ''.join(map(str, ctx.authority)) + ''.join(map(str, ctx.additional))
 
 server = []
 
@@ -194,22 +190,17 @@ class lookup:
 
       query = message()
 
-      query.header.id = '\0\0'
+      query.id = '\0\0'
 
-      query.header.qr = 0
-      query.header.opcode = 0
-      query.header.aa = 0
-      query.header.tc = 0
-      query.header.rd = 1
+      query.qr = 0
+      query.opcode = 0
+      query.aa = 0
+      query.tc = 0
+      query.rd = 1
 
-      query.header.ra = 0
-      query.header.z = 0
-      query.header.rcode = 0
-
-      query.header.qdcount = 1
-      query.header.ancount = 0
-      query.header.nscount = 0
-      query.header.arcount = 0
+      query.ra = 0
+      query.z = 0
+      query.rcode = 0
 
       query.question.append(question(qname, qtype, qclass))
 
@@ -219,38 +210,38 @@ class lookup:
 
       response = message()
 
-      response.header.id = ctx.recv[:2]
+      response.id = ctx.recv[:2]
 
-      response.header.qr = ord(ctx.recv[2]) >> 7
-      response.header.opcode = ord(ctx.recv[2]) >> 3 & 0xf
-      response.header.aa = ord(ctx.recv[2]) >> 2 & 1
-      response.header.tc = ord(ctx.recv[2]) >> 1 & 1
-      response.header.rd = ord(ctx.recv[2]) & 1
+      response.qr = ord(ctx.recv[2]) >> 7
+      response.opcode = ord(ctx.recv[2]) >> 3 & 0xf
+      response.aa = ord(ctx.recv[2]) >> 2 & 1
+      response.tc = ord(ctx.recv[2]) >> 1 & 1
+      response.rd = ord(ctx.recv[2]) & 1
 
-      response.header.ra = ord(ctx.recv[3]) >> 7
-      response.header.z = ord(ctx.recv[3]) >> 4 & 7
-      response.header.rcode = ord(ctx.recv[3]) & 0xf
+      response.ra = ord(ctx.recv[3]) >> 7
+      response.z = ord(ctx.recv[3]) >> 4 & 7
+      response.rcode = ord(ctx.recv[3]) & 0xf
 
-      response.header.qdcount = ord(ctx.recv[4]) << 8 | ord(ctx.recv[5])
-      response.header.ancount = ord(ctx.recv[6]) << 8 | ord(ctx.recv[7])
-      response.header.nscount = ord(ctx.recv[8]) << 8 | ord(ctx.recv[9])
-      response.header.arcount = ord(ctx.recv[10]) << 8 | ord(ctx.recv[11])
+      qdcount = ord(ctx.recv[4]) << 8 | ord(ctx.recv[5])
+      ancount = ord(ctx.recv[6]) << 8 | ord(ctx.recv[7])
+      nscount = ord(ctx.recv[8]) << 8 | ord(ctx.recv[9])
+      arcount = ord(ctx.recv[10]) << 8 | ord(ctx.recv[11])
 
       ctx.offset = 12
 
-      for _ in range(response.header.qdcount):
+      for _ in range(qdcount):
         response.question.append(ctx.question(ctx.offset))
 
-      for _ in range(response.header.ancount):
+      for _ in range(ancount):
         response.answer.append(ctx.rr(ctx.offset))
 
-      for _ in range(response.header.nscount):
+      for _ in range(nscount):
         response.authority.append(ctx.rr(ctx.offset))
 
-      for _ in range(response.header.arcount):
+      for _ in range(arcount):
         response.additional.append(ctx.rr(ctx.offset))
 
-      if response.header.rcode:
+      if response.rcode:
         raise response
 
       #return ...

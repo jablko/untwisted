@@ -83,17 +83,17 @@ def header():
     write = promise.sequence()
 
   def callback(actual):
-    equal('id', actual.header.id)
+    equal('id', actual.id)
 
-    ok(actual.header.qr)
-    equal(0xf, actual.header.opcode)
-    ok(actual.header.aa)
-    ok(actual.header.tc)
-    ok(actual.header.rd)
+    ok(actual.qr)
+    equal(0xf, actual.opcode)
+    ok(actual.aa)
+    ok(actual.tc)
+    ok(actual.rd)
 
-    ok(actual.header.ra)
-    equal(7, actual.header.z)
-    equal(0, actual.header.rcode)
+    ok(actual.ra)
+    equal(7, actual.z)
+    equal(0, actual.rcode)
 
   connect = udp.connect
   udp.connect = lambda host, port: lambda: transport
