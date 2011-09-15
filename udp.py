@@ -8,50 +8,50 @@ from untwisted import promise
 # the port on the other side may have no one listening,
 # http://twistedmatrix.com/documents/current/core/howto/udp.html#auto2
 def connect(host, port):
-  transport = promise.sequence()
-
-  @untwisted.call
-  class protocol:
-    datagramReceived = promise.sequence()
-
-    # Avoid AttributeError: protocol instance has no attribute 'doStop'
-    def doStop(ctx):
-      pass
-
-    @promise.resume
-    def makeConnection(ctx, nstTransport):
-      nstHost = host
-
-      try:
-        try:
-          nstTransport.connect(host, port)
-
-        except ValueError:
-
-          # Avoid ImportError: cannot import name dns
-          from untwisted import dns
-
-          nstHost = (yield dns.lookup(host)).answer[0].address
-
-          nstTransport.connect(nstHost, port)
-
-      # tcp.Connector calls socket.getservbyname() but .connect() doesn't : (
-      except TypeError:
-        nstPort = socket.getservbyname(port, 'udp')
-
-        # Fix RuntimeError: already connected
-        nstTransport._connectedAddr = None
-
-        nstTransport.connect(nstHost, nstPort)
-
-      transport(nstTransport)
-
   class result(udp.Port):
     class __metaclass__(type):
       def __call__(ctx):
+        transport = promise.promise()
+
+        @untwisted.call
+        class protocol:
+          datagramReceived = promise.sequence()
+
+          # Avoid AttributeError: protocol instance has no attribute 'doStop'
+          def doStop(ctx):
+            pass
+
+          @promise.resume
+          def makeConnection(ctx, nstTransport):
+            nstHost = host
+
+            try:
+              try:
+                nstTransport.connect(host, port)
+
+              except ValueError:
+
+                # Avoid ImportError: cannot import name dns
+                from untwisted import dns
+
+                nstHost = (yield dns.lookup(host)).answer[0].address
+
+                nstTransport.connect(nstHost, port)
+
+            # tcp.Connector calls socket.getservbyname() but .connect() doesn't : (
+            except TypeError:
+              nstPort = socket.getservbyname(port, 'udp')
+
+              # Fix RuntimeError: already connected
+              nstTransport._connectedAddr = None
+
+              nstTransport.connect(nstHost, nstPort)
+
+            transport(nstTransport)
+
         type.__call__(ctx, None, protocol).startListening()
 
-        return transport.shift()
+        return transport
 
     # Avoid socket.bind()
     def _bindSocket(ctx):

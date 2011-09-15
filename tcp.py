@@ -3,38 +3,39 @@ from twisted.internet import protocol, reactor, tcp
 from untwisted import promise
 
 def connect(host, port, timeout=30, bindAddress=None):
-  transport = promise.sequence()
-
-  # Extend protocol.ClientFactory for .startedConnecting()
-
-  @untwisted.call
-  class factory(protocol.ClientFactory):
-
-    # Extend protocol.Protocol for .connectionLost()
-    class protocol(protocol.Protocol):
-      def __init__(ctx):
-        ctx.connectionLost = promise.promise()
-
-        ctx.dataReceived = promise.sequence()
-
-        # .dataReceived() must return falsy: SelectReactor._doReadOrWrite()
-
-        __call__ = ctx.dataReceived.__call__
-
-        @untwisted.partial(setattr, ctx.dataReceived, '__call__')
-        def _(*args, **kwds):
-          __call__(*args, **kwds)
-
-      makeConnection = transport
 
   # Avoid TypeError: Error when calling the metaclass bases, a new-style class
   # can't have only classic bases
   class result(tcp.Connector, object):
     class __metaclass__(type):
       def __call__(ctx):
+        transport = promise.promise()
+
+        # Extend protocol.ClientFactory for .startedConnecting()
+
+        @untwisted.call
+        class factory(protocol.ClientFactory):
+
+          # Extend protocol.Protocol for .connectionLost()
+          class protocol(protocol.Protocol):
+            def __init__(ctx):
+              ctx.connectionLost = promise.promise()
+
+              ctx.dataReceived = promise.sequence()
+
+              # .dataReceived() must return falsy: SelectReactor._doReadOrWrite()
+
+              __call__ = ctx.dataReceived.__call__
+
+              @untwisted.partial(setattr, ctx.dataReceived, '__call__')
+              def _(*args, **kwds):
+                __call__(*args, **kwds)
+
+            makeConnection = transport
+
         type.__call__(ctx, host, port, factory, timeout, bindAddress, reactor).connect()
 
-        return transport.shift()
+        return transport
 
     class _makeTransport(tcp.Client):
       class __metaclass__(type):
