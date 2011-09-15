@@ -1,8 +1,5 @@
 import socket, untwisted
 from twisted.internet import udp
-
-# Avoid ImportError: cannot import name dns
-import dns
 from untwisted import promise
 
 # A connected UDP socket is slightly different from a standard one - it can
@@ -31,6 +28,10 @@ class connect:
             nstTransport.connect(host, port)
 
           except ValueError:
+
+            # Avoid ImportError: cannot import name dns
+            from untwisted import dns
+
             nstHost = (yield dns.lookup(host)).answer[0].address
 
             nstTransport.connect(nstHost, port)
