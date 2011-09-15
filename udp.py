@@ -44,20 +44,20 @@ def connect(host, port):
 
         nstTransport.connect(nstHost, nstPort)
 
-      nstTransport.recv = untwisted.compose(untwisted.partial(promise.promise.then, callback=lambda asdf, _: asdf), ctx.datagramReceived.shift)
-
       transport(nstTransport)
 
-  def result():
+  class result(udp.Port):
+    class __metaclass__(type):
+      def __call__(ctx):
+        type.__call__(ctx, None, protocol).startListening()
+
+        return transport.shift()
 
     # Avoid socket.bind()
-    port = udp.Port(None, protocol)
+    def _bindSocket(ctx):
+      ctx.socket = ctx.createInternetSocket()
+      ctx.fileno = ctx.socket.fileno
 
-    port.socket = port.createInternetSocket()
-    port.fileno = port.socket.fileno
-
-    port._connectToProtocol()
-
-    return transport.shift()
+    recv = lambda ctx: ctx.protocol.datagramReceived.shift().then(lambda asdf, _: asdf)
 
   return result

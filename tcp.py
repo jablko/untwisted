@@ -25,20 +25,26 @@ def connect(host, port, timeout=30, bindAddress=None):
         def _(*args, **kwds):
           __call__(*args, **kwds)
 
-      def makeConnection(ctx, nstTransport):
+      makeConnection = transport
 
-        @untwisted.partial(setattr, nstTransport, 'close')
-        def _():
-          nstTransport.loseConnection()
+  # Avoid TypeError: Error when calling the metaclass bases, a new-style class
+  # can't have only classic bases
+  class result(tcp.Connector, object):
+    class __metaclass__(type):
+      def __call__(ctx):
+        type.__call__(ctx, host, port, factory, timeout, bindAddress, reactor).connect()
 
-          return ctx.connectionLost
+        return transport.shift()
 
-        transport(nstTransport)
+    class _makeTransport(tcp.Client):
+      class __metaclass__(type):
+        __call__ = lambda ctx: type.__call__(ctx, ctx.ctx.host, ctx.ctx.port, ctx.ctx.bindAddress, ctx.ctx, ctx.ctx.reactor)
+        __get__ = untwisted.ctxual
 
-  def result():
-    tcp.Connector(host, port, factory, timeout, bindAddress, reactor).connect()
+      def close(ctx):
+        ctx.loseConnection()
 
-    return transport.shift()
+        return ctx.protocol.connectionLost
 
   return result
 
@@ -65,23 +71,25 @@ def listen(port, interface=''):
         def _(*args, **kwds):
           __call__(*args, **kwds)
 
-      def makeConnection(ctx, nstTransport):
+      makeConnection = transport
 
-        @untwisted.partial(setattr, nstTransport, 'close')
-        def _():
-          nstTransport.loseConnection()
+  @untwisted.call
+  class _(tcp.Port):
+    class __metaclass__(type):
+      def __call__(ctx):
+        try:
+          type.__call__(ctx, port, factory, interface=interface).startListening()
 
-          return ctx.connectionLost
+        # tcp.Connector calls socket.getservbyname() but tcp.Port doesn't : (
+        except TypeError:
+          nstPort = socket.getservbyname(port, 'tcp')
 
-        transport(nstTransport)
+          type.__call__(ctx, nstPort, factory, interface=interface).startListening()
 
-  try:
-    tcp.Port(port, factory, interface=interface).startListening()
+    class transport(tcp.Server):
+      def close(ctx):
+        ctx.loseConnection()
 
-  # tcp.Connector calls socket.getservbyname() but tcp.Port doesn't : (
-  except TypeError:
-    port = socket.getservbyname(port, 'tcp')
-
-    tcp.Port(port, factory, interface=interface).startListening()
+        return ctx.protocol.connectionLost
 
   return transport.shift
