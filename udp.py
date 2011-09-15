@@ -7,57 +7,57 @@ from untwisted import promise
 # in any way imply a connection.  Datagrams may still arrive in any order, and
 # the port on the other side may have no one listening,
 # http://twistedmatrix.com/documents/current/core/howto/udp.html#auto2
-class connect:
-  def __init__(ctx, host, port):
-    transport = promise.sequence()
+def connect(host, port):
+  transport = promise.sequence()
 
-    @untwisted.call
-    class protocol:
-      datagramReceived = promise.sequence()
+  @untwisted.call
+  class protocol:
+    datagramReceived = promise.sequence()
 
-      # Avoid AttributeError: protocol instance has no attribute 'doStop'
-      def doStop(ctx):
-        pass
+    # Avoid AttributeError: protocol instance has no attribute 'doStop'
+    def doStop(ctx):
+      pass
 
-      @promise.resume
-      def makeConnection(ctx, nstTransport):
-        nstHost = host
+    @promise.resume
+    def makeConnection(ctx, nstTransport):
+      nstHost = host
 
+      try:
         try:
-          try:
-            nstTransport.connect(host, port)
+          nstTransport.connect(host, port)
 
-          except ValueError:
+        except ValueError:
 
-            # Avoid ImportError: cannot import name dns
-            from untwisted import dns
+          # Avoid ImportError: cannot import name dns
+          from untwisted import dns
 
-            nstHost = (yield dns.lookup(host)).answer[0].address
+          nstHost = (yield dns.lookup(host)).answer[0].address
 
-            nstTransport.connect(nstHost, port)
+          nstTransport.connect(nstHost, port)
 
-        # tcp.Connector calls socket.getservbyname() but .connect() doesn't : (
-        except TypeError:
-          nstPort = socket.getservbyname(port, 'udp')
+      # tcp.Connector calls socket.getservbyname() but .connect() doesn't : (
+      except TypeError:
+        nstPort = socket.getservbyname(port, 'udp')
 
-          # Fix RuntimeError: already connected
-          nstTransport._connectedAddr = None
+        # Fix RuntimeError: already connected
+        nstTransport._connectedAddr = None
 
-          nstTransport.connect(nstHost, nstPort)
+        nstTransport.connect(nstHost, nstPort)
 
-        nstTransport.recv = untwisted.compose(untwisted.partial(promise.promise.then, callback=lambda asdf, _: asdf), ctx.datagramReceived.shift)
+      nstTransport.recv = untwisted.compose(untwisted.partial(promise.promise.then, callback=lambda asdf, _: asdf), ctx.datagramReceived.shift)
 
-        transport(nstTransport)
+      transport(nstTransport)
 
-    @untwisted.partial(setattr, ctx, '__call__')
-    def _():
+  def result():
 
-      # Avoid socket.bind()
-      port = udp.Port(None, protocol)
+    # Avoid socket.bind()
+    port = udp.Port(None, protocol)
 
-      port.socket = port.createInternetSocket()
-      port.fileno = port.socket.fileno
+    port.socket = port.createInternetSocket()
+    port.fileno = port.socket.fileno
 
-      port._connectToProtocol()
+    port._connectToProtocol()
 
-      return transport.shift()
+    return transport.shift()
+
+  return result

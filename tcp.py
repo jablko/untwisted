@@ -2,87 +2,86 @@ import socket, untwisted
 from twisted.internet import protocol, reactor, tcp
 from untwisted import promise
 
-class connect:
-  def __init__(ctx, host, port, timeout=30, bindAddress=None):
-    transport = promise.sequence()
+def connect(host, port, timeout=30, bindAddress=None):
+  transport = promise.sequence()
 
-    # Extend protocol.ClientFactory for .startedConnecting()
+  # Extend protocol.ClientFactory for .startedConnecting()
 
-    @untwisted.call
-    class factory(protocol.ClientFactory):
+  @untwisted.call
+  class factory(protocol.ClientFactory):
 
-      # Extend protocol.Protocol for .connectionLost()
-      class protocol(protocol.Protocol):
-        def __init__(ctx):
-          ctx.connectionLost = promise.promise()
+    # Extend protocol.Protocol for .connectionLost()
+    class protocol(protocol.Protocol):
+      def __init__(ctx):
+        ctx.connectionLost = promise.promise()
 
-          ctx.dataReceived = promise.sequence()
+        ctx.dataReceived = promise.sequence()
 
-          # .dataReceived() must return falsy: SelectReactor._doReadOrWrite()
+        # .dataReceived() must return falsy: SelectReactor._doReadOrWrite()
 
-          __call__ = ctx.dataReceived.__call__
+        __call__ = ctx.dataReceived.__call__
 
-          @untwisted.partial(setattr, ctx.dataReceived, '__call__')
-          def _(*args, **kwds):
-            __call__(*args, **kwds)
+        @untwisted.partial(setattr, ctx.dataReceived, '__call__')
+        def _(*args, **kwds):
+          __call__(*args, **kwds)
 
-        def makeConnection(ctx, nstTransport):
+      def makeConnection(ctx, nstTransport):
 
-          @untwisted.partial(setattr, nstTransport, 'close')
-          def _():
-            nstTransport.loseConnection()
+        @untwisted.partial(setattr, nstTransport, 'close')
+        def _():
+          nstTransport.loseConnection()
 
-            return ctx.connectionLost
+          return ctx.connectionLost
 
-          transport(nstTransport)
+        transport(nstTransport)
 
-    @untwisted.partial(setattr, ctx, '__call__')
-    def _():
-      tcp.Connector(host, port, factory, timeout, bindAddress, reactor).connect()
+  def result():
+    tcp.Connector(host, port, factory, timeout, bindAddress, reactor).connect()
 
-      return transport.shift()
+    return transport.shift()
 
-class listen:
-  def __init__(ctx, port, interface=''):
-    transport = promise.sequence()
+  return result
 
-    # Extend protocol.Factory for .doStart()
+def listen(port, interface=''):
+  transport = promise.sequence()
 
-    @untwisted.call
-    class factory(protocol.Factory):
+  # Extend protocol.Factory for .doStart()
 
-      # Extend protocol.Protocol for .connectionLost()
-      class protocol(protocol.Protocol):
-        def __init__(ctx):
-          ctx.connectionLost = promise.promise()
+  @untwisted.call
+  class factory(protocol.Factory):
 
-          ctx.dataReceived = promise.sequence()
+    # Extend protocol.Protocol for .connectionLost()
+    class protocol(protocol.Protocol):
+      def __init__(ctx):
+        ctx.connectionLost = promise.promise()
 
-          # .dataReceived() must return falsy: SelectReactor._doReadOrWrite()
+        ctx.dataReceived = promise.sequence()
 
-          __call__ = ctx.dataReceived.__call__
+        # .dataReceived() must return falsy: SelectReactor._doReadOrWrite()
 
-          @untwisted.partial(setattr, ctx.dataReceived, '__call__')
-          def _(*args, **kwds):
-            __call__(*args, **kwds)
+        __call__ = ctx.dataReceived.__call__
 
-        def makeConnection(ctx, nstTransport):
+        @untwisted.partial(setattr, ctx.dataReceived, '__call__')
+        def _(*args, **kwds):
+          __call__(*args, **kwds)
 
-          @untwisted.partial(setattr, nstTransport, 'close')
-          def _():
-            nstTransport.loseConnection()
+      def makeConnection(ctx, nstTransport):
 
-            return ctx.connectionLost
+        @untwisted.partial(setattr, nstTransport, 'close')
+        def _():
+          nstTransport.loseConnection()
 
-          transport(nstTransport)
+          return ctx.connectionLost
 
-    try:
-      tcp.Port(port, factory, interface=interface).startListening()
+        transport(nstTransport)
 
-    # tcp.Connector calls socket.getservbyname() but tcp.Port doesn't : (
-    except TypeError:
-      port = socket.getservbyname(port, 'tcp')
+  try:
+    tcp.Port(port, factory, interface=interface).startListening()
 
-      tcp.Port(port, factory, interface=interface).startListening()
+  # tcp.Connector calls socket.getservbyname() but tcp.Port doesn't : (
+  except TypeError:
+    port = socket.getservbyname(port, 'tcp')
 
-    ctx.__call__ = transport.shift
+    tcp.Port(port, factory, interface=interface).startListening()
+
+  return transport.shift
