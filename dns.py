@@ -52,7 +52,7 @@ class header:
   __getitem__ = object.__getattribute__
   __setitem__ = object.__setattr__
 
-  __str__ = lambda ctx: chr(ctx.id >> 8) + chr(ctx.id & 0xff) + chr(ctx.qr << 7 | ctx.opcode << 3 | ctx.aa << 2 | ctx.tc << 1 | ctx.rd) + chr(ctx.ra << 7 | ctx.z << 4 | ctx.rcode) + chr(ctx.qdcount >> 8) + chr(ctx.qdcount & 0xff) + chr(ctx.ancount >> 8) + chr(ctx.ancount & 0xff) + chr(ctx.nscount >> 8) + chr(ctx.nscount & 0xff) + chr(ctx.arcount >> 8) + chr(ctx.arcount & 0xff)
+  __str__ = lambda ctx: ctx.id + chr(ctx.qr << 7 | ctx.opcode << 3 | ctx.aa << 2 | ctx.tc << 1 | ctx.rd) + chr(ctx.ra << 7 | ctx.z << 4 | ctx.rcode) + chr(ctx.qdcount >> 8) + chr(ctx.qdcount & 0xff) + chr(ctx.ancount >> 8) + chr(ctx.ancount & 0xff) + chr(ctx.nscount >> 8) + chr(ctx.nscount & 0xff) + chr(ctx.arcount >> 8) + chr(ctx.arcount & 0xff)
 
 #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
 # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
@@ -194,7 +194,7 @@ class lookup:
 
       query = message()
 
-      query.header.id = 0
+      query.header.id = '\0\0'
 
       query.header.qr = 0
       query.header.opcode = 0
@@ -219,7 +219,7 @@ class lookup:
 
       response = message()
 
-      response.header.id = ord(ctx.recv[0]) << 8 | ord(ctx.recv[1])
+      response.header.id = ctx.recv[:2]
 
       response.header.qr = ord(ctx.recv[2]) >> 7
       response.header.opcode = ord(ctx.recv[2]) >> 3 & 0xf

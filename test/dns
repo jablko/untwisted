@@ -83,7 +83,7 @@ def header():
     write = promise.sequence()
 
   def callback(actual):
-    equal(0xabcd, actual.header.id)
+    equal('id', actual.header.id)
 
     ok(actual.header.qr)
     equal(0xf, actual.header.opcode)
@@ -106,7 +106,7 @@ def header():
 
   transport.write.shift().then(untwisted.partial(equal, '\0\0\1\0\0\1\0\0\0\0\0\0\7example\3com\0\0\1\0\1'))
 
-  transport.recv.__self__('\xab\xcd\xff\xf0\0\0\0\0\0\0\0\0')
+  transport.recv.__self__('id\xff\xf0\0\0\0\0\0\0\0\0')
 
 @test
 def rcode():
@@ -130,7 +130,7 @@ def rcode():
 
   transport.write.shift().then(untwisted.partial(equal, '\0\0\1\0\0\1\0\0\0\0\0\0\7example\3com\0\0\1\0\1'))
 
-  transport.recv.__self__('\xab\xcd\xff\xff\0\0\0\0\0\0\0\0')
+  transport.recv.__self__('id\xff\xff\0\0\0\0\0\0\0\0')
 
 @test
 def question():
