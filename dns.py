@@ -1,4 +1,4 @@
-import re, untwisted
+import re, socket, untwisted
 from untwisted import promise, udp
 
 # TYPE fields are used in resource records.  Note that these types are a subset
@@ -279,7 +279,7 @@ class lookup:
       # |                    ADDRESS                    |
       # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
-      result.address = '.'.join(map(untwisted.compose(str, ord), ctx.recv[ctx.offset:ctx.offset + 4]))
+      result.address = socket.inet_ntop(socket.AF_INET, ctx.recv[ctx.offset:ctx.offset + 4])
 
       ctx.offset += 4
 

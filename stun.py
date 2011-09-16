@@ -20,6 +20,11 @@ SOFTWARE = 0x8022
 ALTERNATE_SERVER = 0x8023
 FINGERPRINT = 0x8028
 
+# The address family can take on the following values
+
+IPv4 = 1
+IPv6 = 2
+
 #  0 1 2 3 4 5 6 7 8 9 A B C D E F 0 1 2 3 4 5 6 7 8 9 A B C D E F
 # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 # |             Type              |            Length             |
@@ -92,9 +97,31 @@ def request(server, messageMethod=binding):
     type = ord(recv[0]) << 8 | ord(recv[1])
     length = ord(recv[2]) << 8 | ord(recv[3])
 
-    response.attribute.append(attribute(type, recv[4:4 + length]))
+    itm = attribute(type, recv[4:4 + length])
 
     recv = recv[4 + length:]
+
+    if MAPPED_ADDRESS == type:
+
+      #  0 1 2 3 4 5 6 7 8 9 A B C D E F 0 1 2 3 4 5 6 7 8 9 A B C D E F
+      # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      # |0 0 0 0 0 0 0 0|    Family     |             Port              |
+      # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      # |                                                               |
+      # |                 Address (32 bits or 128 bits)                 |
+      # |                                                               |
+      # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+      itm.family = ord(itm.value[1])
+      itm.port = ord(itm.value[2]) << 8 | ord(itm.value[3])
+
+      if IPv4 == itm.family:
+        itm.address = socket.inet_ntop(socket.AF_INET, itm.value[4:])
+
+      elif IPv6 == itm.family:
+        itm.address = socket.inet_ntop(socket.AF_INET6, itm.value[4:])
+
+    response.attribute.append(itm)
 
   #return ...
   raise StopIteration(response)
