@@ -68,6 +68,35 @@ def mappedAddress():
   transport.recv.__self__('\1\1\0\x0c\x21\x12\xa4\x42abcdefghijkl\0\1\0\x08\0\1\xab\xcd\1\2\3\4')
 
 @test
+def xorMappedAddress():
+  expect(4)
+
+  class transport:
+    recv = promise.sequence().shift
+    write = promise.sequence()
+
+  def callback(actual):
+    equal(stun.IPv4, actual.attribute.family)
+    equal(0xabcd, actual.attribute.port)
+    equal('1.2.3.4', actual.attribute.address)
+
+  connect = udp.connect
+  urandom = os.urandom
+
+  udp.connect, os.urandom = lambda host, port: lambda: transport, lambda _: 'abcdefghijkl'
+
+  try:
+    stun.request('example.com').then(callback)
+
+  finally:
+    udp.connect = connect
+    os.urandom = urandom
+
+  transport.write.shift().then(untwisted.partial(equal, '\0\1\0\0\x21\x12\xa4\x42abcdefghijkl'))
+
+  transport.recv.__self__('\1\1\0\x0c\x21\x12\xa4\x42abcdefghijkl\0\x20\0\x08\0\1\x8a\xdf\x20\x10\xa7\x46')
+
+@test
 def many():
   expect(5)
 

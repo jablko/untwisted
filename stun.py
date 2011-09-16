@@ -121,6 +121,26 @@ def request(server, messageMethod=binding):
       elif IPv6 == itm.family:
         itm.address = socket.inet_ntop(socket.AF_INET6, itm.value[4:])
 
+    elif XOR_MAPPED_ADDRESS == type:
+
+      #  0 1 2 3 4 5 6 7 8 9 A B C D E F 0 1 2 3 4 5 6 7 8 9 A B C D E F
+      # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      # |0 0 0 0 0 0 0 0|    Family     |            X-Port             |
+      # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      # |                                                               |
+      # |                X-Address (32 bits or 128 bits)                |
+      # |                                                               |
+      # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+      itm.family = ord(itm.value[1])
+      itm.port = (ord(itm.value[2]) ^ ord(response.magicCookie[0])) << 8 | ord(itm.value[3]) ^ ord(response.magicCookie[1])
+
+      if IPv4 == itm.family:
+        itm.address = socket.inet_ntop(socket.AF_INET, ''.join(chr(ord(address) ^ ord(magicCookie)) for address, magicCookie in zip(itm.value[4:], response.magicCookie)))
+
+      elif IPv6 == itm.family:
+        itm.address = socket.inet_ntop(socket.AF_INET6, ''.join(chr(ord(address) ^ ord(magicCookie)) for address, magicCookie in zip(itm.value[4:], response.magicCookie + response.transactionId)))
+
     response.attribute.append(itm)
 
   #return ...
