@@ -94,28 +94,6 @@ class rr:
   __getitem__ = object.__getattribute__
   __setitem__ = object.__setattr__
 
-class oneMany:
-  def __init__(ctx):
-    ctx.asdf = []
-
-  def __getattr__(ctx, name):
-    try:
-      return getattr(ctx.asdf, name)
-
-    except AttributeError:
-      asdf, = ctx.asdf
-
-      return getattr(asdf, name)
-
-  def __getitem__(ctx, name):
-    try:
-      return ctx.asdf[name]
-
-    except TypeError:
-      asdf, = ctx.asdf
-
-      return asdf[name]
-
 # +---------------------+
 # |       Header        |
 # +---------------------+
@@ -132,10 +110,10 @@ class message:
   __metaclass__ = type
 
   def __init__(ctx):
-    ctx.question = oneMany()
-    ctx.answer = oneMany()
-    ctx.authority = oneMany()
-    ctx.additional = oneMany()
+    ctx.question = untwisted.oneMany()
+    ctx.answer = untwisted.oneMany()
+    ctx.authority = untwisted.oneMany()
+    ctx.additional = untwisted.oneMany()
 
   __delitem__ = object.__delattr__
   __getitem__ = object.__getattribute__

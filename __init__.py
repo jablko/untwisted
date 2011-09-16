@@ -115,6 +115,28 @@ def head(cbl):
 # http://jdbates.blogspot.com/2011/04/ow-ow-ow-python-why-do-you-hurt-so-hard.html
 identity = lambda ctx: ctx
 
+class oneMany:
+  def __init__(ctx):
+    ctx.asdf = []
+
+  def __getattr__(ctx, name):
+    try:
+      return getattr(ctx.asdf, name)
+
+    except AttributeError:
+      asdf, = ctx.asdf
+
+      return getattr(asdf, name)
+
+  def __getitem__(ctx, name):
+    try:
+      return ctx.asdf[name]
+
+    except TypeError:
+      asdf, = ctx.asdf
+
+      return asdf[name]
+
 # functools.partial() breaks descriptor,
 # http://docs.python.org/reference/datamodel.html#descriptors
 class partial:
