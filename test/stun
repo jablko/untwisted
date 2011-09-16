@@ -19,8 +19,10 @@ def request():
     equal('\x21\x12\xa4\x42', actual.magicCookie)
     equal('abcdefghijkl', actual.transactionId)
 
-    equal(stun.MAPPED_ADDRESS, actual.attribute.type)
-    equal('\0\1\xab\xcd\1\2\3\4', actual.attribute.value)
+    (type, value), = actual.attribute
+
+    equal(stun.MAPPED_ADDRESS, type)
+    equal('\0\1\xab\xcd\1\2\3\4', value.value)
 
   connect = udp.connect
   urandom = os.urandom
@@ -47,9 +49,11 @@ def mappedAddress():
     write = promise.sequence()
 
   def callback(actual):
-    equal(stun.IPv4, actual.attribute.family)
-    equal(0xabcd, actual.attribute.port)
-    equal('1.2.3.4', actual.attribute.address)
+    (_, value), = actual.attribute
+
+    equal(stun.IPv4, value.family)
+    equal(0xabcd, value.port)
+    equal('1.2.3.4', value.address)
 
   connect = udp.connect
   urandom = os.urandom
@@ -76,9 +80,11 @@ def xorMappedAddress():
     write = promise.sequence()
 
   def callback(actual):
-    equal(stun.IPv4, actual.attribute.family)
-    equal(0xabcd, actual.attribute.port)
-    equal('1.2.3.4', actual.attribute.address)
+    (_, value), = actual.attribute
+
+    equal(stun.IPv4, value.family)
+    equal(0xabcd, value.port)
+    equal('1.2.3.4', value.address)
 
   connect = udp.connect
   urandom = os.urandom
@@ -114,8 +120,10 @@ def errorResponse():
       equal('\x21\x12\xa4\x42', value.magicCookie)
       equal('abcdefghijkl', value.transactionId)
 
-      equal(stun.ERROR_CODE, value.attribute.type)
-      equal('\0\0\5\x43Expect', value.attribute.value)
+      (type, value), = value.attribute
+
+      equal(stun.ERROR_CODE, type)
+      equal('\0\0\5\x43Expect', value.value)
 
   connect = udp.connect
   urandom = os.urandom
@@ -145,9 +153,11 @@ def errorCode():
 
     @staticmethod
     def throw(type, value, traceback):
-      equal(5, value.attribute['class'])
-      equal(67, value.attribute.number)
-      equal('Expect', value.attribute.reasonPhrase)
+      (_, value), = value.attribute
+
+      equal(5, value['class'])
+      equal(67, value.number)
+      equal('Expect', value.reasonPhrase)
 
   connect = udp.connect
   urandom = os.urandom
@@ -174,7 +184,12 @@ def unknownAttributes():
     write = promise.sequence()
 
   class callback:
-    throw = staticmethod(lambda type, value, traceback: equal((1, 2, 3), tuple(value.attribute.attributeType)))
+
+    @staticmethod
+    def throw(type, value, traceback):
+      (_, value), = value.attribute
+
+      equal((1, 2, 3), tuple(value.attributeType))
 
   connect = udp.connect
   urandom = os.urandom
@@ -204,9 +219,11 @@ def alternateServer():
 
     @staticmethod
     def throw(type, value, traceback):
-      equal(stun.IPv4, value.attribute.family)
-      equal(0xabcd, value.attribute.port)
-      equal('1.2.3.4', value.attribute.address)
+      (_, value), = value.attribute
+
+      equal(stun.IPv4, value.family)
+      equal(0xabcd, value.port)
+      equal('1.2.3.4', value.address)
 
   connect = udp.connect
   urandom = os.urandom
@@ -235,11 +252,15 @@ def many():
   def callback(actual):
     a, b = actual.attribute
 
-    equal(stun.MAPPED_ADDRESS, a.type)
-    equal('\0\1\xab\xcd\1\2\3\4', a.value)
+    type, value = a
 
-    equal(stun.SOFTWARE, b.type)
-    equal('Expect', b.value)
+    equal(stun.MAPPED_ADDRESS, type)
+    equal('\0\1\xab\xcd\1\2\3\4', value.value)
+
+    type, value = b
+
+    equal(stun.SOFTWARE, type)
+    equal('Expect', value.value)
 
   connect = udp.connect
   urandom = os.urandom

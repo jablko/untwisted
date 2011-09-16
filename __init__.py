@@ -137,6 +137,33 @@ class oneMany:
 
       return asdf[name]
 
+class manyMap:
+  def __init__(ctx, *args, **kwds):
+    ctx.asdf = dict(*args, **kwds)
+
+  def __getattr__(ctx, name):
+    try:
+      return getattr(ctx.asdf, name)
+
+    except AttributeError:
+      return ctx.asdf[name]
+
+  def __getitem__(ctx, name):
+    try:
+      return ctx.asdf[name]
+
+    except KeyError:
+      return getattr(ctx.asdf, name)
+
+  __iter__ = lambda ctx: ctx.asdf.iteritems()
+
+  def append(ctx, key, value):
+    try:
+      ctx.asdf[key].append(value)
+
+    except KeyError:
+      ctx.asdf[key] = oneMany(value)
+
 # functools.partial() breaks descriptor,
 # http://docs.python.org/reference/datamodel.html#descriptors
 class partial:

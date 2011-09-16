@@ -35,8 +35,7 @@ IPv6 = 2
 class attribute:
   __metaclass__ = type
 
-  def __init__(ctx, type, value):
-    ctx.type = type
+  def __init__(ctx, value):
     ctx.value = value
 
   __delitem__ = object.__delattr__
@@ -45,7 +44,7 @@ class attribute:
 
 class message:
   def __init__(ctx):
-    ctx.attribute = untwisted.oneMany()
+    ctx.attribute = untwisted.manyMap()
 
   #  0 1 2 3 4 5 6 7 8 9 A B C D E F 0 1 2 3 4 5 6 7 8 9 A B C D E F
   # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -103,7 +102,7 @@ def request(server, messageMethod=binding):
     type = ord(recv[0]) << 8 | ord(recv[1])
     length = ord(recv[2]) << 8 | ord(recv[3])
 
-    itm = attribute(type, recv[4:4 + length])
+    itm = attribute(recv[4:4 + length])
 
     # Each STUN attribute MUST end on a 32-bit boundary
     recv = recv[4 + length - length % -4:]
@@ -172,7 +171,7 @@ def request(server, messageMethod=binding):
       elif IPv6 == itm.family:
         itm.address = socket.inet_ntop(socket.AF_INET6, ''.join(chr(ord(address) ^ ord(magicCookie)) for address, magicCookie in zip(itm.value[4:], response.magicCookie + response.transactionId)))
 
-    response.attribute.append(itm)
+    response.attribute.append(type, itm)
 
   if 0x0100 != response.messageClass:
     raise response
