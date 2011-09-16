@@ -99,7 +99,8 @@ def request(server, messageMethod=binding):
 
     itm = attribute(type, recv[4:4 + length])
 
-    recv = recv[4 + length:]
+    # Each STUN attribute MUST end on a 32-bit boundary
+    recv = recv[4 + length - length % -4:]
 
     if MAPPED_ADDRESS == type:
 
@@ -142,6 +143,9 @@ def request(server, messageMethod=binding):
         itm.address = socket.inet_ntop(socket.AF_INET6, ''.join(chr(ord(address) ^ ord(magicCookie)) for address, magicCookie in zip(itm.value[4:], response.magicCookie + response.transactionId)))
 
     response.attribute.append(itm)
+
+  if 0x0100 != response.messageClass:
+    raise response
 
   #return ...
   raise StopIteration(response)
