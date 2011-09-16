@@ -117,7 +117,7 @@ def rcode():
     write = promise.sequence()
 
   class callback:
-    throw = staticmethod(ok)
+    throw = staticmethod(lambda type, value, traceback: equal(0xf, value.rcode))
 
   connect = udp.connect
   udp.connect = lambda host, port: lambda: transport

@@ -107,17 +107,11 @@ class rr:
 # +---------------------+
 
 class message:
-  __metaclass__ = type
-
   def __init__(ctx):
     ctx.question = untwisted.oneMany()
     ctx.answer = untwisted.oneMany()
     ctx.authority = untwisted.oneMany()
     ctx.additional = untwisted.oneMany()
-
-  __delitem__ = object.__delattr__
-  __getitem__ = object.__getattribute__
-  __setitem__ = object.__setattr__
 
   #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
   # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
