@@ -86,10 +86,15 @@ def request(server, messageMethod=binding):
   response.magicCookie = recv[4:8]
   response.transactionId = recv[8:20]
 
-  type = ord(recv[20]) << 8 | ord(recv[21])
-  length = ord(recv[22]) << 8 | ord(recv[23])
+  recv = recv[20:]
 
-  response.attribute.append(attribute(type, recv[24:24 + length]))
+  while recv:
+    type = ord(recv[0]) << 8 | ord(recv[1])
+    length = ord(recv[2]) << 8 | ord(recv[3])
+
+    response.attribute.append(attribute(type, recv[4:4 + length]))
+
+    recv = recv[4 + length:]
 
   #return ...
   raise StopIteration(response)

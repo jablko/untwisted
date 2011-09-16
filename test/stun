@@ -4,34 +4,69 @@ import os, untwisted
 from testify import *
 from untwisted import promise, stun, udp
 
-expect(7)
+@test
+def request():
+  expect(7)
 
-class transport:
-  recv = promise.sequence().shift
-  write = promise.sequence()
+  class transport:
+    recv = promise.sequence().shift
+    write = promise.sequence()
 
-def callback(actual):
-  equal(stun.binding, actual.messageMethod)
-  equal(0x0100, actual.messageClass)
+  def callback(actual):
+    equal(stun.binding, actual.messageMethod)
+    equal(0x0100, actual.messageClass)
 
-  equal('\x21\x12\xa4\x42', actual.magicCookie)
-  equal('abcdefghijkl', actual.transactionId)
+    equal('\x21\x12\xa4\x42', actual.magicCookie)
+    equal('abcdefghijkl', actual.transactionId)
 
-  equal(stun.MAPPED_ADDRESS, actual.attribute.type)
-  equal('\0\1\xab\xcd\1\2\3\4', actual.attribute.value)
+    equal(stun.MAPPED_ADDRESS, actual.attribute.type)
+    equal('\0\1\xab\xcd\1\2\3\4', actual.attribute.value)
 
-connect = udp.connect
-urandom = os.urandom
+  connect = udp.connect
+  urandom = os.urandom
 
-udp.connect, os.urandom = lambda host, port: lambda: transport, lambda _: 'abcdefghijkl'
+  udp.connect, os.urandom = lambda host, port: lambda: transport, lambda _: 'abcdefghijkl'
 
-try:
-  stun.request('example.com').then(callback)
+  try:
+    stun.request('example.com').then(callback)
 
-finally:
-  udp.connect = connect
-  os.urandom = urandom
+  finally:
+    udp.connect = connect
+    os.urandom = urandom
 
-transport.write.shift().then(untwisted.partial(equal, '\0\1\0\0\x21\x12\xa4\x42abcdefghijkl'))
+  transport.write.shift().then(untwisted.partial(equal, '\0\1\0\0\x21\x12\xa4\x42abcdefghijkl'))
 
-transport.recv.__self__('\1\1\0\x0c\x21\x12\xa4\x42abcdefghijkl\0\1\0\x08\0\1\xab\xcd\1\2\3\4')
+  transport.recv.__self__('\1\1\0\x0c\x21\x12\xa4\x42abcdefghijkl\0\1\0\x08\0\1\xab\xcd\1\2\3\4')
+
+@test
+def many():
+  expect(5)
+
+  class transport:
+    recv = promise.sequence().shift
+    write = promise.sequence()
+
+  def callback(actual):
+    a, b = actual.attribute
+
+    equal(stun.MAPPED_ADDRESS, a.type)
+    equal('\0\1\xab\xcd\1\2\3\4', a.value)
+
+    equal(stun.SOFTWARE, b.type)
+    equal('Expect', b.value)
+
+  connect = udp.connect
+  urandom = os.urandom
+
+  udp.connect, os.urandom = lambda host, port: lambda: transport, lambda _: 'abcdefghijkl'
+
+  try:
+    stun.request('example.com').then(callback)
+
+  finally:
+    udp.connect = connect
+    os.urandom = urandom
+
+  transport.write.shift().then(untwisted.partial(equal, '\0\1\0\0\x21\x12\xa4\x42abcdefghijkl'))
+
+  transport.recv.__self__('\1\1\0\x18\x21\x12\xa4\x42abcdefghijkl\0\1\0\x08\0\1\xab\xcd\1\2\3\4\x80\x22\0\6Expect\0\0')
