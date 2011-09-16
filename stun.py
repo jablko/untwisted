@@ -141,6 +141,17 @@ def request(server, messageMethod=binding):
       itm.number = ord(itm.value[3])
       itm.reasonPhrase = itm.value[4:]
 
+    elif UNKNOWN_ATTRIBUTES == type:
+
+      #  0 1 2 3 4 5 6 7 8 9 A B C D E F 0 1 2 3 4 5 6 7 8 9 A B C D E F
+      # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      # |       Attribute 1 Type        |       Attribute 2 Type        |
+      # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      # |       Attribute 3 Type        |       Attribute 4 Type    ...
+      # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+      itm.attributeType = untwisted.oneMany(*(ord(itm.value[offset]) << 8 | ord(itm.value[offset + 1]) for offset in range(0, len(itm.value), 2)))
+
     elif XOR_MAPPED_ADDRESS == type:
 
       #  0 1 2 3 4 5 6 7 8 9 A B C D E F 0 1 2 3 4 5 6 7 8 9 A B C D E F

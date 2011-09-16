@@ -116,8 +116,8 @@ def head(cbl):
 identity = lambda ctx: ctx
 
 class oneMany:
-  def __init__(ctx):
-    ctx.asdf = []
+  def __init__(ctx, *args):
+    ctx.asdf = list(args)
 
   def __getattr__(ctx, name):
     try:
