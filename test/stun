@@ -134,6 +134,38 @@ def errorResponse():
   transport.recv.__self__('\1\x11\0\x10\x21\x12\xa4\x42abcdefghijkl\0\x09\0\x0a\0\0\5\x43Expect\0\0')
 
 @test
+def errorCode():
+  expect(4)
+
+  class transport:
+    recv = promise.sequence().shift
+    write = promise.sequence()
+
+  class callback:
+
+    @staticmethod
+    def throw(type, value, traceback):
+      equal(5, value.attribute['class'])
+      equal(67, value.attribute.number)
+      equal('Expect', value.attribute.reasonPhrase)
+
+  connect = udp.connect
+  urandom = os.urandom
+
+  udp.connect, os.urandom = lambda host, port: lambda: transport, lambda _: 'abcdefghijkl'
+
+  try:
+    stun.request('example.com').then(callback)
+
+  finally:
+    udp.connect = connect
+    os.urandom = urandom
+
+  transport.write.shift().then(untwisted.partial(equal, '\0\1\0\0\x21\x12\xa4\x42abcdefghijkl'))
+
+  transport.recv.__self__('\1\x11\0\x10\x21\x12\xa4\x42abcdefghijkl\0\x09\0\x0a\0\0\5\x43Expect\0\0')
+
+@test
 def many():
   expect(5)
 

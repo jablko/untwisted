@@ -33,9 +33,15 @@ IPv6 = 2
 # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 class attribute:
+  __metaclass__ = type
+
   def __init__(ctx, type, value):
     ctx.type = type
     ctx.value = value
+
+  __delitem__ = object.__delattr__
+  __getitem__ = object.__getattribute__
+  __setitem__ = object.__setattr__
 
 class message:
   def __init__(ctx):
@@ -121,6 +127,19 @@ def request(server, messageMethod=binding):
 
       elif IPv6 == itm.family:
         itm.address = socket.inet_ntop(socket.AF_INET6, itm.value[4:])
+
+    elif ERROR_CODE == type:
+
+      #  0 1 2 3 4 5 6 7 8 9 A B C D E F 0 1 2 3 4 5 6 7 8 9 A B C D E F
+      # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      # |          Reserved, should be 0          |Class|    Number     |
+      # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      # |                    Reason Phrase (variable)               ...
+      # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+      itm['class'] = ord(itm.value[2])
+      itm.number = ord(itm.value[3])
+      itm.reasonPhrase = itm.value[4:]
 
     elif XOR_MAPPED_ADDRESS == type:
 
