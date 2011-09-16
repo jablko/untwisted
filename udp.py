@@ -21,13 +21,14 @@ def connect(host, port):
           def doStop(ctx):
             pass
 
+          @transport.then
           @promise.resume
-          def makeConnection(ctx, nstTransport):
+          def makeConnection(transport):
             nstHost = host
 
             try:
               try:
-                nstTransport.connect(host, port)
+                transport.connect(host, port)
 
               except ValueError:
 
@@ -36,18 +37,18 @@ def connect(host, port):
 
                 nstHost = (yield dns.lookup(host)).answer[0].address
 
-                nstTransport.connect(nstHost, port)
+                transport.connect(nstHost, port)
 
             # tcp.Connector calls socket.getservbyname() but .connect() doesn't : (
             except TypeError:
               nstPort = socket.getservbyname(port, 'udp')
 
-              # Fix RuntimeError: already connected
-              nstTransport._connectedAddr = None
+              # Avoid RuntimeError: already connected
+              transport._connectedAddr = None
 
-              nstTransport.connect(nstHost, nstPort)
+              transport.connect(nstHost, nstPort)
 
-            transport(nstTransport)
+            raise StopIteration(transport)
 
         type.__call__(ctx, None, protocol).startListening()
 
