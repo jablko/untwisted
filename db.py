@@ -21,7 +21,10 @@ class connect:
     def __init__(ctx):
       ctx.cursor = ctx.ctx.conn.cursor()
 
-    close = lambda ctx: (ctx, ctx.cursor.close())[0]
+    def close(ctx):
+      ctx.cursor.close()
+
+      return ctx
 
     def execute(ctx, operation, *args):
       try:

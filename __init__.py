@@ -6,7 +6,7 @@ def compose(*args):
   #*rest, head = args
   head, rest = (lambda head, *rest: (head, rest))(*reversed(args))
 
-  return lambda *args, **kwds: reduce(lambda result, cbl: cbl(result), rest, head(*args, **kwds))
+  return lambda *args, **kwds: reduce(lambda result, itm: itm(result), rest, head(*args, **kwds))
 
 # Give a class access to its dynamic context, e.g.
 #
@@ -46,7 +46,7 @@ def ctxual(ctx, instance, *_):
     key = weakref.ref(ctx), weakref.ref(instance)
 
   except TypeError:
-    key = weakref.ref(ctx), instance
+    key = weakref.ref(ctx)
 
   try:
     return cache[key]
@@ -99,11 +99,11 @@ def each(cbl):
 
 ref = weakref.WeakKeyDictionary()
 class final:
+  def __init__(ctx, callback):
+    ref[ctx] = weakref.ref(ctx, lambda _: callback())
+
   def cancel(ctx):
     del ref[ctx]
-
-  def __init__(ctx, callback):
-    ref[ctx] = weakref.ref(ctx, lambda ref: callback())
 
 def head(cbl):
   def result(*args, **kwds):

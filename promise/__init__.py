@@ -234,7 +234,7 @@ def join(*args, **kwds):
     head, rest = args[0], iter(args[1:])
 
   except IndexError:
-    return promise()(*args, **kwds)
+    return promise()(**kwds)
 
   args = []
   def callback(*nstArgs, **nstKwds):
