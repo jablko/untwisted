@@ -13,12 +13,10 @@ def noReference():
 def collectableCycle():
   expect(1)
 
-  class cycle:
-    def __init__(ctx, cycle):
-      ctx.next = cycle
-      cycle.next = ctx
+  sample = untwisted.final(lambda: ok(True))
+  sample.cycle = sample
 
-  cycle(untwisted.final(lambda: ok(True)))
+  del sample
 
   gc.collect()
 
