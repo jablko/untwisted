@@ -8,6 +8,37 @@ def compose(*args):
 
   return lambda *args, **kwds: reduce(lambda result, cbl: cbl(result), rest, head(*args, **kwds))
 
+# Give a class access to its dynamic context, e.g.
+#
+#   class outer:
+#     class inner:
+#       class __metaclass__(type):
+#         __get__ = ctxual
+#
+#   instance = outer()
+#   instance is instance.inner.ctx # True
+#
+# A subclass is generated each time the class (inner) is accessed with a unique
+# dynamic context (instance).  The same subclass must be returned each time the
+# class is accessed with the same dynamic context, such that:
+#
+#   instance.inner.sample = 'Sample'
+#
+#   # If the same subclass isn't returned then this might raise an AttributeError
+#   instance.inner.sample # 'Sample'
+#
+# This is achieved with a mapping from class and dynamic context to subclass.
+# To avoid leaking memory, we make weak references to class and dynamic
+# context.  Subclass references class and dynamic context (this is our goal) so
+# if we don't also make weak reference to subclass, then it, class, and dynamic
+# context won't get finalized before mapping is finalized
+#
+# Recycle mapping when class or dynamic context get finalized.  To simplify,
+# recycle mapping when subclass is finalized.  Because subclass references
+# class and dynamic context, this never happens later than class or dynamic
+# context get finalized.  Only difference is that after subclass is finalized,
+# mapping is recycled vs. a broken weak reference
+
 # http://jdbates.blogspot.com/2011/07/in-python-how-can-you-associate-one.html
 cache = weakref.WeakValueDictionary()
 def ctxual(ctx, instance, *_):
@@ -47,16 +78,16 @@ def each(cbl):
 # Callback is called after there are no references to this final instance, or
 # after this final instance is garbage collected if it's part of a collectable
 # reference cycle.  Callback isn't called in the following rare (hopefully)
-# cases,
+# cases:
 #
-#  * Exotic situations like when the program is killed by a signal not handled
-#    by Python, when a Python fatal internal error is detected, or when
-#    os._exit() is called
+#   * Exotic situations like when the program is killed by a signal not handled
+#     by Python, when a Python fatal internal error is detected, or when
+#     os._exit() is called
 #
-#  * There's an uncollectable reference to this final instance,
-#    http://docs.python.org/reference/datamodel.html#object.__del__
+#   * There's an uncollectable reference to this final instance,
+#     http://docs.python.org/reference/datamodel.html#object.__del__
 #
-#  * The weak reference instance is itself part of a circular reference
+#   * The weak reference instance is itself part of a circular reference
 #
 # Maintain references to weak references or they get destroyed before final
 # instances - use weak dictionary to avoid memory leak.  Maintaining reference

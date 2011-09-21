@@ -217,16 +217,16 @@ class StopIteration(exceptions.StopIteration):
 #
 # Join is like the following, except,
 #
-#  * this is infinitely recursive because @resume depends on join()
+#   * this is infinitely recursive because @resume depends on join()
 #
-#  * this isn't a generator function!  "yield" yields extra values from the
-#    list comprehension - it doesn't form a generator function.  Bracketing the
-#    list comprehension with "[]" solves this, however
+#   * this isn't a generator function!  "yield" yields extra values from the
+#     list comprehension - it doesn't form a generator function.  Bracketing the
+#     list comprehension with "[]" solves this, however
 #
-# @resume
-# def join(*args, **kwds):
-#   #return ...
-#   raise StopIteration(*((yield itm) for itm in args), **kwds)
+#   @resume
+#   def join(*args, **kwds):
+#     #return ...
+#     raise StopIteration(*((yield itm) for itm in args), **kwds)
 #
 def join(*args, **kwds):
   try:
@@ -331,8 +331,8 @@ def nowThen(ctx, now=lambda *args, **kwds: promise()(*args, **kwds), then=lambda
 # was a promise
 #
 # compose(etc., third, second, first) is point free (pointless) variation of
-# the following,
+# the following:
 #
-# lambda *args, **kwds: promise()(*args, **kwds).then(first).then(second).then(third).then(etc.)
+#   lambda *args, **kwds: promise()(*args, **kwds).then(first).then(second).then(third).then(etc.)
 #
 compose = lambda *args: lambda *nstArgs, **nstKwds: reduce(promise.then, reversed(args), promise())(*nstArgs, **nstKwds)
