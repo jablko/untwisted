@@ -175,7 +175,13 @@ class oneMany:
 
 class manyMap:
   def __init__(ctx, *args, **kwds):
-    ctx.asdf = dict(*args, **kwds)
+    ctx.asdf = dict()
+
+    for key, value in args:
+      ctx.append(key, value)
+
+    for key, value in kwds.iteritems():
+      ctx.append(key, value)
 
   def __getattr__(ctx, name):
     try:

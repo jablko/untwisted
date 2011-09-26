@@ -20,3 +20,5 @@ try:
 
 except KeyError:
   ok(True)
+
+untwisted.manyMap(('Expect', 'Tcepxe'))
