@@ -168,6 +168,11 @@ class oneMany:
 
       return asdf[name]
 
+  def __str__(ctx):
+    asdf, = ctx.asdf
+
+    return str(asdf)
+
 class manyMap:
   def __init__(ctx, *args, **kwds):
     ctx.asdf = dict(*args, **kwds)

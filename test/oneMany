@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+import untwisted
+from testify import *
+
+equal('Expect', str(untwisted.oneMany('Expect')))
