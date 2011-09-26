@@ -182,14 +182,22 @@ class manyMap:
       return getattr(ctx.asdf, name)
 
     except AttributeError:
-      return ctx.asdf[name]
+      try:
+        return ctx.asdf[name]
+
+      except KeyError:
+        raise AttributeError
 
   def __getitem__(ctx, name):
     try:
       return ctx.asdf[name]
 
     except KeyError:
-      return getattr(ctx.asdf, name)
+      try:
+        return getattr(ctx.asdf, name)
+
+      except (AttributeError, TypeError):
+        raise KeyError
 
   __iter__ = lambda ctx: ctx.asdf.iteritems()
 

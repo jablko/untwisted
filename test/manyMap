@@ -1,0 +1,22 @@
+#!/usr/bin/env python
+
+import untwisted
+from testify import *
+
+try:
+  ok(False, untwisted.manyMap().bogus)
+
+except AttributeError:
+  ok(True)
+
+try:
+  ok(False, untwisted.manyMap()['bogus'])
+
+except KeyError:
+  ok(True)
+
+try:
+  ok(False, untwisted.manyMap()[None])
+
+except KeyError:
+  ok(True)
