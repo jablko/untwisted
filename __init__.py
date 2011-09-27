@@ -1,4 +1,5 @@
 import weakref
+from random import random
 
 call = lambda cbl: cbl()
 
@@ -242,6 +243,18 @@ class partial:
     totalKwds.update(kwds)
 
     return ctx.cbl(*totalArgs, **totalKwds)
+
+def randstr(length, alphabet):
+
+  # Choose symbols from alphabet, at random
+  symbol = random()
+  result = ''
+  for _ in range(6):
+    symbol *= len(alphabet)
+    result += alphabet[int(symbol)]
+    symbol -= int(symbol)
+
+  return result
 
 @call
 class wildcard:
