@@ -30,6 +30,23 @@ CS = 2
 CH = 3
 HS = 4
 
+# The name server was unable to interpret the query
+formatError = 1
+
+# The name server was unable to process this query due to a problem with the
+# name server
+serverFailure = 2
+
+# Meaningful only for responses from an authoritative name server, this code
+# signifies that the domain name referenced in the query does not exist
+nameError = 3
+
+# The name server does not support the requested kind of query
+notSupported = 4
+
+# The name server refuses to perform the specified operation for policy reasons
+refused = 5
+
 #   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
 # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 # /                                               /
