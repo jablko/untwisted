@@ -68,3 +68,68 @@ uricNoSlash = qwer('(?:', rule('unreserved'), '|', rule('escaped'), '|[$&+,:;=?@
 opaquePart = qwer(rule('uricNoSlash'), '(?:', rule('uric'), ')*')
 absoluteUri = qwer(rule('scheme'), ':(?:', rule('hierPart'), '|', rule('opaquePart'), ')')
 requestUri = qwer('(?:', rule('sipUri'), '|', rule('sipsUri'), '|', rule('absoluteUri'), ')')
+sipVersion = qwer('SIP/(?:', rule('rfc5234.DIGIT'), ')+\.(?:', rule('rfc5234.DIGIT'), ')+')
+
+informational = qwer('(?:100', # Trying
+  '|180', # Ringing
+  '|181', # Call is being forwarded
+  '|182', # Queued
+  '|183)') # Session progress
+
+redirection = qwer('(?:300', # Multiple choices
+  '|301', # Moved permanently
+  '|302', # Moved temporarily
+  '|305', # Use proxy
+  '|380)') # Alternative service
+
+# OK
+success = qwer('200')
+
+clientError = qwer('(?:400', # Bad request
+  '|401', # Unauthorized
+  '|402', # Payment required
+  '|403', # Forbidden
+  '|404', # Not found
+  '|405', # Method not allowed
+  '|406', # Not acceptable
+  '|407', # Proxy authentication required
+  '|408', # Request timeout
+  '|410', # Gone
+  '|413', # Request entity too large
+  '|414', # Request-URI too large
+  '|415', # Unsupported media type
+  '|416', # Unsupported URI scheme
+  '|420', # Bad extension
+  '|421', # Extension too brief
+  '|423', # Interval too brief
+  '|480', # Temporarily not available
+  '|481', # Call leg/transaction does not exist
+  '|482', # Loop detected
+  '|483', # Too many hops
+  '|484', # Address incomplete
+  '|485', # Ambiguous
+  '|486', # Busy here
+  '|487', # Request terminated
+  '|488', # Not acceptable here
+  '|491', # Request pending
+  '|493)') # Undecipherable
+
+serverError = qwer('(?:500', # Internal server error
+  '|501', # Not implemented
+  '|502', # Bad gateway
+  '|503', # Service unavailable
+  '|504', # Server time-out
+  '|505', # SIP version not supported
+  '|513)') # Message too large
+
+globalFailure = qwer('(?:600', # Busy everywhere
+  '|603', # Decline
+  '|604', # Does not exist anywhere
+  '|606)') # Not acceptable
+
+extensionCode = qwer('(?:', rule('rfc5234.DIGIT'), '){3}')
+statusCode = qwer('(?:', rule('informational'), '|', rule('redirection'), '|', rule('success'), '|', rule('clientError'), '|', rule('serverError'), '|', rule('globalFailure'), '|', rule('extensionCode'), ')')
+utf8Cont = qwer('[\x80-\xbf]')
+utf8Nonascii = qwer('(?:[\xc0-\xdf]', rule('utf8Cont'), '|[\xe0-\xef](?:', rule('utf8Cont'), '){2}|[\xf0-\xf7](?:', rule('utf8Cont'), '){3}|[\xf8-\xfb](?:', rule('utf8Cont'), '){4}|[\xfc-\xfd](?:', rule('utf8Cont'), '){5})')
+reasonPhrase = qwer('(?:', rule('reserved'), '|', rule('unreserved'), '|', rule('escaped'), '|', rule('utf8Nonascii'), '|', rule('utf8Cont'), '| |\t)*')
+statusLine = qwer(rule('sipVersion'), ' ', rule('statusCode'), ' ', rule('reasonPhrase'), rule('rfc5234.CRLF'))
