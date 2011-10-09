@@ -9,6 +9,9 @@ DIGIT = qwer('\d')
 DQUOTE = qwer('"')
 HEXDIG = qwer('[\dABCDEF]')
 
+# 8 bits of data
+OCTET = qwer('[\0-\xff]')
+
 # Visible (printing) characters
 VCHAR = qwer('[!-~]')
 
