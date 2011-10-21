@@ -15,9 +15,7 @@ def connect(host, port, timeout=30, bindAddress=None):
 
         @untwisted.call
         class factory(protocol.ClientFactory):
-
-          # Extend protocol.Protocol for .connectionLost()
-          class protocol(protocol.Protocol):
+          class protocol:
             def __init__(ctx):
               ctx.connectionLost = promise.promise()
 
@@ -56,9 +54,7 @@ def listen(port, interface=''):
 
   @untwisted.call
   class factory(protocol.Factory):
-
-    # Extend protocol.Protocol for .connectionLost()
-    class protocol(protocol.Protocol):
+    class protocol:
       def __init__(ctx):
         ctx.connectionLost = promise.promise()
 
