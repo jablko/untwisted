@@ -62,3 +62,32 @@ def connect(host, port):
     recv = lambda ctx: ctx.protocol.datagramReceived.shift().then(lambda asdf, _: asdf)
 
   return result
+
+def listen(port, interface=''):
+  class result(udp.Port):
+    class __metaclass__(type):
+      def __call__(ctx):
+        transport = promise.promise()
+
+        @untwisted.call
+        class protocol:
+          datagramReceived = promise.sequence()
+
+          # Avoid AttributeError: protocol instance has no attribute 'doStop'
+          def doStop(ctx):
+            pass
+
+          makeConnection = transport
+
+        try:
+          type.__call__(ctx, port, protocol, interface).startListening()
+
+        # tcp.Connector calls socket.getservbyname() but udp.Port doesn't : (
+        except TypeError:
+          nstPort = socket.getservbyname(port, 'udp')
+
+          type.__call__(ctx, nstPort, protocol, interface).startListening()
+
+        return transport
+
+  return result
